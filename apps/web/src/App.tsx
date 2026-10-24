@@ -1,43 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react';
-
-type User = { id: string; username: string };
-
-const Op = { DISPATCH: 0, HEARTBEAT: 1, IDENTIFY: 2, HELLO: 10 };
-const AUTHENTICATION_FAILED = 4004;
+import { useState, type FormEvent } from 'react';
+import { Chat } from './Chat.tsx';
 
 export function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
-  const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!token) return;
-    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/gateway`);
-    const send = (op: number, d: unknown) => ws.send(JSON.stringify({ op, d }));
-    let seq: number | null = null;
-    let heartbeat: number | undefined;
-
-    ws.onmessage = (e) => {
-      const { op, d, s, t } = JSON.parse(e.data);
-      if (s) seq = s;
-      if (op === Op.HELLO) {
-        heartbeat = window.setInterval(() => send(Op.HEARTBEAT, seq), d.heartbeat_interval);
-        send(Op.IDENTIFY, { token });
-      }
-      if (op === Op.DISPATCH && t === 'READY') setUser(d.user);
-    };
-    ws.onclose = (e) => {
-      clearInterval(heartbeat);
-      setUser(null);
-      if (e.code === AUTHENTICATION_FAILED) logout();
-    };
-
-    return () => {
-      clearInterval(heartbeat);
-      ws.onclose = null;
-      ws.close();
-    };
-  }, [token]);
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -59,14 +25,7 @@ export function App() {
     setToken(null);
   }
 
-  if (token) {
-    return (
-      <main>
-        <p>{user ? `Conectado ao gateway como ${user.username}` : 'Conectando…'}</p>
-        <button onClick={logout}>Sair</button>
-      </main>
-    );
-  }
+  if (token) return <Chat token={token} onLogout={logout} />;
 
   return (
     <main>

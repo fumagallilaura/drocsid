@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import { userFromToken, type User } from './auth.ts';
+import { guildsFor } from './guilds.ts';
 
 // Mesmo desenho do gateway documentado do Discord: https://discord.com/developers/docs/events/gateway
 export const Op = { DISPATCH: 0, HEARTBEAT: 1, IDENTIFY: 2, HELLO: 10, HEARTBEAT_ACK: 11 } as const;
@@ -11,8 +12,12 @@ export const Close = {
   SESSION_TIMED_OUT: 4009,
 } as const;
 
+type Dispatcher = (t: string, d: unknown) => void;
+
 export function createGateway(heartbeatInterval: number) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 });
+  // ponytail: sessões em memória de um único processo; com várias instâncias, trocar por pub/sub (ex.: Redis).
+  const sessions = new Map<string, Set<Dispatcher>>();
 
   wss.on('connection', (ws) => {
     let user: User | null = null;
@@ -21,12 +26,16 @@ export function createGateway(heartbeatInterval: number) {
 
     const send = (op: number, d: unknown, t?: string) =>
       ws.send(JSON.stringify(op === Op.DISPATCH ? { op, d, s: ++seq, t } : { op, d }));
+    const dispatch: Dispatcher = (t, d) => send(Op.DISPATCH, d, t);
     const resetTimeout = () => {
       clearTimeout(timeout);
       timeout = setTimeout(() => ws.close(Close.SESSION_TIMED_OUT, 'Heartbeat não recebido'), heartbeatInterval * 1.5);
     };
 
-    ws.on('close', () => clearTimeout(timeout));
+    ws.on('close', () => {
+      clearTimeout(timeout);
+      if (user) sessions.get(user.id)?.delete(dispatch);
+    });
     send(Op.HELLO, { heartbeat_interval: heartbeatInterval });
     resetTimeout();
 
@@ -46,7 +55,11 @@ export function createGateway(heartbeatInterval: number) {
           const token = msg.d?.token;
           user = typeof token === 'string' ? await userFromToken(token) : null;
           if (!user) return ws.close(Close.AUTHENTICATION_FAILED, 'Token inválido');
-          return send(Op.DISPATCH, { user }, 'READY');
+          const guilds = await guildsFor(user.id);
+          if (ws.readyState !== ws.OPEN) return;
+          if (!sessions.has(user.id)) sessions.set(user.id, new Set());
+          sessions.get(user.id)!.add(dispatch);
+          return dispatch('READY', { user, guilds });
         }
         default:
           return ws.close(Close.UNKNOWN_OPCODE, 'Opcode desconhecido');
@@ -54,5 +67,9 @@ export function createGateway(heartbeatInterval: number) {
     });
   });
 
-  return wss;
+  const dispatchTo = (userIds: string[], t: string, d: unknown) => {
+    for (const id of userIds) sessions.get(id)?.forEach((dispatch) => dispatch(t, d));
+  };
+
+  return { wss, dispatchTo };
 }

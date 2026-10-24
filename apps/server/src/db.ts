@@ -18,5 +18,32 @@ export async function migrate() {
       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    CREATE TABLE IF NOT EXISTS guilds (
+      id BIGSERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      owner_id BIGINT NOT NULL REFERENCES users(id)
+    );
+    CREATE TABLE IF NOT EXISTS guild_members (
+      guild_id BIGINT NOT NULL REFERENCES guilds(id) ON DELETE CASCADE,
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      PRIMARY KEY (guild_id, user_id)
+    );
+    CREATE TABLE IF NOT EXISTS channels (
+      id BIGSERIAL PRIMARY KEY,
+      guild_id BIGINT NOT NULL REFERENCES guilds(id) ON DELETE CASCADE,
+      name TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS invites (
+      code TEXT PRIMARY KEY,
+      guild_id BIGINT NOT NULL REFERENCES guilds(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS messages (
+      id BIGSERIAL PRIMARY KEY,
+      channel_id BIGINT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+      author_id BIGINT NOT NULL REFERENCES users(id),
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS messages_channel_id ON messages (channel_id, id);
   `);
 }

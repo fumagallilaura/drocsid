@@ -62,6 +62,12 @@ export async function login(username: unknown, password: unknown) {
   return { user: { id: row.id, username: row.username }, token: await createSession(row.id) };
 }
 
+export async function authenticate(token: string | undefined) {
+  const user = token ? await userFromToken(token) : null;
+  if (!user) throw new HttpError(401, 'Não autenticado');
+  return user;
+}
+
 export async function userFromToken(token: string) {
   const { rows } = await pool.query<User>(
     'SELECT u.id, u.username FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1',
