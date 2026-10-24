@@ -53,8 +53,8 @@ T5 -> T6 -> T7 -> T8
 **Requirement**: STAB-27, STAB-40, STAB-41, STAB-49, STAB-50.
 **Tools**: MCP Agent Skills; tlc-spec-driven; shell/Node.
 **Done when**:
-- [ ] Eventos inválidos, versão e ICE/PORT são discriminados pelos testes da spec.
-- [ ] npm.cmd test e build passam; testes existentes permanecem.
+- [x] Eventos inválidos, versão e ICE/PORT são discriminados pelos testes da spec.
+- [x] npm.cmd test e build passam; 7 testes, incluindo os 3 anteriores. Adequação em evidence.md, T1.
 **Tests**: unit em tests/protocol.test.js.
 **Gate**: quick
 

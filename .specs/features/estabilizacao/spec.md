@@ -295,7 +295,7 @@ Prioridades das histórias orientam esta estabilização: P1 protege captura, te
 
 ## Requirement Traceability
 
-Todos os requisitos estão em **Specify**, com status **Pending**. Nenhuma linha significa implementação aprovada ou achado corrigido. Os apontamentos de código identificam o comportamento atual que fundamenta o requisito, não a evidência de seu atendimento.
+Os requisitos foram relacionados ao plano em tasks.md. O status abaixo conserva a referência de Specify até a verificação integrada; tarefas concluídas e evidências parciais aparecem em tasks.md/evidence.md. Os apontamentos desta tabela identificam a origem do requisito, não a evidência de atendimento.
 
 | Requirement ID | Story | Achados | Evidência atual (file:line) | Phase | Status |
 | --- | --- | --- | --- | --- | --- |
@@ -368,7 +368,7 @@ Todos os requisitos estão em **Specify**, com status **Pending**. Nenhuma linha
 | STAB-66 | US10 | R21 | scripts/desktop-smoke.mjs:12; scripts/startup-audio-check.mjs:30 | Specify | Pending |
 | STAB-67 | US10 | R25 | server/service.js:54; server/service.js:107; src/main.jsx:13; electron/main.js:34 | Specify | Pending |
 
-**Coverage:** 68 requisitos, 68 associados a histórias e evidências atuais; zero mapeados a tarefas porque Tasks não foi iniciado. Todos Pending. Nenhuma cobertura é evidência de implementação.
+**Coverage:** 68 requisitos associados a histórias, evidências de origem e ao plano em tasks.md. Pending significa ainda não verificado integralmente. Nenhum mapeamento equivale a aprovação do produto.
 
 ## Review Findings Disposition
 
