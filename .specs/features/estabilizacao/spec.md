@@ -1,6 +1,6 @@
 # Estabilização do Conversa Specification
 
-**Data:** 2026-10-24. **Fase:** Specify, escopo Large/Complex. **Estado:** proposta de requisitos; implementação não iniciada. Os critérios abaixo descrevem o resultado exigido de uma futura estabilização. Não atestam o comportamento da versão 0.1.1.
+**Data:** 2026-10-24. **Escopo:** Large/Complex. **Estado:** implementação local autorizada pela instrução posterior de continuidade autônoma. Os critérios descrevem o resultado exigido, não uma aprovação da versão 0.1.1. O estado efetivo por requisito aparece na rastreabilidade.
 
 ## Problem Statement
 
@@ -34,7 +34,8 @@ Fontes lidas: [revisão completa](../../../review/REVISAO_COMPLETA.md), [resumo]
 | --- | --- | --- |
 | C1 | Estabilizar o protótipo atual para testes com pessoas de confiança. Contas, grupos privados e TURN autenticado ficam para outra entrega e bloqueiam futura publicação com essas garantias. | Resposta do usuário nesta sessão, 2026-10-24. |
 | C2 | Trocar de sala de texto encerra a chamada. Manter voz independente da sala de texto está fora deste escopo. | Resposta do usuário nesta sessão, 2026-10-24. |
-| C3 | Nesta sessão, produzir somente a spec e atualizar somente o Handoff de STATE.md. Não implementar, refatorar, criar design ou decompor tarefas. | Instrução explícita do usuário. |
+| C3 | Na sessão de Specify, produzir somente a spec e atualizar somente o Handoff. Limite histórico cumprido, posteriormente substituído por C4. | Instrução original do usuário. |
+| C4 | Continuar o trabalho de forma autônoma usando skills do MCP Agent Skills, evitando código desnecessário. Execução local no escopo C1/C2; sem conexão remota Git, conforme correção posterior do usuário. | Instruções posteriores do usuário. |
 
 Estas confirmações não preenchem nem alteram a seção Decisions de STATE.md. A stack observada é contexto atual, não aprovação de arquitetura futura.
 
@@ -55,7 +56,7 @@ Estas confirmações não preenchem nem alteram a seção Decisions de STATE.md.
 
 ## Assumptions & Open Questions
 
-Os padrões abaixo tornam os resultados verificáveis. São **propostas desta spec**, não decisões confirmadas do produto. Alterá-los exige revisar os critérios e seus testes. Nenhum deles implica autorização para implementar nesta sessão.
+Os padrões abaixo tornam os resultados verificáveis. Foram propostos na sessão de Specify e agora adotados como escolhas técnicas do agente sob C4. Não são respostas explícitas do usuário. Alterá-los exige revisar critérios e testes; não autorizam publicação ou expansão do escopo.
 
 | Assumption / decision | Chosen default | Rationale | Confirmed? |
 | --- | --- | --- | --- |
