@@ -1,44 +1,115 @@
-// Fixed transceiver slots allow microphone/screen replacement without renegotiation.
+import { LIMITS, ProtocolError, validSignal } from '../shared/protocol.js';
+
+const stop = stream => stream?.getTracks().forEach(track => { track.onended = null; track.stop(); });
+const realClock = { now: () => Date.now(), setTimeout: (fn, ms) => setTimeout(fn, ms), clearTimeout: id => clearTimeout(id) };
+
 export class Call {
-  constructor({ id, send, iceServers, onStreams, onMedia, onError }) {
-    Object.assign(this, { id, send, iceServers, onStreams, onMedia, onError });
-    this.peers = new Map(); this.microphone = null; this.display = null;
-    this.active = false; this.muted = true; this.closed = false;
+  constructor({ id, send, iceServers, onStreams, onMedia, onError,
+    mediaDevices = navigator.mediaDevices, PeerConnection = globalThis.RTCPeerConnection,
+    Stream = globalThis.MediaStream, clock = realClock }) {
+    Object.assign(this, { id, send, iceServers, onStreams, onMedia, onError, mediaDevices, PeerConnection, Stream, clock });
+    this.peers = new Map(); this.failed = new Set(); this.members = [];
+    this.generation = 0; this.screenGeneration = 0;
+    this.microphone = null; this.display = null;
+    this.active = false; this.admitted = false; this.muted = true; this.closed = false;
   }
-  async join() {
-    this.active = true;
-    try {
-      this.microphone = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
-      if (!this.active || this.closed) { this.microphone.getTracks().forEach(t => t.stop()); this.microphone = null; return; }
-      this.muted = false;
-    } catch { this.onError('Microfone indisponível. Você pode entrar para ouvir e compartilhar a tela.'); }
-    if (this.active && !this.closed) this.send({ type: 'call-join', muted: this.muted });
-    this.notify();
+  current(generation) { return this.active && !this.closed && this.generation === generation; }
+  notify() { this.onMedia({ muted: this.muted, display: this.display, pending: this.active && !this.admitted, admitted: this.admitted }); }
+  report(error) { this.onError(error instanceof Error ? error : new Error(String(error))); }
+  announce(event) {
+    try { return Promise.resolve(this.send({ ...event, callId: this.callId })).catch(error => { this.report(error); }); }
+    catch (error) { this.report(error); return Promise.resolve(); }
   }
-  notify() { this.onMedia({ muted: this.muted, display: this.display }); }
-  peer(id) {
+  deadline(promise, ms) {
+    let timer;
+    return Promise.race([promise, new Promise((_, reject) => {
+      timer = this.clock.setTimeout(() => reject(new ProtocolError('TIMEOUT')), ms);
+    })]).finally(() => this.clock.clearTimeout(timer));
+  }
+  join() {
+    if (this.closed) return Promise.reject(new ProtocolError('MEDIA_FAILED', 'Chamada encerrada.'));
+    if (this.joining) return this.joining;
+    if (this.admitted) return Promise.resolve();
+    const generation = ++this.generation;
+    this.callId = crypto.randomUUID(); this.active = true; this.admitted = false; this.notify();
+    const operation = (async () => {
+      try {
+        try { await this.acquireMicrophone(generation); }
+        catch { if (this.current(generation)) this.report(new ProtocolError('MEDIA_FAILED', 'Microfone indisponível. Você pode ouvir e compartilhar a tela.')); }
+        if (!this.current(generation)) return;
+        const ack = await this.deadline(Promise.resolve(this.send({ type: 'call-join', callId: this.callId, generation, muted: this.muted })), LIMITS.requestMs);
+        if (!this.current(generation)) return;
+        if (ack?.callId !== this.callId || ack?.inCall !== true) throw new ProtocolError('INVALID_EVENT');
+        this.admitted = true; this.notify(); this.sync(this.members);
+      } catch (error) {
+        if (!this.current(generation)) return;
+        this.leave();
+        throw error;
+      } finally { if (this.generation === generation) { this.joining = null; this.notify(); } }
+    })();
+    this.joining = operation;
+    return operation;
+  }
+  acquireMicrophone(generation) {
+    if (this.micPending?.generation === generation) return this.micPending.promise;
+    const operation = (async () => {
+      const stream = await this.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
+      if (!this.current(generation)) { stop(stream); return null; }
+      stop(this.microphone); this.microphone = stream; this.muted = false;
+      stream.getAudioTracks().forEach(track => { track.onended = () => { if (this.microphone === stream) { stop(stream); this.microphone = null; this.muted = true; this.notify(); void this.announce({ type: 'media', muted: true }); } }; });
+      return stream;
+    })();
+    const pending = { generation, promise: operation };
+    this.micPending = pending;
+    operation.finally(() => { if (this.micPending === pending) this.micPending = null; }).catch(() => {});
+    return operation;
+  }
+  async toggleMicrophone() {
+    if (!this.active || !this.admitted || this.closed) return;
+    const generation = this.generation;
+    if (this.micPending?.generation === generation) return this.micPending.promise;
+    if (!this.microphone || !this.microphone.getAudioTracks().some(t => t.readyState === 'live')) {
+      const stream = await this.acquireMicrophone(generation);
+      if (!stream || !this.current(generation)) return;
+      await Promise.all([...this.peers.values()].map(async entry => {
+        try { if (entry.mic) await this.deadline(entry.mic.sender.replaceTrack(stream.getAudioTracks()[0]), 1000); }
+        catch { this.failPeer(entry.id); }
+      }));
+    } else {
+      this.muted = !this.muted;
+      this.microphone.getAudioTracks().forEach(track => { track.enabled = !this.muted; });
+    }
+    if (this.current(generation)) { this.notify(); await this.announce({ type: 'media', muted: this.muted }); }
+  }
+  peer(id, callId) {
     if (this.peers.has(id)) return this.peers.get(id);
-    const pc = new RTCPeerConnection({ iceServers: this.iceServers });
+    const pc = new this.PeerConnection({ iceServers: this.iceServers });
     const initiator = this.id < id;
-    const mic = initiator ? pc.addTransceiver('audio', { direction: 'sendrecv' }) : null;
-    const video = initiator ? pc.addTransceiver('video', { direction: 'sendrecv' }) : null;
-    const audio = initiator ? pc.addTransceiver('audio', { direction: 'sendrecv' }) : null;
-    const stream = new MediaStream();
-    const entry = { pc, mic, video, audio, stream, candidates: [], offered: false, queue: Promise.resolve() };
+    const entry = { id, callId, pc, stream: new this.Stream(), candidates: [], offered: false, queue: Promise.resolve() };
+    for (const [name, kind] of [['mic', 'audio'], ['video', 'video'], ['audio', 'audio']]) entry[name] = initiator ? pc.addTransceiver(kind, { direction: 'sendrecv' }) : null;
     this.peers.set(id, entry);
-    pc.onicecandidate = event => { if (event.candidate) this.send({ type: 'signal', to: id, signal: { candidate: event.candidate.toJSON() } }); };
-    pc.ontrack = ({ track }) => { stream.addTrack(track); this.publishStreams(); };
+    const generation = this.generation;
+    const live = () => this.current(generation) && this.peers.get(id) === entry;
+    entry.timer = this.clock.setTimeout(() => { if (live()) this.failPeer(id); }, LIMITS.negotiationMs);
+    pc.onicecandidate = event => { if (live() && event.candidate) void this.announce({ type: 'signal', to: id, toCallId: entry.callId, signal: { candidate: event.candidate.toJSON() } }); };
+    pc.ontrack = ({ track }) => { if (live()) { entry.stream.addTrack(track); this.publishStreams(); } };
     pc.onconnectionstatechange = () => {
-      this.publishStreams();
-      if (pc.connectionState === 'failed') this.onError('Uma conexão de mídia falhou. Saia e entre novamente na chamada; redes restritas podem exigir um servidor TURN.');
+      if (!live()) return;
+      if (pc.connectionState === 'failed') this.failPeer(id);
+      else this.publishStreams();
     };
     return entry;
   }
+  dropPeer(id) {
+    const entry = this.peers.get(id); if (!entry) return;
+    this.peers.delete(id); this.clock.clearTimeout(entry.timer); this.clock.clearTimeout(entry.candidateTimer);
+    entry.candidates.length = 0; entry.pc.ontrack = null; entry.pc.onicecandidate = null; entry.pc.onconnectionstatechange = null; entry.pc.close();
+  }
+  failPeer(id) { this.dropPeer(id); this.failed.add(id); this.report(new ProtocolError('MEDIA_FAILED', 'A mídia falhou. Tente reconectar a chamada.')); this.publishStreams(); }
+  retryPeer(id) { this.dropPeer(id); this.failed.delete(id); this.sync(this.members); }
   async attachTracks(entry) {
     if (!entry.mic) return;
-    // Transceivers created by an incoming offer default to receive-only.
-    // Replacing their sender track alone does not enable the outbound stream.
-    for (const transceiver of [entry.mic, entry.video, entry.audio]) transceiver.direction = 'sendrecv';
+    for (const slot of [entry.mic, entry.video, entry.audio]) slot.direction = 'sendrecv';
     await Promise.all([
       entry.mic.sender.replaceTrack(this.microphone?.getAudioTracks()[0] || null),
       entry.video.sender.replaceTrack(this.display?.getVideoTracks()[0] || null),
@@ -46,86 +117,105 @@ export class Call {
     ]);
   }
   publishStreams() {
-    this.onStreams([...this.peers.entries()].map(([id, peer]) => ({ id, stream: peer.stream, state: peer.pc.connectionState })));
+    const streams = [...this.peers.entries()].map(([id, entry]) => {
+      const ready = entry.pc.connectionState === 'connected' && entry.stream.getTracks().some(t => t.readyState === 'live');
+      if (ready) this.clock.clearTimeout(entry.timer);
+      return { id, stream: entry.stream, state: ready ? 'connected' : entry.pc.connectionState === 'connected' ? 'connecting' : entry.pc.connectionState };
+    });
+    this.onStreams(streams);
   }
   sync(members) {
-    if (!this.active || this.closed) return;
+    this.members = members;
+    if (!this.active || !this.admitted || this.closed) return;
     const own = members.find(m => m.id === this.id);
-    if (!own?.inCall) return;
-    const participants = members.filter(m => m.inCall && m.id !== this.id);
-    const ids = new Set(participants.map(m => m.id));
-    for (const [id, entry] of this.peers) if (!ids.has(id)) { entry.pc.close(); this.peers.delete(id); }
-    for (const member of participants) {
-      const entry = this.peer(member.id);
+    if (!own?.inCall || own.callId !== this.callId) return;
+    const others = members.filter(m => m.inCall && m.id !== this.id);
+    for (const [id, entry] of this.peers) if (!others.some(m => m.id === id && m.callId === entry.callId)) { this.dropPeer(id); this.failed.delete(id); }
+    for (const member of others) {
+      if (this.failed.has(member.id)) continue;
+      const entry = this.peer(member.id, member.callId), generation = this.generation;
       if (this.id < member.id && !entry.offered) {
         entry.offered = true;
         entry.queue = entry.queue.then(async () => {
-          if (entry.pc.signalingState === 'closed') return;
+          if (!this.current(generation) || this.peers.get(member.id) !== entry) return;
           await this.attachTracks(entry);
           await entry.pc.setLocalDescription(await entry.pc.createOffer());
-          this.send({ type: 'signal', to: member.id, signal: { description: entry.pc.localDescription.toJSON() } });
-        }).catch(error => { if (this.active) this.onError(`Falha ao iniciar a chamada: ${error.message}`); });
+          if (this.current(generation) && this.peers.get(member.id) === entry) await this.announce({ type: 'signal', to: member.id, toCallId: entry.callId, signal: { description: entry.pc.localDescription.toJSON() } });
+        }).catch(() => { if (this.current(generation) && this.peers.get(member.id) === entry) this.failPeer(member.id); });
       }
     }
     this.publishStreams();
   }
-  signal(from, signal) {
-    if (!this.active || this.closed) return;
-    const entry = this.peer(from);
+  expireCandidates(entry) {
+    this.clock.clearTimeout(entry.candidateTimer);
+    entry.candidates = entry.candidates.filter(c => this.clock.now() - c.at < LIMITS.candidateMs);
+    if (entry.candidates.length) entry.candidateTimer = this.clock.setTimeout(() => this.expireCandidates(entry), Math.max(1, LIMITS.candidateMs - (this.clock.now() - entry.candidates[0].at)));
+  }
+  signal(from, signal, fromCallId) {
+    if (!this.active || !this.admitted || !validSignal(signal) || !this.members.some(m => m.id === from && m.inCall && m.callId === fromCallId) || this.failed.has(from)) return;
+    const entry = this.peer(from, fromCallId), generation = this.generation;
     entry.queue = entry.queue.then(async () => {
-      if (entry.pc.signalingState === 'closed') return;
+      if (!this.current(generation) || this.peers.get(from) !== entry) return;
       if (signal.description) {
         await entry.pc.setRemoteDescription(signal.description);
-        for (const candidate of entry.candidates.splice(0)) await entry.pc.addIceCandidate(candidate);
+        this.expireCandidates(entry);
+        for (const item of entry.candidates.splice(0)) await entry.pc.addIceCandidate(item.candidate);
         if (signal.description.type === 'offer') {
           [entry.mic, entry.video, entry.audio] = entry.pc.getTransceivers();
+          if (!entry.mic || !entry.video || !entry.audio) throw new ProtocolError('INVALID_EVENT');
           await this.attachTracks(entry);
           await entry.pc.setLocalDescription(await entry.pc.createAnswer());
-          this.send({ type: 'signal', to: from, signal: { description: entry.pc.localDescription.toJSON() } });
+          if (this.current(generation) && this.peers.get(from) === entry) await this.announce({ type: 'signal', to: from, toCallId: entry.callId, signal: { description: entry.pc.localDescription.toJSON() } });
         }
-      } else if (signal.candidate) {
-        if (entry.pc.remoteDescription) await entry.pc.addIceCandidate(signal.candidate);
-        else entry.candidates.push(signal.candidate);
-      }
-    }).catch(error => { if (this.active) this.onError(`Não foi possível conectar a mídia: ${error.message}`); });
+      } else if (entry.pc.remoteDescription) await entry.pc.addIceCandidate(signal.candidate);
+      else { this.expireCandidates(entry); if (entry.candidates.length < LIMITS.candidates) entry.candidates.push({ candidate: signal.candidate, at: this.clock.now() }); this.expireCandidates(entry); }
+    }).catch(() => { if (this.current(generation) && this.peers.get(from) === entry) this.failPeer(from); });
+    return entry.queue;
   }
-  async toggleMicrophone() {
-    if (!this.active) return;
-    if (!this.microphone) {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false });
-      if (!this.active) { stream.getTracks().forEach(t => t.stop()); return; }
-      this.microphone = stream;
-      await Promise.all([...this.peers.values()].filter(p => p.mic).map(p => p.mic.sender.replaceTrack(stream.getAudioTracks()[0])));
-      this.muted = false;
-    } else {
-      this.muted = !this.muted;
-      this.microphone.getAudioTracks().forEach(t => { t.enabled = !this.muted; });
-    }
-    this.send({ type: 'media', muted: this.muted }); this.notify();
-  }
-  async shareScreen(systemAudio, quality) {
-    if (!this.active) return;
-    const display = await navigator.mediaDevices.getDisplayMedia({ video: { height: { ideal: Number(quality) }, frameRate: { ideal: 30, max: 30 } }, audio: systemAudio });
-    if (!this.active) { display.getTracks().forEach(t => t.stop()); return; }
-    this.display = display;
-    display.getVideoTracks()[0].onended = () => this.stopScreen();
-    await Promise.all([...this.peers.values()].filter(p => p.video).flatMap(p => [p.video.sender.replaceTrack(display.getVideoTracks()[0]), p.audio.sender.replaceTrack(display.getAudioTracks()[0] || null)]));
-    this.send({ type: 'media', sharing: true }); this.notify();
+  shareScreen(systemAudio, quality) {
+    if (!this.active || !this.admitted || this.closed) return Promise.resolve();
+    if (this.screenPending) return this.screenPending;
+    if (this.display) return Promise.resolve();
+    const generation = this.generation, screenGeneration = ++this.screenGeneration;
+    const operation = (async () => {
+      const display = await this.mediaDevices.getDisplayMedia({ video: { height: { ideal: Number(quality) }, frameRate: { ideal: 30, max: 30 } }, audio: systemAudio === true });
+      if (!this.current(generation) || this.screenGeneration !== screenGeneration) { stop(display); return; }
+      this.display = display;
+      display.getVideoTracks()[0].onended = () => { void this.stopScreen().catch(error => this.report(error)); };
+      this.notify();
+      try {
+        await Promise.all([...this.peers.values()].filter(p => p.video).map(async entry => {
+          try { await this.deadline(Promise.all([entry.video.sender.replaceTrack(display.getVideoTracks()[0]), entry.audio.sender.replaceTrack(display.getAudioTracks()[0] || null)]), LIMITS.requestMs); }
+          catch (error) { if (this.current(generation) && this.screenGeneration === screenGeneration && this.peers.get(entry.id) === entry) this.failPeer(entry.id); throw error; }
+        }));
+        if (!this.current(generation) || this.screenGeneration !== screenGeneration) { stop(display); return; }
+        await this.announce({ type: 'media', sharing: true }); this.notify();
+      } catch (error) { if (this.display === display) await this.stopScreen(); else stop(display); throw error; }
+    })();
+    this.screenPending = operation;
+    operation.finally(() => { if (this.screenPending === operation) this.screenPending = null; }).catch(() => {});
+    return operation;
   }
   async stopScreen() {
-    const display = this.display; this.display = null;
-    display?.getTracks().forEach(t => { t.onended = null; t.stop(); });
-    await Promise.all([...this.peers.values()].filter(p => p.video).flatMap(p => [p.video.sender.replaceTrack(null), p.audio.sender.replaceTrack(null)]));
-    if (this.active) this.send({ type: 'media', sharing: false }); this.notify();
+    ++this.screenGeneration;
+    const display = this.display; this.display = null; stop(display); this.notify();
+    const notice = this.active && this.admitted ? this.announce({ type: 'media', sharing: false }) : Promise.resolve();
+    await Promise.all([...this.peers.values()].filter(p => p.video).map(async entry => {
+      try { await this.deadline(Promise.all([entry.video.sender.replaceTrack(null), entry.audio.sender.replaceTrack(null)]), 1000); }
+      catch { this.failPeer(entry.id); }
+    }));
+    await notice;
   }
   leave(announce = true) {
-    this.active = false;
-    this.microphone?.getTracks().forEach(t => t.stop()); this.microphone = null;
-    this.display?.getTracks().forEach(t => { t.onended = null; t.stop(); }); this.display = null;
-    for (const peer of this.peers.values()) peer.pc.close();
-    this.peers.clear(); this.muted = true;
-    if (announce) this.send({ type: 'call-leave' });
+    const callId = this.callId;
+    ++this.generation; ++this.screenGeneration;
+    this.active = false; this.admitted = false; this.joining = null; this.screenPending = null;
+    stop(this.microphone); this.microphone = null; stop(this.display); this.display = null;
+    for (const id of [...this.peers.keys()]) this.dropPeer(id);
+    this.failed.clear(); this.members = []; this.muted = true;
     this.publishStreams(); this.notify();
+    if (announce && callId) return this.announce({ type: 'call-leave' });
+    return Promise.resolve();
   }
-  close() { this.leave(false); this.closed = true; }
+  close() { if (this.closed) return; this.closed = true; void this.leave(false); }
 }

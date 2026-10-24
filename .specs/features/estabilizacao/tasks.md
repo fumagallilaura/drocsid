@@ -67,8 +67,8 @@ T5 -> T6 -> T7 -> T8
 **Requirement**: STAB-01–09, STAB-10–16, STAB-42, STAB-43, STAB-68.
 **Tools**: MCP Agent Skills; tlc-spec-driven; shell/Node.
 **Done when**:
-- [ ] Corridas e falhas parciais terminam todas as tracks esperadas sem capturas obsoletas.
-- [ ] Negociação e candidatos respeitam os limites; nova tentativa funciona.
+- [x] Corridas e falhas parciais terminam todas as tracks esperadas sem capturas obsoletas.
+- [x] Negociação e candidatos respeitam os limites; nova tentativa funciona. Gate: 16/16 testes e build; T2 em evidence.md.
 **Tests**: unit em tests/rtc.test.js, incluindo promises de permissão/sender controladas.
 **Gate**: quick
 

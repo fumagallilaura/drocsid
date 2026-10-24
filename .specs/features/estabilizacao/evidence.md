@@ -9,8 +9,26 @@ Gate: `npm.cmd test` (7/7, zero skips) e `npm.cmd run build` aprovados. Os três
 | AC / critério da tarefa | Evidência e asserção | Resultado da spec | Coberto nesta unidade? |
 | --- | --- | --- | --- |
 | STAB-40/41, versão e estrutura | tests/protocol.test.js:14, `rejects(() => decode({ ...event('join'), v: 2 }), 'INCOMPATIBLE_PROTOCOL')`; :13, `rejects(() => parseClientEvent('{'), 'INVALID_EVENT')` | Categorias distintas | Sim; integração pendente |
-| STAB-27, conteúdo | tests/protocol.test.js:31, `assert.equal(decode(...).text, text)`; :32, `rejects(..., 'INVALID_INPUT')` | Aceitar 1/2000, recusar vazio/2001 | Sim; persistência pendente |
-| STAB-40, dados de servidor | tests/protocol.test.js:38, `rejects(() => parseServerEvent(...), 'INVALID_EVENT')` | Estrutura inválida não chega à UI | Sim; transporte pendente |
-| STAB-49/50, configuração | tests/protocol.test.js:44, `assert.deepEqual(readIceServers(ice), ice)`; :47, `assert.equal(parsePort(value), Number(value))`; :48, `rejects(() => parsePort(value), 'INVALID_INPUT')` | ICE e PORT válidos/limites | Sim; bootstrap pendente |
+| STAB-27, conteúdo | tests/protocol.test.js:30, `assert.equal(decode(...).text, text)`; :31, `rejects(..., 'INVALID_INPUT')` | Aceitar 1/2000, recusar vazio/2001 | Sim; persistência pendente |
+| STAB-40, dados de servidor | tests/protocol.test.js:37, `rejects(() => parseServerEvent(...), 'INVALID_EVENT')` | Estrutura inválida não chega à UI | Sim; transporte pendente |
+| STAB-49/50, configuração | tests/protocol.test.js:43, `assert.deepEqual(readIceServers(ice), ice)`; :46, `assert.equal(parsePort(value), Number(value))`; :47, `rejects(() => parsePort(value), 'INVALID_INPUT')` | ICE e PORT válidos/limites | Sim; bootstrap pendente |
 
-Mapeamento reverso: as asserções das linhas 11–26 pertencem a STAB-40/41; 31–32 a STAB-27; 36–38 a STAB-40; 44–51 a STAB-49/50 e aos tetos A8. As quatro funções de teste não cobrem comportamento de bibliotecas ou requisitos externos. Litmus: aceitar versão 2, array como evento, texto de 2001 ou porta 65536 faria as asserções falharem. Padrão node:test/assert do repositório preservado. Adequação da unidade: PASS; não é validação integrada.
+Mapeamento reverso: as asserções das linhas 11–26 pertencem a STAB-40/41; 30–31 a STAB-27; 35–37 a STAB-40; 43–50 a STAB-49/50 e aos tetos A8. As quatro funções de teste não cobrem comportamento de bibliotecas ou requisitos externos. Litmus: aceitar versão 2, array como evento, texto de 2001 ou porta 65536 faria as asserções falharem. Padrão node:test/assert do repositório preservado. Adequação da unidade: PASS; não é validação integrada.
+
+## T2 — Call
+
+Gate: `npm.cmd test`, 16/16, zero skips; build aprovado. Nove testes novos com mídia/relógio controlados. Não é validação de microfone físico. Os testes reprovavam antes da implementação; o sensor final usará mutações comportamentais sobre a implementação já funcional.
+
+| AC / caso | Evidência e asserção | Resultado esperado | Cobertura da unidade |
+| --- | --- | --- | --- |
+| STAB-01/03/04/05 | tests/rtc.test.js:44, `assert.equal(requests,0)`; :46, `ended(old)`; :48, `ended(current)`; :49, `assert.equal(requests,2)` após close | Nenhuma captura inicial/obsoleta/fechada | Sim |
+| STAB-02/06/08/09 | tests/rtc.test.js:55, `assert.equal(requests,1)` e `pending,true`; :57, `admitted,true`, `microphone,null`, `muted,true`; :59, `active,false` | Aquisição única, admissão de escuta, cancelamento terminal | Sim; botão acessível será T6 |
+| STAB-07 | tests/rtc.test.js:65, `assert.rejects(...,e=>e.code===code)`; :66, `ended(f.captures[0])`, `active,false` | Toda recusa libera captura, sem comparar texto | Sim |
+| STAB-02/03 | tests/rtc.test.js:74, `assert.equal(requests,2)` e `ended(late)`; :75, `microphone,null` | Uma aquisição de ativação, resultado tardio descartado | Sim |
+| STAB-10/11 | tests/rtc.test.js:82, `request.audio,false`, `height.ideal,720`; :83, `ended(late)` | Captura solicitada com opções explícitas e cancelável | Sim; seletor nativo será T7 |
+| STAB-12/13/15/16/68 | tests/rtc.test.js:90–93, `ended(...)`, `display,null`, `healthy.video.sender.track,null`, `healthy.mic.sender.track,...`, `admitted,true`, `bad.pc.connectionState,'closed'`, `sharing,false` | Rollback total e microfone saudável preservado | Sim; presença remota será T3/T6 |
+| STAB-14/15 | tests/rtc.test.js:101–102, `ended(display)`, `peer.pc.connectionState,'closed'`, `sharing,false` | onended limpa mesmo se remoção falhar | Sim |
+| STAB-12/13, sender pendurado | tests/rtc.test.js:110, `ended(f.captures[1])` antes de resolver o sender | Falha de outro peer aborta sem esperar sender pendurado | Sim |
+| STAB-42/43 | tests/rtc.test.js:119–122, `candidates.length,128`, depois `connectionState,'closed'`, `candidates.length,0`; nova tentativa cria peer | Limites de tempo/fila e retry manual | Sim |
+
+Reverso: cada uma das nove funções de teste corresponde à linha acima, sem testes externos à spec. Asserções verificam tracks, sender, estado de admissão e conteúdo dos eventos, não só número de chamadas. Litmus: remover stop, aceitar geração antiga, esperar todos os senders para abortar ou permitir 129 candidatos quebra resultados. Sem novos frameworks. Adequação da unidade: PASS; integração ainda pendente.
