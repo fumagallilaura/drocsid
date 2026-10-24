@@ -74,7 +74,7 @@ const message = m => object(m) && string(m.id) && string(m.room) && string(m.aut
   (m.authorId === null || string(m.authorId)) && (m.operationId === null || string(m.operationId));
 const member = m => object(m) && string(m.id) && string(m.name, 32) &&
   typeof m.inCall === 'boolean' && typeof m.muted === 'boolean' && typeof m.sharing === 'boolean' &&
-  (m.callId === null || string(m.callId)) && integer(m.generation);
+  (m.inCall ? string(m.callId) : m.callId === null) && (!m.sharing || m.inCall) && integer(m.generation);
 
 export function parseServerEvent(raw) {
   const e = envelope(raw);
@@ -92,7 +92,7 @@ export function parseServerEvent(raw) {
     case 'signal': valid = string(e.from) && string(e.fromCallId) && string(e.callId) && validSignal(e.signal); break;
     case 'error': valid = string(e.code, 64) && string(e.message, 512) && string(e.phase, 64) && (e.requestId == null || string(e.requestId)); break;
   }
-  if (!valid) fail();
+  if (!valid || (['presence','message','signal'].includes(e.type) && !string(e.context))) fail();
   return e;
 }
 

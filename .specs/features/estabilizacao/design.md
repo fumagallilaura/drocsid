@@ -35,7 +35,7 @@ Preservar layout, elementos React, três transceivers por peer, factory createSe
 
 ## Data Models
 
-Eventos de cliente: `v`, `type`, `requestId` nas operações confirmáveis; `room` na navegação/envio; `operationId` estável no envio; `callId` e `generation` na admissão. Media, signal e leave carregam callId; signal também identifica a geração de destino. Respostas terminais repetem requestId e resultado/código. Presença inclui callId vigente. Receptor descarta contexto obsoleto antes de aplicar estado.
+Eventos de cliente: `v`, `type`, `requestId` nas operações confirmáveis; `room` na navegação/envio; `operationId` estável no envio; `callId` e `generation` na admissão. Media, signal e leave carregam callId; signal também identifica a geração de destino. Respostas terminais repetem requestId e resultado/código. Presença inclui callId vigente. Eventos de sala carregam context, o requestId da admissão nessa sala para o destinatário; isso distingue retorno à mesma sala de um evento antigo. Receptor descarta contexto obsoleto antes de aplicar estado.
 
 Mensagens novas preservam id, room, author, text e created, acrescentando authorId e operationId únicos. Migrar de forma aditiva e transacional; dados legados continuam legíveis. A ordenação usa sequência de inserção e índice compatível com a seleção dos últimos 200. Reenvio da mesma operação/sala/texto retorna a mensagem original; conflito não modifica dados. Confirmação ocorre após commit, separada de broadcast.
 

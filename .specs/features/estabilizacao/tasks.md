@@ -109,8 +109,8 @@ T5 -> T6 -> T7 -> T8
 **Requirement**: STAB-17–26, STAB-38–41, STAB-46–47.
 **Tools**: MCP Agent Skills; tlc-spec-driven; shell/Node.
 **Done when**:
-- [ ] Nenhuma resposta antiga altera a sessão atual; handshake sem hello termina em timeout.
-- [ ] Texto e operação sobrevivem à troca/reconexão na execução; reenvio reconcilia pelo recibo.
+- [x] Nenhuma resposta antiga altera a sessão atual; handshake sem hello termina em timeout.
+- [x] Texto e operação sobrevivem à troca/reconexão na execução; reenvio reconcilia pelo recibo. Gate: 39/39 testes e build; T5 em evidence.md.
 **Tests**: unit em tests/session.test.js com transporte controlado.
 **Gate**: quick
 

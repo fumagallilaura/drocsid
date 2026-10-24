@@ -65,3 +65,21 @@ Gate: 30/30 testes, zero skips, build aprovado. Quatro testes novos; nenhuma ass
 | STAB-36/37 | tests/bootstrap.test.js:50, `assert.equal(code,0,stderr)` e tempo<5000 para ambos os sinais | Processo filho encerra no prazo | Sim |
 
 Reverso: cada uma das quatro funções corresponde a uma linha da tabela. O teste HMR realiza handshake real, não apenas presença de listener. O teste de sinal verifica código de saída e duração, não apenas envio do sinal. Sem framework/configurações adicionais. Adequação: PASS para bootstrap. Desktop e hardware real ainda pendentes.
+
+## T5 — Session
+
+Gate: 39/39 testes, zero skips; build aprovado. Nove testes novos: oito com transporte/relógio controlados e um com HTTP/WS/SQLite reais. Nenhuma asserção anterior removida. O prazo de hello começa no evento open, inclusive quando o relógio avança antes de rodarem os próximos microtasks.
+
+| AC / caso | Evidência e asserção | Resultado esperado | Coberto? |
+| --- | --- | --- | --- |
+| STAB-38 | tests/session.test.js:35–37, rejeição TIMEOUT, connecting=false, socket=closed e nova conexão aceita | Hello não fica indefinido | Sim |
+| STAB-39 | tests/session.test.js:46/49, um único socket e sessão final de third.example/me | Fetch/callback antigo não substitui atual | Sim |
+| STAB-17/20/39 | tests/session.test.js:55–61, room antigo durante pending, zero message enviada, draft A restaurado e presença obsoleta ignorada | Intenção de sala e rascunho preservados | Sim |
+| STAB-18/21/22/23 | tests/session.test.js:67–71, erro RATE_LIMITED, texto integral/room/status, mesmo operationId, uma mensagem e zero outbox após retry | Sem perda nem duplicação | Sim |
+| STAB-20/22 | tests/session.test.js:76–79, texto/operationId/status failed permanecem após reconexão manual | Pendente recuperável na execução | Sim |
+| STAB-40/41 | tests/session.test.js:84–85, connected=false, salas válidas preservadas e INVALID_EVENT | Dado inválido não entra na UI | Sim |
+| STAB-46/47 | tests/session.test.js:89–94, origem/sala exatas, INVALID_INPUT nos inválidos e zero join quando sala não existe | Convite preservado, sem fallback silencioso | Sim |
+| STAB-18/21/39, interoperabilidade | tests/session.test.js:101–103, primeira presença Ana, mensagem em geral e histórico vazio em cafe | Cliente e servidor reais usam mesmo contrato | Sim |
+| STAB-22/23, confirmação perdida | tests/session.test.js:108–111, TIMEOUT na fase message, texto conservado e reconciliação por histórico | Uma mensagem confirmada, nenhum falso pendente | Sim |
+
+Reverso: as nove funções correspondem às linhas acima. O teste real verifica ordem de aplicação do joined antes da presença, não só recepção de frames. Asserções conferem destino, texto original e identificador, sem inferir sucesso do send. Eventos de sala recebem contexto do destinatário para impedir reaplicação de presença antiga quando se retorna à mesma sala. Adequação: PASS para Session; UI e host desktop ainda precisam consumir esse controlador.

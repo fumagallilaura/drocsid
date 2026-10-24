@@ -65,7 +65,7 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers } = 
     if(client.ws.readyState!==WebSocket.OPEN)return false;
     if(client.ws.bufferedAmount>LIMITS.outboundBytes){client.ws.terminate();return false;}
     try {
-      client.ws.send(JSON.stringify({v:PROTOCOL_VERSION,...event}),error=>{if(error)logFailure('delivery','DELIVERY_FAILED',event.requestId,error);});
+      client.ws.send(JSON.stringify({v:PROTOCOL_VERSION,context:client.roomContext||null,...event}),error=>{if(error)logFailure('delivery','DELIVERY_FAILED',event.requestId,error);});
       return true;
     } catch(error){logFailure('delivery','DELIVERY_FAILED',event.requestId||event.message?.operationId,error);return false;}
   }
@@ -110,7 +110,7 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers } = 
         }
         if(e.type==='join'){
           const next=roomQuery.get(e.room);if(!next)return error(c,'INVALID_INPUT',requestId,e.type);
-          const previous=c.room;endCall(c);Object.assign(c,{room:e.room,name:e.name.trim()});
+          const previous=c.room;endCall(c);Object.assign(c,{room:e.room,name:e.name.trim(),roomContext:requestId});
           send(c,{type:'joined',requestId,room:next,messages:history.all(c.room)});presence(previous);if(previous!==c.room)presence(c.room);return;
         }
         if(!c.room)return error(c,'INVALID_EVENT',requestId,e.type);
