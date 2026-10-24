@@ -83,3 +83,24 @@ Gate: 39/39 testes, zero skips; build aprovado. Nove testes novos: oito com tran
 | STAB-22/23, confirmação perdida | tests/session.test.js:108–111, TIMEOUT na fase message, texto conservado e reconciliação por histórico | Uma mensagem confirmada, nenhum falso pendente | Sim |
 
 Reverso: as nove funções correspondem às linhas acima. O teste real verifica ordem de aplicação do joined antes da presença, não só recepção de frames. Asserções conferem destino, texto original e identificador, sem inferir sucesso do send. Eventos de sala recebem contexto do destinatário para impedir reaplicação de presença antiga quando se retorna à mesma sala. Adequação: PASS para Session; UI e host desktop ainda precisam consumir esse controlador.
+
+## T6 — Interface
+
+Gate: 39/39 testes Node, build e smoke desktop ampliado aprovados, zero erros de renderer observados. Capturas em test-results/desktop, preservando artifacts/ da referência; tela compartilhada inspecionada visualmente. O smoke usa mídia sintética e --mute-audio: não aprova som físico ou redes distintas. A integração detectou e corrigiu o binding de fetch no Window; o teste Node não reproduzia essa exigência do runtime browser. O contraste antigo reprovou com 3,63:1 antes do ajuste.
+
+| AC / caso | Evidência e asserção | Resultado da spec | Coberto? |
+| --- | --- | --- | --- |
+| STAB-47 | scripts/desktop-smoke.mjs:66, erro de endereço inválido visível antes da entrada correta | Sem falha silenciosa de entrada | Sim |
+| STAB-57/58 | scripts/desktop-smoke.mjs:77–86, foco dentro, background.inert=true, ciclo Shift+Tab/Tab, Escape remove dialog e restaura foco | Modal efetivo por teclado | Sim |
+| STAB-59 | scripts/desktop-smoke.mjs:98, `expect(contrast.ratio,...).toBeGreaterThanOrEqual(4.5)` nos três seletores | Contraste mínimo medido | Sim, amostragem da spec |
+| STAB-17/20 | scripts/desktop-smoke.mjs:113–122, sala geral visível, composer/send desabilitados durante joined retido, draft A intacto antes/depois | Destino/composição coerentes na transição | Sim |
+| STAB-22/23 | scripts/desktop-smoke.mjs:128–132, texto recuperável, mesmo operationId no retry, uma ocorrência e nenhum botão de reenvio após confirmação | Sem perda/duplicação | Sim |
+| STAB-07/08 | scripts/desktop-smoke.mjs:136–147, recusa por código para todas as tracks ended; cancelamento enquanto gUM está retido, lateStream ended e saída bloqueada | Recusa/cancelamento compensam captura | Sim |
+| STAB-31 | scripts/desktop-smoke.mjs:60/138/147/189–193, native webContents muted fora da chamada/deafened e liberado na admissão | Playback segue chamada real | Sim |
+| STAB-60 | scripts/desktop-smoke.mjs:165–172, histórico excede 100 px e scrollTop permanece 0 após nova mensagem | Preservar leitura | Sim |
+| STAB-61 | scripts/desktop-smoke.mjs:185, `expect(homonym).not.toHaveClass(/grouped/)` após mensagem de outra Ana | Nomes iguais não provam autoria | Sim |
+| STAB-42/44 | scripts/desktop-smoke.mjs:197–201, falha indicada e reentrada manual conecta novo peer; :215–217, observador sem video/AO VIVO e botão Participar visível | Falha finita, admissão distinta de mídia | Sim |
+| STAB-62 | scripts/desktop-smoke.mjs:223, indicação da próxima captura após mudar qualidade durante tela | Preferência não promete alterar captura atual | Sim |
+| STAB-05, fluxo existente | scripts/desktop-smoke.mjs:245–247, nova sala Estúdio, playback bloqueado e outro participante observa saída | Troca de sala encerra chamada | Sim |
+
+Reverso: cada bloco novo do smoke corresponde a uma linha acima. As verificações de RTP agora consultam somente peers conectados, evitando aprovação por estatísticas antigas após reconexão. O ensaio de falha injeta também o evento de mudança de estado; chamar close diretamente não produz esse evento no Chromium. As asserções do fluxo anterior permanecem, com observador adicional fora da chamada. Sem mudanças de layout gerais nem bibliotecas novas. Adequação: PASS para os fluxos UI medidos. Perfil estável, permissões de frame/câmera e diagnóstico source ficam para T7/T8.

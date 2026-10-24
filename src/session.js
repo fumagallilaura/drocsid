@@ -15,7 +15,7 @@ export function parseInvite(input, fallback, defaultRoom = 'geral') {
 
 export class Session {
   constructor({ onState = () => {}, onError = () => {}, onSignal = () => {}, onPresence = () => {}, onDisconnect = () => {},
-    fetch: fetcher = globalThis.fetch, WebSocket: Socket = globalThis.WebSocket, clock = realClock,
+    fetch: fetcher = globalThis.fetch?.bind(globalThis), WebSocket: Socket = globalThis.WebSocket, clock = realClock,
     localOrigin = globalThis.location?.origin || 'http://127.0.0.1' } = {}) {
     Object.assign(this, { onState, onError, onSignal, onPresence, onDisconnect, fetcher, Socket, clock, localOrigin });
     this.state = emptyState(); this.epoch = 0; this.pending = new Map(); this.phases = new Set(); this.drafts = new Map(); this.outbox = new Map();
@@ -52,8 +52,12 @@ export class Session {
   }
   disconnect() { this.lose(new ProtocolError('CANCELLED'), true); }
   async connect({ name, server, room = 'geral' }) {
-    if (typeof name !== 'string' || !name.trim() || name.trim().length > 32) throw new ProtocolError('INVALID_INPUT');
-    const destination = parseInvite(server, this.localOrigin, room), epoch = ++this.epoch;
+    let destination;
+    try {
+      if (typeof name !== 'string' || !name.trim() || name.trim().length > 32) throw new ProtocolError('INVALID_INPUT');
+      destination = parseInvite(server, this.localOrigin, room);
+    } catch (error) { this.onError(error); throw error; }
+    const epoch = ++this.epoch;
     this.cancelTransport(new ProtocolError('CANCELLED')); this.onDisconnect();
     this.origin = destination.server; this.name = name.trim();
     this.publish({ ...emptyState(), connecting: true });
@@ -100,6 +104,7 @@ export class Session {
       this.publish({ connected: true, connecting: false, rooms: greeting.rooms, config,
         session: { id: greeting.id, name: this.name, server: this.origin } });
       await this.changeRoom(destination.room);
+      if (epoch === this.epoch) return this.state.session;
     } catch (error) {
       if (epoch !== this.epoch) return;
       this.lose(error); throw error;

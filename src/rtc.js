@@ -17,7 +17,8 @@ export class Call {
   notify() { this.onMedia({ muted: this.muted, display: this.display, pending: this.active && !this.admitted, admitted: this.admitted }); }
   report(error) { this.onError(error instanceof Error ? error : new Error(String(error))); }
   announce(event) {
-    try { return Promise.resolve(this.send({ ...event, callId: this.callId })).catch(error => { this.report(error); }); }
+    const generation = this.generation;
+    try { return Promise.resolve(this.send({ ...event, callId: this.callId })).catch(error => { if (this.generation === generation && !this.closed) this.report(error); }); }
     catch (error) { this.report(error); return Promise.resolve(); }
   }
   deadline(promise, ms) {
@@ -95,7 +96,7 @@ export class Call {
     pc.ontrack = ({ track }) => { if (live()) { entry.stream.addTrack(track); this.publishStreams(); } };
     pc.onconnectionstatechange = () => {
       if (!live()) return;
-      if (pc.connectionState === 'failed') this.failPeer(id);
+      if (['failed', 'closed'].includes(pc.connectionState)) this.failPeer(id);
       else this.publishStreams();
     };
     return entry;
@@ -122,7 +123,7 @@ export class Call {
       if (ready) this.clock.clearTimeout(entry.timer);
       return { id, stream: entry.stream, state: ready ? 'connected' : entry.pc.connectionState === 'connected' ? 'connecting' : entry.pc.connectionState };
     });
-    this.onStreams(streams);
+    this.onStreams([...streams, ...[...this.failed].map(id => ({ id, stream: null, state: 'failed' }))]);
   }
   sync(members) {
     this.members = members;

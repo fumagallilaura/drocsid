@@ -123,8 +123,8 @@ T5 -> T6 -> T7 -> T8
 **Requirement**: STAB-08, STAB-17, STAB-20, STAB-22, STAB-31, STAB-44, STAB-46–47, STAB-57–62, STAB-67.
 **Tools**: MCP Agent Skills; tlc-spec-driven; shell/Playwright.
 **Done when**:
-- [ ] UI conecta Call/Session sem depender de texto de erro; pending tem cancelamento e texto falho é recuperável.
-- [ ] Keyboard modal, agrupamento por ID, leitura e qualidade correspondem aos ACs.
+- [x] UI conecta Call/Session sem depender de texto de erro; pending tem cancelamento e texto falho é recuperável.
+- [x] Keyboard modal, agrupamento por ID, leitura e qualidade correspondem aos ACs. Gate: 39 testes Node, build e smoke desktop ampliado; T6 em evidence.md.
 **Tests**: e2e em scripts/desktop-smoke.mjs, incluindo falhas controladas e teclado.
 **Gate**: full
 
