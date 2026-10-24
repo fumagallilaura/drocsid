@@ -1,0 +1,74 @@
+{
+  "target": "source",
+  "samples": [
+    [
+      {
+        "id": 1,
+        "audible": false,
+        "muted": true,
+        "url": "http://127.0.0.1:49417/"
+      }
+    ],
+    [
+      {
+        "id": 1,
+        "audible": false,
+        "muted": true,
+        "url": "http://127.0.0.1:49417/"
+      }
+    ],
+    [
+      {
+        "id": 1,
+        "audible": false,
+        "muted": true,
+        "url": "http://127.0.0.1:49417/"
+      }
+    ],
+    [
+      {
+        "id": 1,
+        "audible": false,
+        "muted": true,
+        "url": "http://127.0.0.1:49417/"
+      }
+    ],
+    [
+      {
+        "id": 1,
+        "audible": false,
+        "muted": true,
+        "url": "http://127.0.0.1:49417/"
+      }
+    ],
+    [
+      {
+        "id": 1,
+        "audible": false,
+        "muted": true,
+        "url": "http://127.0.0.1:49417/"
+      }
+    ],
+    [
+      {
+        "id": 1,
+        "audible": false,
+        "muted": true,
+        "url": "http://127.0.0.1:49417/"
+      }
+    ],
+    [
+      {
+        "id": 1,
+        "audible": false,
+        "muted": true,
+        "url": "http://127.0.0.1:49417/"
+      }
+    ]
+  ],
+  "dom": {
+    "audioElements": 0,
+    "videoElements": 0,
+    "mediaElements": []
+  }
+}

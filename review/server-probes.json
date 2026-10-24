@@ -1,0 +1,32 @@
+[
+  {
+    "id": "SRV-01",
+    "confirmed": true,
+    "observation": "An unauthenticated client without Origin can list rooms, reuse another display name and read its room history.",
+    "roomsBeforeJoin": 3,
+    "historyRead": 1
+  },
+  {
+    "id": "SRV-02",
+    "confirmed": true,
+    "observation": "ICE configuration including a configured TURN credential is returned without authentication. Probe used dummy credentials only."
+  },
+  {
+    "id": "SRV-03",
+    "confirmed": true,
+    "observation": "A different localhost Origin is accepted, including arbitrary ports; Origin is not an access boundary."
+  },
+  {
+    "id": "SRV-04",
+    "confirmed": true,
+    "observation": "Malformed ICE is forwarded. All event types share one rate budget; after enough signaling, call-leave is rejected and the participant remains inCall server-side.",
+    "leaveRejected": true
+  },
+  {
+    "id": "SRV-05",
+    "confirmed": true,
+    "observation": "Unknown Upgrade path gets no response and keeps a socket open. Service shutdown waits until the external socket is destroyed.",
+    "bytesReturned": 0,
+    "delayedShutdown": true
+  }
+]

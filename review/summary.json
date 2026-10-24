@@ -1,0 +1,19 @@
+{
+  "version": "0.1.1",
+  "implementationFilesUnchanged": 18,
+  "findings": 26,
+  "priorities": {
+    "P1": 9,
+    "P2": 14,
+    "P3": 3
+  },
+  "confirmedProbes": 17,
+  "existingServerTests": {
+    "passed": 3,
+    "failed": 0
+  },
+  "isolatedBuild": "passed",
+  "npmAuditReportedVulnerabilities": 0,
+  "rendererErrorsInUiProbes": [],
+  "report": "review/REVISAO_COMPLETA.md"
+}
