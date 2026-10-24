@@ -29,7 +29,7 @@ async function readJson(req: IncomingMessage) {
 type Route = [method: string, path: RegExp, handler: (req: IncomingMessage, params: string[]) => Promise<[number, unknown]>];
 
 export function createApp({ heartbeatInterval = 41_250 } = {}) {
-  const { wss, dispatchTo } = createGateway(heartbeatInterval);
+  const { wss, dispatchTo, voiceStates } = createGateway(heartbeatInterval);
   const auth = (req: IncomingMessage) => authenticate(req.headers.authorization);
 
   const routes: Route[] = [
@@ -44,12 +44,13 @@ export function createApp({ heartbeatInterval = 41_250 } = {}) {
     ['POST', /^\/api\/guilds$/, async (req) => {
       const user = await auth(req);
       const guild = await createGuild(user, (await readJson(req)).name);
-      dispatchTo([user.id], 'GUILD_CREATE', guild);
+      dispatchTo([user.id], 'GUILD_CREATE', { ...guild, voice_states: [] });
       return [201, guild];
     }],
     ['POST', /^\/api\/guilds\/(\d{1,18})\/channels$/, async (req, [guildId]) => {
       const user = await auth(req);
-      const channel = await createChannel(user, guildId, (await readJson(req)).name);
+      const { name, type } = await readJson(req);
+      const channel = await createChannel(user, guildId, name, type);
       dispatchTo(await memberIds(guildId), 'CHANNEL_CREATE', channel);
       return [201, channel];
     }],
@@ -59,7 +60,7 @@ export function createApp({ heartbeatInterval = 41_250 } = {}) {
     ['POST', /^\/api\/invites\/([\w-]{1,32})$/, async (req, [code]) => {
       const user = await auth(req);
       const { guild, joined } = await acceptInvite(user, code);
-      if (joined) dispatchTo([user.id], 'GUILD_CREATE', guild);
+      if (joined) dispatchTo([user.id], 'GUILD_CREATE', { ...guild, voice_states: voiceStates(guild.id) });
       return [200, guild];
     }],
     ['GET', /^\/api\/channels\/(\d{1,18})\/messages$/, async (req, [channelId]) => {

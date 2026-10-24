@@ -123,8 +123,8 @@ test('servidores, canais, convites e mensagens em tempo real', async () => {
   assert.equal(created.status, 201);
   const guild = created.body;
   assert.equal(guild.owner_id, alice.user.id);
-  assert.deepEqual(guild.channels.map((c: any) => c.name), ['geral']);
-  assert.deepEqual((await alice.gw.next()).d, guild);
+  assert.deepEqual(guild.channels.map((c: any) => `${c.type}:${c.name}`), ['text:geral', 'voice:geral']);
+  assert.deepEqual((await alice.gw.next()).d, { ...guild, voice_states: [] });
   const geral = guild.channels[0].id;
 
   assert.equal((await post('/api/guilds', { name: 'Casa' })).status, 401);
@@ -170,9 +170,66 @@ test('servidores, canais, convites e mensagens em tempo real', async () => {
   await bobAgain.next();
   bobAgain.send(Op.IDENTIFY, { token: bob.token });
   const [readyGuild] = (await bobAgain.next()).d.guilds;
-  assert.deepEqual(readyGuild.channels.map((c: any) => c.name), ['geral', 'avisos']);
+  assert.deepEqual(readyGuild.channels.map((c: any) => c.name), ['geral', 'geral', 'avisos']);
   alice.gw.close();
   bobAgain.close();
+});
+
+test('voz: entrar, repassar sinais WebRTC e sair', async () => {
+  const alice = await signedIn();
+  const bob = await signedIn();
+  const carol = await signedIn();
+  const guild = (await post('/api/guilds', { name: 'Call' }, alice.token)).body;
+  await alice.gw.next();
+  const [text, voiceChannel] = guild.channels;
+  for (const who of [bob, carol]) {
+    const { code } = (await post(`/api/guilds/${guild.id}/invites`, {}, alice.token)).body;
+    await post(`/api/invites/${code}`, {}, who.token);
+    await who.gw.next();
+  }
+  const other = (await post(`/api/guilds/${guild.id}/channels`, { name: 'sala-2', type: 'voice' }, alice.token)).body;
+  assert.equal(other.type, 'voice');
+  for (const who of [alice, bob, carol]) await who.gw.next();
+  assert.equal((await post(`/api/channels/${voiceChannel.id}/messages`, { content: 'oi' }, alice.token)).status, 400);
+
+  alice.gw.send(Op.VOICE_STATE_UPDATE, { channel_id: text.id });
+  alice.gw.send(Op.VOICE_STATE_UPDATE, { channel_id: voiceChannel.id });
+  const aliceIn = { guild_id: guild.id, channel_id: voiceChannel.id, user: alice.user };
+  for (const who of [alice, bob, carol]) {
+    assert.deepEqual(await who.gw.next(), { op: Op.DISPATCH, t: 'VOICE_STATE_UPDATE', s: 4, d: aliceIn });
+  }
+  bob.gw.send(Op.VOICE_STATE_UPDATE, { channel_id: voiceChannel.id });
+  carol.gw.send(Op.VOICE_STATE_UPDATE, { channel_id: other.id });
+  for (const who of [alice, bob, carol]) {
+    const events = [(await who.gw.next()).d, (await who.gw.next()).d];
+    assert.deepEqual(events.map((e) => `${e.user.username}:${e.channel_id}`).sort(), [
+      `${bob.user.username}:${voiceChannel.id}`,
+      `${carol.user.username}:${other.id}`,
+    ].sort());
+  }
+
+  alice.gw.send(Op.VOICE_SIGNAL, { to: carol.user.id, data: 'nao-deveria-chegar' });
+  alice.gw.send(Op.VOICE_SIGNAL, { to: bob.user.id, data: { description: { type: 'offer', sdp: 'x' } } });
+  assert.deepEqual((await bob.gw.next()).d, { from: alice.user.id, data: { description: { type: 'offer', sdp: 'x' } } });
+
+  const late = connect();
+  await late.next();
+  late.send(Op.IDENTIFY, { token: carol.token });
+  const [lateGuild] = (await late.next()).d.guilds;
+  assert.equal(lateGuild.voice_states.length, 3);
+  late.close();
+
+  bob.gw.close();
+  for (const who of [alice, carol]) {
+    assert.deepEqual((await who.gw.next()).d, { guild_id: guild.id, channel_id: null, user: bob.user });
+  }
+
+  const anon = connect();
+  await anon.next();
+  anon.send(Op.VOICE_STATE_UPDATE, { channel_id: voiceChannel.id });
+  assert.equal(await anon.closed, Close.NOT_AUTHENTICATED);
+  alice.gw.close();
+  carol.gw.close();
 });
 
 test('gateway: fecha a sessão se o heartbeat não chegar', async () => {
