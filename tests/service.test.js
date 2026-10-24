@@ -67,7 +67,10 @@ test('STAB-28/29/30/68: leave and stop-screen bypass exhausted action budgets',a
 test('STAB-33/36/37: unknown upgrades are rejected and concurrent shutdown completes',async t=>{
   const s=await start(t), port=s.server.address().port, socket=connect(port,'127.0.0.1');
   await once(socket,'connect'); socket.write('GET /unused-upgrade HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n');
-  const [bytes]=await once(socket,'data'); assert.match(bytes.toString(),/^HTTP\/1\.1 404/); await once(socket,'close');
+  const socketClosed=once(socket,'close'); let bytes;
+  try { [bytes]=await once(socket,'data',{signal:AbortSignal.timeout(1500)}); }
+  finally { socket.destroy(); }
+  assert.match(bytes.toString(),/^HTTP\/1\.1 404/); await socketClosed;
   const idle=connect(port,'127.0.0.1'); await once(idle,'connect');
   const closed=once(idle,'close'), started=performance.now(); await Promise.all([s.close(),s.close()]); await closed;
   assert.ok(performance.now()-started<5000); assert.equal(s.server.listening,false);

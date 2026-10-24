@@ -1,6 +1,6 @@
 # Evidência incremental da estabilização
 
-Esta é a revisão de adequação do autor por tarefa. A validação independente final é separada. Nenhum teste usa o exit zero das sondagens históricas como aprovação.
+Esta é a revisão de adequação do autor por tarefa. As linhas de cada seção referem-se ao commit da respectiva entrega; se um teste for ampliado depois, a validação independente final resolve as referências novamente em HEAD. Nenhum teste usa o exit zero das sondagens históricas como aprovação.
 
 ## T1 — Contrato
 
@@ -52,3 +52,16 @@ Gate: `npm.cmd test`, 26/26, zero skips; build aprovado. Dez testes de integraç
 | STAB-37/67 | tests/service.test.js:131–133, SHUTDOWN_FAILED, listening=false, fase/versão exatas e segredo ausente | Limpeza restante e diagnóstico sem segredo | Sim |
 
 Reverso: as dez funções de teste correspondem às linhas acima; o primeiro teste cobre também ausência de entrega na outra sala, sem depender apenas do nome do teste. Asserções de recibo cobrem valores de todos os campos exigidos pela spec. O controle do tempo espera o fechamento nos dois extremos antes de observar os conjuntos de sockets, sem reduzir o prazo exigido. Litmus: gravar em client.room ignorando room, gerar novo id em retry, aplicar cota a leave, omitir rejeição de Upgrade ou ordenar timestamps empatados faria as asserções falharem. Adequação da unidade: PASS. HMR, bootstrap, UI e evidência física seguem pendentes.
+
+## T4 — Bootstrap
+
+Gate: 30/30 testes, zero skips, build aprovado. Quatro testes novos; nenhuma asserção existente removida. O teste de Upgrade recebeu prazo e finally de limpeza para que também falhe de modo limitado contra uma regressão. Sinais são emitidos no processo filho, pois Windows não entrega SIGTERM de outro processo como um sinal Unix; isso testa o handler, sem alegar teste de políticas do sistema operacional.
+
+| AC / critério | Evidência e asserção | Resultado esperado | Coberto? |
+| --- | --- | --- | --- |
+| STAB-49, configuração/porta | tests/bootstrap.test.js:16/20, `assert.rejects(..., e=>e.code==='INVALID_INPUT')` e BOOTSTRAP_FAILED; :21, listenerCount igual à referência | Falha tipada e sem handler abandonado | Sim |
+| STAB-49/50 | tests/bootstrap.test.js:28, `assert.deepEqual(config.iceServers,[{urls:'stun:localhost:3478'}])` e protocolVersion=1; :29, listening=false | Configuração efetiva e fechamento idempotente | Sim no servidor separado |
+| STAB-34 | tests/bootstrap.test.js:36, close HMR=1000 após open; :39, HTTP 404 em caminho desconhecido | Consumidor legítimo funciona, desconhecido recusado | Sim |
+| STAB-36/37 | tests/bootstrap.test.js:50, `assert.equal(code,0,stderr)` e tempo<5000 para ambos os sinais | Processo filho encerra no prazo | Sim |
+
+Reverso: cada uma das quatro funções corresponde a uma linha da tabela. O teste HMR realiza handshake real, não apenas presença de listener. O teste de sinal verifica código de saída e duração, não apenas envio do sinal. Sem framework/configurações adicionais. Adequação: PASS para bootstrap. Desktop e hardware real ainda pendentes.

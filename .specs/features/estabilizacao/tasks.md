@@ -95,8 +95,8 @@ T5 -> T6 -> T7 -> T8
 **Requirement**: STAB-34–37, STAB-49, STAB-50.
 **Tools**: MCP Agent Skills; tlc-spec-driven; shell/Node.
 **Done when**:
-- [ ] Porta inválida/ocupada e ICE inválido encerram com causa identificável e sem listener abandonado.
-- [ ] SIGINT e SIGTERM fecham o processo; HMR continua funcional.
+- [x] Porta inválida/ocupada e ICE inválido encerram com causa identificável e sem listener abandonado.
+- [x] SIGINT e SIGTERM fecham o processo; HMR continua funcional. Gate: 30/30 testes e build; T4 em evidence.md.
 **Tests**: integration em tests/bootstrap.test.js.
 **Gate**: build
 
