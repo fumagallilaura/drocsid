@@ -6,6 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:3001',
+      '/cdn': 'http://localhost:3001',
       '/gateway': { target: 'ws://localhost:3001', ws: true },
     },
   },

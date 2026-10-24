@@ -8,7 +8,8 @@
     "db": "docker compose up -d",
     "dev:server": "npm run dev -w apps/server",
     "dev:web": "npm run dev -w apps/web",
+    "dev:desktop": "npm start -w apps/desktop",
     "test": "npm test -w apps/server",
-    "typecheck": "npm run typecheck --workspaces"
+    "typecheck": "npm run typecheck --workspaces --if-present"
   }
 }

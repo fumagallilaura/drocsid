@@ -1,27 +1,28 @@
-import { useEffect, useReducer, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { createCall, type Call } from './call.ts';
+import { Friends } from './Friends.tsx';
+import { Messages } from './Messages.tsx';
+import {
+  Avatar,
+  createApi,
+  FriendsIcon,
+  SpeakerIcon,
+  STATUS_LABEL,
+  type Channel,
+  type Guild,
+  type Message,
+  type Presence,
+  type Reaction,
+  type Relationship,
+  type Status,
+  type User,
+  type VoiceState,
+} from './ui.tsx';
 
-type User = { id: string; username: string };
-type Channel = { id: string; guild_id: string; name: string; type: 'text' | 'voice' };
-type VoiceState = { guild_id: string; channel_id: string | null; user: User };
-type Guild = { id: string; name: string; owner_id: string; channels: Channel[]; voice_states?: VoiceState[] };
-type Message = { id: string; channel_id: string; content: string; created_at: string; author: User };
-
-const Op = { DISPATCH: 0, HEARTBEAT: 1, IDENTIFY: 2, VOICE_STATE_UPDATE: 4, HELLO: 10, VOICE_SIGNAL: 20 };
+const Op = { DISPATCH: 0, HEARTBEAT: 1, IDENTIFY: 2, PRESENCE_UPDATE: 3, VOICE_STATE_UPDATE: 4, HELLO: 10, VOICE_SIGNAL: 20 };
 const AUTHENTICATION_FAILED = 4004;
-
-const initials = (name: string) =>
-  name.split(/[\s_.-]+/).filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-
-const SpeakerIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden style={{ verticalAlign: 'text-bottom' }}>
-    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z" />
-  </svg>
-);
-
-function Avatar({ name, size }: { name: string; size?: 'small' | 'large' }) {
-  return <span className={`avatar ${size ?? ''}`} aria-hidden>{initials(name)}</span>;
-}
+const TYPING_VISIBLE_MS = 10_000;
+const SELECTABLE: Status[] = ['online', 'idle', 'dnd', 'invisible'];
 
 function Media({ stream, label, muted }: { stream: MediaStream; label: string; muted?: boolean }) {
   const attach = (el: HTMLMediaElement | null) => {
@@ -36,35 +37,78 @@ function Media({ stream, label, muted }: { stream: MediaStream; label: string; m
   );
 }
 
+function applyReaction(list: Reaction[], name: string, add: boolean, mine: boolean): Reaction[] {
+  const existing = list.find((r) => r.emoji.name === name);
+  if (add) {
+    if (!existing) return [...list, { emoji: { name }, count: 1, me: mine }];
+    return list.map((r) => (r === existing ? { ...r, count: r.count + 1, me: r.me || mine } : r));
+  }
+  if (!existing) return list;
+  if (existing.count <= 1) return list.filter((r) => r !== existing);
+  return list.map((r) => (r === existing ? { ...r, count: r.count - 1, me: mine ? false : r.me } : r));
+}
+
+const byUsername = (a: User, b: User) => a.username.localeCompare(b.username);
+
 export function Chat({ token, onLogout }: { token: string; onLogout: () => void }) {
+  const api = useMemo(() => createApi(token), [token]);
   const [user, setUser] = useState<User | null>(null);
+  const [status, setStatus] = useState<Status>('online');
   const [guilds, setGuilds] = useState<Guild[]>([]);
+  const [dms, setDms] = useState<Channel[]>([]);
+  const [relationships, setRelationships] = useState<Relationship[]>([]);
+  const [presences, setPresences] = useState<Record<string, Status>>({});
   const [guildId, setGuildId] = useState<string | null>(null);
   const [channelId, setChannelId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [typing, setTyping] = useState<Record<string, Record<string, number>>>({});
   const [voiceStates, setVoiceStates] = useState<Record<string, VoiceState>>({});
+  const [statusMenu, setStatusMenu] = useState(false);
   const [, rerender] = useReducer((n: number) => n + 1, 0);
-  const channelRef = useRef(channelId);
-  channelRef.current = channelId;
   const sendRef = useRef<(op: number, d: unknown) => void>(() => {});
   const callRef = useRef<Call | null>(null);
 
-  async function api(method: string, path: string, body?: unknown) {
-    const res = await fetch(`/api${path}`, {
-      method,
-      headers: { authorization: token },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    return data;
-  }
+  const users = useMemo(() => {
+    const map = new Map<string, User>();
+    for (const u of [...guilds.flatMap((g) => g.members), ...dms.flatMap((c) => c.recipients ?? []), ...relationships.map((r) => r.user)]) {
+      map.set(u.id, u);
+    }
+    if (user) map.set(user.id, user);
+    return map;
+  }, [guilds, dms, relationships, user]);
+
+  // O handler do WebSocket vive enquanto a conexão existir; estes refs dão a ele o estado atual.
+  const live = useRef({ user, status, channelId, guilds, dms, users });
+  live.current = { user, status, channelId, guilds, dms, users };
+
   const run = (action: () => Promise<unknown>) => action().catch((err) => alert(err.message));
 
   function endCall() {
     callRef.current?.leave();
     callRef.current = null;
     rerender();
+  }
+
+  function openChannel(id: string) {
+    const guild = live.current.guilds.find((g) => g.channels.some((c) => c.id === id));
+    setGuildId(guild?.id ?? null);
+    setChannelId(id);
+  }
+
+  // Como no Discord: notifica DMs e menções, nunca em "Não perturbe" nem para o canal que já está na tela.
+  function notify(m: Message) {
+    const { user: me, status: myStatus, channelId: open, dms: myDms, users: known } = live.current;
+    if (!me || m.author.id === me.id || myStatus === 'dnd') return;
+    const isDm = myDms.some((c) => c.id === m.channel_id);
+    if (!isDm && !m.mentions.some((u) => u.id === me.id)) return;
+    if (!document.hidden && open === m.channel_id) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const body = m.content.replace(/<@(\d+)>/g, (all, id) => (known.has(id) ? `@${known.get(id)!.username}` : all)) || '📎 Anexo';
+    const n = new Notification(isDm ? m.author.username : `${m.author.username} mencionou você`, { body, tag: m.channel_id });
+    n.onclick = () => {
+      window.focus();
+      openChannel(m.channel_id);
+    };
   }
 
   useEffect(() => {
@@ -75,6 +119,10 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
     let heartbeat: number | undefined;
     const addVoiceStates = (states: VoiceState[] = []) =>
       setVoiceStates((vs) => ({ ...vs, ...Object.fromEntries(states.map((v) => [v.user.id, v])) }));
+    const addPresences = (list: Presence[] = []) =>
+      setPresences((p) => ({ ...p, ...Object.fromEntries(list.map((x) => [x.user.id, x.status])) }));
+    const updateMessage = (id: string, change: (m: Message) => Message) =>
+      setMessages((ms) => ms.map((m) => (m.id === id ? change(m) : m)));
 
     ws.onmessage = (e) => {
       const { op, d, s, t } = JSON.parse(e.data);
@@ -84,26 +132,80 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
         send(Op.IDENTIFY, { token });
       }
       if (op !== Op.DISPATCH) return;
-      if (t === 'READY') {
-        setUser(d.user);
-        setGuilds(d.guilds);
-        setVoiceStates({});
-        addVoiceStates(d.guilds.flatMap((g: Guild) => g.voice_states));
+      const me = live.current.user;
+      switch (t) {
+        case 'READY':
+          setUser(d.user);
+          setStatus(d.status);
+          setGuilds(d.guilds);
+          setDms(d.private_channels);
+          setRelationships(d.relationships);
+          setPresences({});
+          addPresences(d.presences);
+          setVoiceStates({});
+          addVoiceStates(d.guilds.flatMap((g: Guild) => g.voice_states));
+          if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+          break;
+        case 'GUILD_CREATE':
+          setGuilds((gs) => [...gs.filter((g) => g.id !== d.id), d]);
+          addVoiceStates(d.voice_states);
+          addPresences(d.presences);
+          break;
+        case 'GUILD_MEMBER_ADD':
+          setGuilds((gs) => gs.map((g) => (g.id === d.guild_id && !g.members.some((u) => u.id === d.user.id)
+            ? { ...g, members: [...g.members, d.user].sort(byUsername) } : g)));
+          break;
+        case 'CHANNEL_CREATE':
+          if (d.type === 'dm') setDms((cs) => (cs.some((c) => c.id === d.id) ? cs : [d, ...cs]));
+          else setGuilds((gs) => gs.map((g) => (g.id === d.guild_id ? { ...g, channels: [...g.channels, d] } : g)));
+          break;
+        case 'MESSAGE_CREATE':
+          if (d.channel_id === live.current.channelId) setMessages((ms) => (ms.some((m) => m.id === d.id) ? ms : [...ms, d]));
+          setDms((cs) => {
+            const dm = cs.find((c) => c.id === d.channel_id);
+            return dm ? [{ ...dm, last_message_id: d.id }, ...cs.filter((c) => c !== dm)] : cs;
+          });
+          setTyping((all) => {
+            const { [d.author.id]: _, ...rest } = all[d.channel_id] ?? {};
+            return { ...all, [d.channel_id]: rest };
+          });
+          notify(d);
+          break;
+        case 'MESSAGE_UPDATE':
+          updateMessage(d.id, (m) => ({ ...m, ...d }));
+          break;
+        case 'MESSAGE_DELETE':
+          setMessages((ms) => ms.filter((m) => m.id !== d.id));
+          break;
+        case 'MESSAGE_REACTION_ADD':
+        case 'MESSAGE_REACTION_REMOVE':
+          updateMessage(d.message_id, (m) => ({
+            ...m,
+            reactions: applyReaction(m.reactions ?? [], d.emoji.name, t === 'MESSAGE_REACTION_ADD', d.user_id === me?.id),
+          }));
+          break;
+        case 'TYPING_START':
+          if (d.user_id !== me?.id) {
+            setTyping((all) => ({ ...all, [d.channel_id]: { ...all[d.channel_id], [d.user_id]: Date.now() + TYPING_VISIBLE_MS } }));
+          }
+          break;
+        case 'PRESENCE_UPDATE':
+          if (d.user.id === me?.id) setStatus(d.status);
+          else setPresences((p) => ({ ...p, [d.user.id]: d.status }));
+          break;
+        case 'RELATIONSHIP_ADD':
+          setRelationships((rs) => [...rs.filter((r) => r.id !== d.id), d].sort((a, b) => byUsername(a.user, b.user)));
+          break;
+        case 'RELATIONSHIP_REMOVE':
+          setRelationships((rs) => rs.filter((r) => r.id !== d.id));
+          break;
+        case 'VOICE_STATE_UPDATE':
+          setVoiceStates(({ [d.user.id]: _, ...rest }) => (d.channel_id ? { ...rest, [d.user.id]: d } : rest));
+          break;
+        case 'VOICE_SIGNAL':
+          callRef.current?.receive(d.from, d.data);
+          break;
       }
-      if (t === 'GUILD_CREATE') {
-        setGuilds((gs) => [...gs.filter((g) => g.id !== d.id), d]);
-        addVoiceStates(d.voice_states);
-      }
-      if (t === 'CHANNEL_CREATE') {
-        setGuilds((gs) => gs.map((g) => (g.id === d.guild_id ? { ...g, channels: [...g.channels, d] } : g)));
-      }
-      if (t === 'MESSAGE_CREATE' && d.channel_id === channelRef.current) {
-        setMessages((ms) => (ms.some((m) => m.id === d.id) ? ms : [...ms, d]));
-      }
-      if (t === 'VOICE_STATE_UPDATE') {
-        setVoiceStates(({ [d.user.id]: _, ...rest }) => (d.channel_id ? { ...rest, [d.user.id]: d } : rest));
-      }
-      if (t === 'VOICE_SIGNAL') callRef.current?.receive(d.from, d.data);
     };
     ws.onclose = (e) => {
       clearInterval(heartbeat);
@@ -126,6 +228,17 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
     if (channelId) run(async () => setMessages(await api('GET', `/channels/${channelId}/messages`)));
   }, [channelId]);
 
+  // Limpa quem parou de digitar; só roda enquanto houver alguém digitando.
+  const anyoneTyping = Object.values(typing).some((c) => Object.keys(c).length);
+  useEffect(() => {
+    if (!anyoneTyping) return;
+    const timer = setInterval(() => {
+      const now = Date.now();
+      setTyping((all) => Object.fromEntries(Object.entries(all).map(([c, us]) => [c, Object.fromEntries(Object.entries(us).filter(([, exp]) => exp > now))])));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [anyoneTyping]);
+
   const myVoice = user ? voiceStates[user.id] : undefined;
 
   useEffect(() => {
@@ -134,15 +247,45 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
   }, [voiceStates]);
 
   const guild = guilds.find((g) => g.id === guildId);
-  const channel = guild?.channels.find((c) => c.id === channelId);
+  const dm = !guild ? dms.find((c) => c.id === channelId) : undefined;
+  const channel = guild?.channels.find((c) => c.id === channelId) ?? dm;
+  const navigable = guild ? guild.channels.filter((c) => c.type === 'text') : dms;
+
+  // Alt+↑/↓ troca de canal, como no Discord.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') || !navigable.length) return;
+      e.preventDefault();
+      const i = navigable.findIndex((c) => c.id === channelId);
+      const next = navigable[(i + (e.key === 'ArrowDown' ? 1 : -1) + navigable.length) % navigable.length];
+      setChannelId(next.id);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigable, channelId]);
+
   const voiceChannel = guilds.flatMap((g) => g.channels).find((c) => c.id === myVoice?.channel_id);
   const call = callRef.current;
   const muted = call?.local.mic?.getAudioTracks().every((t) => !t.enabled);
+  const statusOf = (id: string): Status => (id === user?.id ? (status === 'invisible' ? 'offline' : status) : presences[id] ?? 'offline');
 
   function openGuild(g: Guild) {
     setGuildId(g.id);
     setChannelId(g.channels.find((c) => c.type === 'text')?.id ?? null);
   }
+
+  function goHome() {
+    setGuildId(null);
+    setChannelId(null);
+  }
+
+  const openDm = (recipientId: string) =>
+    run(async () => {
+      const created: Channel = await api('POST', '/users/@me/channels', { recipient_id: recipientId });
+      setDms((cs) => (cs.some((c) => c.id === created.id) ? cs : [created, ...cs]));
+      setGuildId(null);
+      setChannelId(created.id);
+    });
 
   function joinVoice(c: Channel) {
     run(async () => {
@@ -158,6 +301,11 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
   function leaveVoice() {
     sendRef.current(Op.VOICE_STATE_UPDATE, { channel_id: null });
     endCall();
+  }
+
+  function changeStatus(next: Status) {
+    sendRef.current(Op.PRESENCE_UPDATE, { status: next });
+    setStatusMenu(false);
   }
 
   const createGuild = () => {
@@ -179,29 +327,42 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
   const invite = () =>
     run(async () => prompt('Envie este código para quem você quer convidar', (await api('POST', `/guilds/${guildId}/invites`, {})).code));
 
-  function sendMessage(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const content = new FormData(form).get('content');
-    run(async () => {
-      await api('POST', `/channels/${channelId}/messages`, { content });
-      form.reset();
-    });
-  }
-
   if (!user) return <p className="empty">Conectando…</p>;
 
   const isOwner = guild?.owner_id === user.id;
   const participants = Object.values(voiceStates).filter((v) => v.channel_id === myVoice?.channel_id);
+  const dmPeer = dm?.recipients?.[0];
+  const typingNames = Object.entries(channelId ? typing[channelId] ?? {} : {})
+    .filter(([, exp]) => exp > Date.now())
+    .map(([id]) => users.get(id)?.username ?? 'Alguém');
+  const members = guild ? [...guild.members].sort(byUsername) : [];
+  const onlineMembers = members.filter((m) => statusOf(m.id) !== 'offline');
+  const offlineMembers = members.filter((m) => statusOf(m.id) === 'offline');
+  const incoming = relationships.filter((r) => r.type === 3).length;
+
+  const memberRow = (m: User) => (
+    <li key={m.id}>
+      <button className={`member ${statusOf(m.id) === 'offline' ? 'offline' : ''}`} disabled={m.id === user.id}
+        title={m.id === user.id ? undefined : `Mandar mensagem para ${m.username}`} onClick={() => openDm(m.id)}>
+        <Avatar name={m.username} status={statusOf(m.id)} />
+        <span>{m.username}{m.id === guild?.owner_id && <span title="Dono do servidor" aria-label="Dono do servidor"> 👑</span>}</span>
+      </button>
+    </li>
+  );
 
   return (
-    <div className="app">
+    <div className={`app ${guild ? 'with-members' : ''}`}>
       <nav className="rail" aria-label="Servidores">
+        <button className="guild-icon home" title="Mensagens diretas" aria-label="Mensagens diretas" aria-current={!guild || undefined} onClick={goHome}>
+          D<span>.</span>
+          {incoming > 0 && <span className="rail-badge" aria-label={`${incoming} pedidos de amizade`}>{incoming}</span>}
+        </button>
+        <div className="rail-divider" />
         <ul>
           {guilds.map((g) => (
             <li key={g.id}>
               <button className="guild-icon" title={g.name} aria-label={g.name} aria-current={g.id === guildId || undefined} onClick={() => openGuild(g)}>
-                {initials(g.name)}
+                {g.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 3)}
               </button>
             </li>
           ))}
@@ -216,13 +377,13 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
       </nav>
 
       <aside className="sidebar">
-        <div className="header">
-          <span>{guild?.name ?? 'Drocsid'}</span>
-          {guild && <button className="icon-btn" onClick={invite}>Convidar</button>}
-        </div>
-        <nav className="channels" aria-label="Canais">
-          {guild ? (
-            <>
+        {guild ? (
+          <>
+            <div className="header">
+              <span>{guild.name}</span>
+              <button className="icon-btn" onClick={invite}>Convidar</button>
+            </div>
+            <nav className="channels" aria-label="Canais">
               <h3>
                 Canais de texto
                 {isOwner && <button className="icon-btn" aria-label="Criar canal de texto" onClick={() => createChannel('text')}>+</button>}
@@ -254,15 +415,51 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
                   </li>
                 ))}
               </ul>
-            </>
-          ) : (
-            <p className="empty">Escolha ou crie um servidor à esquerda.</p>
-          )}
-        </nav>
+            </nav>
+          </>
+        ) : (
+          <nav className="channels" aria-label="Mensagens diretas">
+            <button className="channel big" aria-current={!channelId || undefined} onClick={() => setChannelId(null)}>
+              <FriendsIcon /> Amigos
+              {incoming > 0 && <span className="badge">{incoming}</span>}
+            </button>
+            <h3>Mensagens diretas</h3>
+            <ul>
+              {dms.map((c) => {
+                const peer = c.recipients![0];
+                return (
+                  <li key={c.id}>
+                    <button className="channel dm" aria-current={c.id === channelId || undefined} onClick={() => setChannelId(c.id)}>
+                      <Avatar name={peer.username} status={statusOf(peer.id)} />
+                      <span>{peer.username}</span>
+                    </button>
+                  </li>
+                );
+              })}
+              {!dms.length && <li className="hint">Suas conversas aparecem aqui.</li>}
+            </ul>
+          </nav>
+        )}
         <div className="user-panel">
-          <Avatar name={user.username} />
-          <span className="name">{user.username}</span>
+          <button className="me" aria-haspopup="menu" aria-expanded={statusMenu} onClick={() => setStatusMenu(!statusMenu)}>
+            <Avatar name={user.username} status={statusOf(user.id)} />
+            <span>
+              <strong>{user.username}</strong>
+              <small>{STATUS_LABEL[status]}</small>
+            </span>
+          </button>
           <button className="icon-btn" onClick={onLogout}>Sair</button>
+          {statusMenu && (
+            <ul className="status-menu" role="menu" onKeyDown={(e) => e.key === 'Escape' && setStatusMenu(false)}>
+              {SELECTABLE.map((s) => (
+                <li key={s}>
+                  <button role="menuitemradio" aria-checked={s === status} autoFocus={s === status} onClick={() => changeStatus(s)}>
+                    <span className={`status-dot inline ${s === 'invisible' ? 'offline' : s}`} /> {STATUS_LABEL[s]}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </aside>
 
@@ -298,28 +495,40 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
         )}
         {channel ? (
           <>
-            <h2 className="header"># {channel.name}</h2>
-            <ol className="messages">
-              {messages.map((m) => (
-                <li key={m.id} className="message">
-                  <Avatar name={m.author.username} />
-                  <div>
-                    <strong>{m.author.username}</strong>
-                    <time dateTime={m.created_at}>{new Date(m.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</time>
-                    <p>{m.content}</p>
-                  </div>
-                </li>
-              ))}
-              {!messages.length && <li className="empty">Nenhuma mensagem ainda. Diga oi!</li>}
-            </ol>
-            <form className="composer" onSubmit={sendMessage}>
-              <input name="content" placeholder={`Conversar em #${channel.name}`} aria-label={`Mensagem em #${channel.name}`} maxLength={2000} required autoComplete="off" />
-            </form>
+            <h2 className="header">
+              {dmPeer ? <span className="dm-title"><Avatar name={dmPeer.username} size="small" status={statusOf(dmPeer.id)} /> {dmPeer.username}</span> : `# ${channel.name}`}
+            </h2>
+            <Messages
+              api={api}
+              me={user}
+              channelId={channel.id}
+              label={dmPeer ? `@${dmPeer.username}` : `#${channel.name}`}
+              messages={messages}
+              users={users}
+              mentionable={guild ? guild.members : [user, ...(dm?.recipients ?? [])]}
+              typing={typingNames}
+              canModerate={isOwner}
+            />
           </>
-        ) : (
+        ) : guild ? (
           !call && <p className="empty">Selecione um canal de texto.</p>
+        ) : (
+          <Friends api={api} relationships={relationships} statusOf={statusOf} openDm={openDm} />
         )}
       </main>
+
+      {guild && (
+        <aside className="members" aria-label="Membros">
+          <h3>Disponível — {onlineMembers.length}</h3>
+          <ul>{onlineMembers.map(memberRow)}</ul>
+          {!!offlineMembers.length && (
+            <>
+              <h3>Offline — {offlineMembers.length}</h3>
+              <ul>{offlineMembers.map(memberRow)}</ul>
+            </>
+          )}
+        </aside>
+      )}
     </div>
   );
 }
