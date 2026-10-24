@@ -10,14 +10,27 @@ type Message = { id: string; channel_id: string; content: string; created_at: st
 const Op = { DISPATCH: 0, HEARTBEAT: 1, IDENTIFY: 2, VOICE_STATE_UPDATE: 4, HELLO: 10, VOICE_SIGNAL: 20 };
 const AUTHENTICATION_FAILED = 4004;
 
+const initials = (name: string) =>
+  name.split(/[\s_.-]+/).filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
+const SpeakerIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden style={{ verticalAlign: 'text-bottom' }}>
+    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z" />
+  </svg>
+);
+
+function Avatar({ name, size }: { name: string; size?: 'small' | 'large' }) {
+  return <span className={`avatar ${size ?? ''}`} aria-hidden>{initials(name)}</span>;
+}
+
 function Media({ stream, label, muted }: { stream: MediaStream; label: string; muted?: boolean }) {
   const attach = (el: HTMLMediaElement | null) => {
     if (el && el.srcObject !== stream) el.srcObject = stream;
   };
   if (!stream.getVideoTracks().length) return <audio ref={attach} autoPlay />;
   return (
-    <figure style={{ margin: 0 }}>
-      <video ref={attach} autoPlay playsInline muted={muted} style={{ width: 320, background: '#000' }} />
+    <figure className="tile">
+      <video ref={attach} autoPlay playsInline muted={muted} />
       <figcaption>{label}</figcaption>
     </figure>
   );
@@ -176,100 +189,135 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
     });
   }
 
-  if (!user) return <p>Conectando…</p>;
+  if (!user) return <p className="empty">Conectando…</p>;
+
+  const isOwner = guild?.owner_id === user.id;
+  const participants = Object.values(voiceStates).filter((v) => v.channel_id === myVoice?.channel_id);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '180px 200px 1fr', height: '100vh' }}>
-      <nav aria-label="Servidores">
-        <p>
-          {user.username} <button onClick={onLogout}>Sair</button>
-        </p>
+    <div className="app">
+      <nav className="rail" aria-label="Servidores">
         <ul>
           {guilds.map((g) => (
             <li key={g.id}>
-              <button aria-current={g.id === guildId || undefined} onClick={() => openGuild(g)}>{g.name}</button>
+              <button className="guild-icon" title={g.name} aria-label={g.name} aria-current={g.id === guildId || undefined} onClick={() => openGuild(g)}>
+                {initials(g.name)}
+              </button>
             </li>
           ))}
         </ul>
-        <button onClick={createGuild}>+ Servidor</button> <button onClick={joinGuild}>Entrar com convite</button>
+        <div className="rail-divider" />
+        <button className="guild-icon add" title="Criar servidor" aria-label="Criar servidor" onClick={createGuild}>+</button>
+        <button className="guild-icon add" title="Entrar com convite" aria-label="Entrar com convite" onClick={joinGuild}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d="M11 7 9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z" />
+          </svg>
+        </button>
       </nav>
 
-      <nav aria-label="Canais">
-        {guild && (
-          <>
-            <h2>{guild.name}</h2>
-            <h3>Canais de texto</h3>
-            <ul>
-              {guild.channels.filter((c) => c.type === 'text').map((c) => (
-                <li key={c.id}>
-                  <button aria-current={c.id === channelId || undefined} onClick={() => setChannelId(c.id)}># {c.name}</button>
-                </li>
-              ))}
-            </ul>
-            <h3>Canais de voz</h3>
-            <ul>
-              {guild.channels.filter((c) => c.type === 'voice').map((c) => (
-                <li key={c.id}>
-                  <button aria-current={c.id === myVoice?.channel_id || undefined} onClick={() => joinVoice(c)}>
-                    Voz: {c.name}
-                  </button>
-                  <ul>
-                    {Object.values(voiceStates).filter((v) => v.channel_id === c.id).map((v) => (
-                      <li key={v.user.id}>{v.user.username}</li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ul>
-            {guild.owner_id === user.id && (
-              <>
-                <button onClick={() => createChannel('text')}>+ Texto</button>{' '}
-                <button onClick={() => createChannel('voice')}>+ Voz</button>{' '}
-              </>
-            )}
-            <button onClick={invite}>Convidar</button>
-          </>
-        )}
-      </nav>
+      <aside className="sidebar">
+        <div className="header">
+          <span>{guild?.name ?? 'Drocsid'}</span>
+          {guild && <button className="icon-btn" onClick={invite}>Convidar</button>}
+        </div>
+        <nav className="channels" aria-label="Canais">
+          {guild ? (
+            <>
+              <h3>
+                Canais de texto
+                {isOwner && <button className="icon-btn" aria-label="Criar canal de texto" onClick={() => createChannel('text')}>+</button>}
+              </h3>
+              <ul>
+                {guild.channels.filter((c) => c.type === 'text').map((c) => (
+                  <li key={c.id}>
+                    <button className="channel" aria-current={c.id === channelId || undefined} onClick={() => setChannelId(c.id)}># {c.name}</button>
+                  </li>
+                ))}
+              </ul>
+              <h3>
+                Canais de voz
+                {isOwner && <button className="icon-btn" aria-label="Criar canal de voz" onClick={() => createChannel('voice')}>+</button>}
+              </h3>
+              <ul>
+                {guild.channels.filter((c) => c.type === 'voice').map((c) => (
+                  <li key={c.id}>
+                    <button className="channel" aria-current={c.id === myVoice?.channel_id || undefined} onClick={() => joinVoice(c)}>
+                      <SpeakerIcon /> {c.name}
+                    </button>
+                    <ul className="voice-members">
+                      {Object.values(voiceStates).filter((v) => v.channel_id === c.id).map((v) => (
+                        <li key={v.user.id}>
+                          <Avatar name={v.user.username} size="small" /> {v.user.username}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="empty">Escolha ou crie um servidor à esquerda.</p>
+          )}
+        </nav>
+        <div className="user-panel">
+          <Avatar name={user.username} />
+          <span className="name">{user.username}</span>
+          <button className="icon-btn" onClick={onLogout}>Sair</button>
+        </div>
+      </aside>
 
-      <main style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <main className="main">
         {call && voiceChannel && (
-          <section aria-label="Chamada de voz">
-            <h2>Voz: {voiceChannel.name}</h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {call.local.camera && <Media stream={call.local.camera} label="Você (câmera)" muted />}
-              {call.local.screen && <Media stream={call.local.screen} label="Você (tela)" muted />}
-              {[...call.peers].flatMap(([id, peer]) =>
-                [...peer.streams.values()].map((stream) => (
-                  <Media key={stream.id} stream={stream} label={voiceStates[id]?.user.username ?? ''} />
-                )),
-              )}
+          <section className="call" aria-label="Chamada de voz">
+            <h2><SpeakerIcon /> {voiceChannel.name}</h2>
+            <div className="tiles">
+              {participants.flatMap((v) => {
+                const self = v.user.id === user.id;
+                const streams = self
+                  ? [call.local.camera, call.local.screen].filter((s): s is MediaStream => !!s)
+                  : [...(call.peers.get(v.user.id)?.streams.values() ?? [])];
+                const hasVideo = streams.some((s) => s.getVideoTracks().length);
+                return [
+                  ...streams.map((stream) => <Media key={stream.id} stream={stream} label={self ? 'Você' : v.user.username} muted={self} />),
+                  !hasVideo && (
+                    <figure key={v.user.id} className="tile">
+                      <Avatar name={v.user.username} size="large" />
+                      <figcaption>{self ? 'Você' : v.user.username}</figcaption>
+                    </figure>
+                  ),
+                ];
+              })}
             </div>
-            <button onClick={() => call.setMuted(!muted)}>{muted ? 'Ativar microfone' : 'Silenciar microfone'}</button>{' '}
-            <button onClick={() => run(() => call.toggle('camera'))}>{call.local.camera ? 'Desligar câmera' : 'Ligar câmera'}</button>{' '}
-            <button onClick={() => run(() => call.toggle('screen'))}>
-              {call.local.screen ? 'Parar de compartilhar' : 'Compartilhar tela'}
-            </button>{' '}
-            <button onClick={leaveVoice}>Sair da chamada</button>
+            <div className="call-controls">
+              <button className="btn" aria-pressed={!!muted} onClick={() => call.setMuted(!muted)}>{muted ? 'Microfone desligado' : 'Silenciar'}</button>
+              <button className="btn" aria-pressed={!!call.local.camera} onClick={() => run(() => call.toggle('camera'))}>Câmera</button>
+              <button className="btn" aria-pressed={!!call.local.screen} onClick={() => run(() => call.toggle('screen'))}>Compartilhar tela</button>
+              <button className="btn danger" onClick={leaveVoice}>Sair da chamada</button>
+            </div>
           </section>
         )}
-        {channel && (
+        {channel ? (
           <>
-            <h2># {channel.name}</h2>
-            <ol style={{ flex: 1, overflowY: 'auto', listStyle: 'none', padding: 0 }}>
+            <h2 className="header"># {channel.name}</h2>
+            <ol className="messages">
               {messages.map((m) => (
-                <li key={m.id}>
-                  <strong>{m.author.username}</strong>{' '}
-                  <time dateTime={m.created_at}>{new Date(m.created_at).toLocaleTimeString('pt-BR')}</time>
-                  <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.content}</p>
+                <li key={m.id} className="message">
+                  <Avatar name={m.author.username} />
+                  <div>
+                    <strong>{m.author.username}</strong>
+                    <time dateTime={m.created_at}>{new Date(m.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</time>
+                    <p>{m.content}</p>
+                  </div>
                 </li>
               ))}
+              {!messages.length && <li className="empty">Nenhuma mensagem ainda. Diga oi!</li>}
             </ol>
-            <form onSubmit={sendMessage}>
-              <input name="content" aria-label={`Mensagem em #${channel.name}`} maxLength={2000} required autoComplete="off" />
-              <button>Enviar</button>
+            <form className="composer" onSubmit={sendMessage}>
+              <input name="content" placeholder={`Conversar em #${channel.name}`} aria-label={`Mensagem em #${channel.name}`} maxLength={2000} required autoComplete="off" />
             </form>
           </>
+        ) : (
+          !call && <p className="empty">Selecione um canal de texto.</p>
         )}
       </main>
     </div>

@@ -28,19 +28,23 @@ export function App() {
   if (token) return <Chat token={token} onLogout={logout} />;
 
   return (
-    <main>
-      <h1>Drocsid</h1>
+    <main className="login">
       <form onSubmit={submit}>
+        <h1>
+          Drocsid<span>.</span>
+        </h1>
         <label>
           Usuário <input name="username" autoComplete="username" required />
         </label>
         <label>
           Senha <input name="password" type="password" autoComplete="current-password" required />
         </label>
-        <button value="login">Entrar</button>
-        <button value="register">Criar conta</button>
+        {error && <p className="error" role="alert">{error}</p>}
+        <div className="actions">
+          <button className="btn primary" value="login">Entrar</button>
+          <button className="btn" value="register">Criar conta</button>
+        </div>
       </form>
-      {error && <p role="alert">{error}</p>}
     </main>
   );
 }
