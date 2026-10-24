@@ -32,3 +32,23 @@ Gate: `npm.cmd test`, 16/16, zero skips; build aprovado. Nove testes novos com m
 | STAB-42/43 | tests/rtc.test.js:119–122, `candidates.length,128`, depois `connectionState,'closed'`, `candidates.length,0`; nova tentativa cria peer | Limites de tempo/fila e retry manual | Sim |
 
 Reverso: cada uma das nove funções de teste corresponde à linha acima, sem testes externos à spec. Asserções verificam tracks, sender, estado de admissão e conteúdo dos eventos, não só número de chamadas. Litmus: remover stop, aceitar geração antiga, esperar todos os senders para abortar ou permitir 129 candidatos quebra resultados. Sem novos frameworks. Adequação da unidade: PASS; integração ainda pendente.
+
+## T3 — Serviço
+
+Gate: `npm.cmd test`, 26/26, zero skips; build aprovado. Dez testes de integração novos. As asserções dos três testes anteriores foram preservadas; seu helper agora produz envelopes v1. Testes usam bancos temporários, não o banco pessoal. Falhas induzidas de entrega/escrita geram logs esperados, sem conteúdo. O fechamento dos bancos temporários precede a remoção de seus diretórios, inclusive no teardown.
+
+| AC / caso | Evidência e asserção | Resultado esperado | Cobertura |
+| --- | --- | --- | --- |
+| STAB-18/19/21/23/24 | tests/service.test.js:21, valores de room/operationId/authorId/sequence; :23, `assert.deepEqual(repeat.message,accepted.message)`; :26/28, ROOM_MISMATCH e OPERATION_CONFLICT | Destino fixo e recibo único | Sim no servidor; UI pendente |
+| STAB-23/53, isolamento negativo | tests/service.test.js:31–33, `history.messages.length,1`, uma entrega na mesma sala, `other.events.some(...),false` | Uma linha, uma entrega, zero entrega a outra sala | Sim |
+| STAB-25/26/55 | tests/service.test.js:44/46, mesmo id após falha de broadcast e reinício; :49, PERSISTENCE_FAILED; :51, histórico exatamente ['Confirmada'] | Commit não é desfeito nem confirmado falsamente | Sim |
+| STAB-28/29/30/68 | tests/service.test.js:59–64, sharing=false, inCall=false, repetição com mesmo callId e INVALID_EVENT para geração encerrada | Saída/parada vencem cota e não ressuscitam | Sim; controles UI pendentes |
+| STAB-33/36/37 | tests/service.test.js:70, HTTP 404; :73, duração <5000 e listening=false | Upgrade recusado e shutdown finito/idempotente | Sim; sinais/HMR serão T4 |
+| STAB-40/41 | tests/service.test.js:80–83, requestId exato, código/fase, zero signal no destinatário | Evento malformado não é encaminhado | Sim |
+| STAB-53/54/55/61 | tests/service.test.js:94–97, 200 resultados 9800..9999, authorId=null, zero TEMP B-TREE antes do limite e 10000 linhas preservadas | Histórico legado estável/indexado | Sim; agrupamento UI será T6 |
+| STAB-51/52 | tests/service.test.js:105/108, 25º recebe 503 e cliente saudável recebe o mesmo id confirmado | Teto e isolamento de consumidor lento | Sim |
+| STAB-32 | tests/service.test.js:116, WS closed e zero clientes no instante virtual de 60 s | Vaga da conexão silenciosa liberada | Sim |
+| STAB-51, salas | tests/service.test.js:122–123, INVALID_INPUT no excesso e 100 salas conservadas | Limite sem exclusão | Sim |
+| STAB-37/67 | tests/service.test.js:131–133, SHUTDOWN_FAILED, listening=false, fase/versão exatas e segredo ausente | Limpeza restante e diagnóstico sem segredo | Sim |
+
+Reverso: as dez funções de teste correspondem às linhas acima; o primeiro teste cobre também ausência de entrega na outra sala, sem depender apenas do nome do teste. Asserções de recibo cobrem valores de todos os campos exigidos pela spec. O controle do tempo espera o fechamento nos dois extremos antes de observar os conjuntos de sockets, sem reduzir o prazo exigido. Litmus: gravar em client.room ignorando room, gerar novo id em retry, aplicar cota a leave, omitir rejeição de Upgrade ou ordenar timestamps empatados faria as asserções falharem. Adequação da unidade: PASS. HMR, bootstrap, UI e evidência física seguem pendentes.

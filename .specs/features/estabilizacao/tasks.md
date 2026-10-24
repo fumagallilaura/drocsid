@@ -81,8 +81,8 @@ T5 -> T6 -> T7 -> T8
 **Requirement**: STAB-18–19, STAB-21, STAB-23–30, STAB-32–37, STAB-40–41, STAB-51–55, STAB-61, STAB-68.
 **Tools**: MCP Agent Skills; tlc-spec-driven; shell/Node.
 **Done when**:
-- [ ] Destino, recibos/deduplicação, limite de chamada, saída com cota esgotada e histórico legado passam.
-- [ ] Upgrade desconhecido e close concorrente não bloqueiam encerramento; falhas de entrega não perdem commit.
+- [x] Destino, recibos/deduplicação, limite de chamada, saída com cota esgotada e histórico legado passam.
+- [x] Upgrade desconhecido e close concorrente não bloqueiam encerramento; falhas de entrega não perdem commit. Gate: 26/26 testes e build; T3 em evidence.md.
 **Tests**: integration em tests/server.test.js e tests/service.test.js; adaptar somente o helper de protocolo dos três testes existentes.
 **Gate**: full
 

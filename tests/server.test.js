@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { WebSocket } from 'ws';
+import { client } from './helpers/client.js';
 import { createService } from '../server/service.js';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,27 +10,6 @@ async function start(dbPath = ':memory:') {
   const service = createService({ dbPath, iceServers: [] });
   await new Promise(resolve => service.server.listen(0, '127.0.0.1', resolve));
   return { ...service, url: `ws://127.0.0.1:${service.server.address().port}/ws` };
-}
-async function client(url, name, room = 'geral') {
-  const ws = new WebSocket(url), events = [], waiters = [];
-  ws.on('message', bytes => {
-    const event = JSON.parse(bytes);
-    const i = waiters.findIndex(w => w.predicate(event));
-    if (i >= 0) { const [w] = waiters.splice(i, 1); clearTimeout(w.timer); w.resolve(event); }
-    else events.push(event);
-  });
-  const next = (type, match = () => true) => new Promise((resolve, reject) => {
-    const predicate = e => e.type === type && match(e);
-    const i = events.findIndex(predicate);
-    if (i >= 0) return resolve(events.splice(i, 1)[0]);
-    const entry = { predicate, resolve, timer: setTimeout(() => { waiters.splice(waiters.indexOf(entry), 1); reject(new Error(`Timeout waiting for ${type}`)); }, 2500) };
-    waiters.push(entry);
-  });
-  const send = event => ws.send(JSON.stringify(event));
-  const hello = await next('hello');
-  send({ type: 'join', name, room });
-  await next('joined');
-  return { ws, send, next, id: hello.id };
 }
 
 test('group messages, room isolation, signaling authorization and disconnect cleanup', async t => {
