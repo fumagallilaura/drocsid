@@ -198,7 +198,7 @@ Observações por inspeção em `cd53044`; caminhos ainda não reproduzidos nest
 | Heartbeat depende de ticks de 30 s | `server/service.js:153`; `tests/service.test.js:114` | Teste alinhado em zero não demonstra limite a partir de qualquer pong. | Expiração por cliente, relógio monotônico e fronteiras deslocadas; T2. |
 | Mute e som físico são evidências distintas | `src/main.jsx:104`; `scripts/startup-audio-check.mjs:15` | Smoke de seis segundos não satisfaz três ciclos físicos de 30 s. | Manter smoke e acrescentar relatório físico A7; T9. |
 | Deriva de contrato durante commits | `shared/protocol.js:1`; fixtures v1 | Um bump isolado quebra produtores/consumidores e os testes. | Campos aditivos primeiro, ativação v2 só em T6, gates entre passos; sem release intermediária. |
-| Evidência Discord parcial e análise sem runtime | Spec D1–D5 | Inferir arquitetura ou equivalência não demonstradas. | Reusar IDs/limitações e registrar comparação como documentada, observada ou desconhecida; T8/T9. |
+| Renderer histórico sem vínculo à versão ativa; análise sem chamada | Spec D1–D9 e relatório de investigação | Confundir fluxo estático com execução ou aplicar o ramo Browser ao desktop por dedução. | Identificar versão/engine ativos antes da comparação; preservar hashes, guardas locais e desconhecidos; T8/T9. |
 
 ## Tech Decisions
 
@@ -218,7 +218,15 @@ Nenhuma decisão deste Draft foi promovida ao log de Decisions. Uma alteração 
 
 Os testes de cada proprietário acompanham sua alteração. Evidência integrada em T8 identifica versão/hash, AC, asserção e resultado; T9 registra os três ciclos de 30 s e sessão física de 10 minutos. O Verifier fresco encerra a execução depois da última tarefa, com sensor em scratch isolado e gate `validate_state.py`; nenhuma aprovação de implementação é produzida agora.
 
-Fontes primárias consultadas em 2026-10-25: [Electron: display handler](https://www.electronjs.org/docs/latest/api/session#sessetdisplaymediarequesthandlerhandler-opts) para campos nativos, cancelamento `null` e loopback Windows; [Electron: IPC](https://www.electronjs.org/docs/latest/api/ipc-renderer#ipcrenderersendsyncchannel-args) para o bridge delimitado e retorno síncrono; [W3C: screen capture](https://w3c.github.io/mediacapture-screen-share/#dom-mediadevices-getdisplaymedia) para ativação transitória; [W3C: replaceTrack](https://w3c.github.io/webrtc-pc/#dom-rtcrtpsender-replacetrack) para mutação assíncrona. Esses contratos não provam que nossa integração funciona; os gates Electron 45 são obrigatórios. Discord D1–D5 continuam sendo referência de experiência com as limitações da spec, sem hipótese nova de implementação interna.
+Fontes primárias consultadas em 2026-10-25: [Electron: display handler](https://www.electronjs.org/docs/latest/api/session#sessetdisplaymediarequesthandlerhandler-opts) para campos nativos, cancelamento `null` e loopback Windows; [Electron: IPC](https://www.electronjs.org/docs/latest/api/ipc-renderer#ipcrenderersendsyncchannel-args) para o bridge delimitado e retorno síncrono; [W3C: screen capture](https://w3c.github.io/mediacapture-screen-share/#dom-mediadevices-getdisplaymedia) para ativação transitória; [W3C: replaceTrack](https://w3c.github.io/webrtc-pc/#dom-rtcrtpsender-replacetrack) para mutação assíncrona. Esses contratos não provam que nossa integração funciona; os gates Electron 45 são obrigatórios.
+
+### Investigação adicional do Discord
+
+O [relatório](discord-investigation.md) acrescenta D6–D9: core e ponte de voz instalados, chamadores Native/Browser recuperados de cache histórico e fuses do executável. O código recuperado separa parar fonte de destruir conexão e contém guardas locais após destruição. A escolha automática dá precedência a Native, mas o engine e a versão efetivamente ativos ainda não foram observados. O ramo Browser não é tratado como captura nativa do Windows.
+
+Esses achados reforçam as responsabilidades de T1/T4 e os testes de resultado tardio. Não comprovam nossa chave de operação, token de documento, callback único, compensação por peer ou protocolo 2. Esses mecanismos e os prazos de 1/8/60 s continuam propostas do Conversa. A ponte nativa encontrada não é motivo para substituir a captura Electron/WebRTC existente.
+
+O ensaio comparativo distingue parar transmissão, desconectar voz, X e sair do aplicativo: no core do Discord, X pode ocultar a janela conforme a opção de bandeja. MEDIA-23 do Conversa continua terminal no fechamento, e C2/A5 permanecem preservados. As três dúvidas de runtime estão registradas como open no REA; nenhum teste físico ou execução de tarefa é declarado concluído por esta pesquisa.
 
 ## Planning Validation
 

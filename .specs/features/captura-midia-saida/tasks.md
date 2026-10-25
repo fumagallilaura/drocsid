@@ -254,7 +254,7 @@ T8 -> T9
 **What**: Produzir um relatório único de resultados e limites por MEDIA automatizável, para a candidata source e Windows do mesmo commit.
 **Where**: `.specs/features/captura-midia-saida/evidence.md`
 **Depends on**: T7
-**Reuses**: Testes e checkers ampliados junto de seus proprietários em T1–T7, manifesto atual e evidência D1–D5.
+**Reuses**: Testes e checkers ampliados junto de seus proprietários em T1–T7, manifesto atual e evidência D1–D9 no [relatório de investigação](discord-investigation.md), com seus registros e hashes.
 **Requirement**: MEDIA-01–32; critérios de sucesso e fronteiras de evidência de MEDIA-33/34.
 **Tools**: MCP Agent Skills; skill `tlc-spec-driven`; shell/Node/Playwright; REA somente se uma conclusão sobre o artefato Discord exigir inspeção adicional autorizada.
 
@@ -262,7 +262,7 @@ T8 -> T9
 
 - [ ] Build completo passa para a candidata final; versão, git SHA, SHA-256, executável e portátil real são identificados e correspondem ao disco.
 - [ ] Cada MEDIA-01–32 tem arquivo:linha, asserção de valor, resultado e limite de evidência. Nenhum caso é aprovado só pelo nome do teste ou pela sondagem histórica.
-- [ ] Fatos D1/D2 continuam rotulados estáticos/parciais; D3–D5 continuam documentais. Observação de runtime Discord não realizada permanece desconhecida, sem impedir registrar diferenças deliberadas C2/A5.
+- [ ] D1/D2 continuam estáticos/parciais, D3–D5 documentais e D6–D9 com a autoridade/cobertura do relatório. Renderer do cache não é atribuído à versão ativa e Browser não é presumido como engine Windows. As dúvidas de runtime permanecem abertas sem observação versionada; registrar diferenças deliberadas C2/A5.
 - [ ] O relatório mantém MEDIA-33/34 pendentes de T9. Total Node `50 + Δ`, zero falhas/skips/cancelled e integridade do histórico de asserções são registrados.
 
 **Tests**: integration/e2e já co-localizados nas tarefas de código, reexecutados na candidata final. Esta tarefa consolida a aceitação e não recebe testes que deveriam ter acompanhado uma correção anterior. Gap encontrado volta à tarefa proprietária, com gate e commit próprios antes de repetir a aceitação.
@@ -283,7 +283,7 @@ T8 -> T9
 - [ ] Ambos os PCs e seus dispositivos/runtime/hash são identificados; três ciclos de 30 s fora de chamada e sessão de 10 minutos são executados sem microfone sintético ou `--mute-audio`.
 - [ ] Cada sentido tem 5/5 frases compreendidas no início e após parar a tela; mute/retorno, fonte visível, loopback desligado/ligado e saída/reentrada passam nos prazos especificados.
 - [ ] Cada etapa recebe resultado e observação. Ausência de recursos, falha ou etapa inconclusiva mantém T9 incompleta e MEDIA-33/34 sem Verified; não se substitui hardware por um smoke local.
-- [ ] Ruído não reproduzido é limitado à configuração ensaiada. Comparação com Discord só recebe rótulo observado se efetivamente realizada e versionada pelos operadores; não automatizar convites ou comunicação com terceiros.
+- [ ] Ruído não reproduzido é limitado à configuração ensaiada. Comparação com Discord só recebe rótulo observado se efetivamente realizada e versionada pelos operadores, seguindo o relatório e distinguindo X, desconectar voz e sair do app. Não automatizar convites ou comunicação com terceiros.
 - [ ] Physical aprovado com referência ao Build e total Node `50 + Δ` já registrado em T8. Não há mudança de código nesta tarefa; uma correção necessária volta ao proprietário e invalida a candidata anterior.
 
 **Tests**: manual/integration, todo o protocolo A7. Dois PCs e participantes disponíveis são pré-requisitos reais, ainda não demonstrados nesta entrega de planejamento.

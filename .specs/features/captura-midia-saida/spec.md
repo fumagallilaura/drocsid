@@ -38,10 +38,16 @@ O relatório BUILD aprovou 11 critérios BUILD, 50/50 testes Node e 12 gates em 
 | D3 | [Discord: Go Live and Screen Share](https://support.discord.com/hc/en-us/articles/360040816151-Go-Live-and-Screen-Share), documentação oficial consultada em 2026-10-25 | Descreve entrada em canal de voz, ação de compartilhar, escolha de janela ou tela e início explícito. | Documento de produto, não observação de runtime da instalação D1. |
 | D4 | [Discord: Video & Screenshare Updates](https://support.discord.com/hc/en-us/articles/360045784891-Video-Screenshare-Updates-Multistream-and-More), documentação oficial | Descreve a ação própria de parar transmissão dentro da chamada. | Não estabelece compensação por peer, prazos de liberação ou mecanismos internos. |
 | D5 | [Discord: Keybinds](https://support.discord.com/hc/en-us/articles/217083547-How-do-I-add-different-Keybinds), documentação oficial | Distingue mute de deafen; deafen também desativa o microfone. | Essa semântica não é automaticamente a do botão atual “Silenciar áudio” do Conversa. |
+| D6 | [Investigação do core desktop](discord-investigation.md), artefato instalado, preloads e extratos AST | Enumeração privilegiada de fontes, bridge e caminho de fechar/ocultar janela localizados. Registros completos e hashes no relatório. | A análise integral do bundle main expirou sem analisar JS; seus fluxos foram lidos por extração AST. Não há observação de chamada. |
+| D7 | [Ponte instalada de voz](../../../../discord-research/2026-10-25-media/voice-findings.md), REA e leitura estática | Fábricas por conexão e operações distintas para destruir conexão, limpar fonte e controlar soundshare. | Efeitos internos do addon não decompilado e vínculo ao renderer ativo permanecem desconhecidos. |
+| D8 | [Chamadores de mídia recuperados](discord-investigation.md), cache histórico, REA e AST | Caminhos separados para parar Go Live e destruir conexão; guardas concretas após destruição; fontes, eventos e alternativas Native/Browser localizados. | Cache parcial, sem versão ativa atribuída; guardas locais não certificam todas as corridas, liberação física ou preservação real da voz. |
+| D9 | [Fuses do executável](../../../../discord-research/2026-10-25-media/fuses-mcp.json), REA MCP | Leitura do executável identifica `EnableNodeCliInspectArguments` desabilitado. | Não demonstra estado de CDP do renderer nem comportamento de mídia em execução. |
 
 D1 e D2 referem-se ao mesmo ASAR, SHA-256 `0025c02c7241045a12464309604ec4d5b8ec7ed2ce43cce05d5dacb8f253f672`. D2 foi obtido pela CLI existente porque REA MCP não estava exposto; o diagnóstico indicou registro ausente no Codex. O MCP Agent Skills está operacional. A análise estática não abriu o Discord nem realizou chamadas. Fontes públicas atuais não comprovam comportamento daquela versão instalada.
 
-**Aplicação da referência:** D3 fundamenta a seleção explícita de fonte; D4 fundamenta a distinção entre parar tela e sair da chamada. R01–R03/R06 fundamentam as invariantes de segurança do Conversa. Nenhuma evidência permite atribuir ao Discord nossos prazos, IDs de tentativa, transações, WebRTC em malha ou estratégia de compensação. Não se exige copiar a arquitetura do Discord ou migrar para SFU/LiveKit.
+**Aplicação da referência:** D3 fundamenta a seleção explícita de fonte; D4 e os chamadores D8 fundamentam a distinção entre parar tela e sair da chamada. D8 também fornece exemplos concretos de guarda após destruição. R01–R03/R06 fundamentam as invariantes de segurança do Conversa. Nenhuma evidência permite atribuir ao Discord nossos prazos, IDs de tentativa, transações, WebRTC em malha ou estratégia de compensação. Não se exige copiar a arquitetura do Discord ou migrar para SFU/LiveKit.
+
+**Aprofundamento em 2026-10-25:** [relatório e rastreabilidade](discord-investigation.md) registram D6–D9, cobertura, três dúvidas abertas no REA e protocolo de observação. O REA foi usado também por conexão MCP stdio temporária, com registros exportados antes de encerrá-la; isso não afirma registro permanente no cliente. Os factories do cache não foram executados nem atribuídos à instalação por inferência. Nenhum AC ou decisão foi alterado.
 
 **Investigação ainda pendente:** observar no Discord Windows, com versão registrada, seleção/cancelamento, parada de tela, saída e indicadores de microfone; comparar com o Conversa usando os mesmos cenários. Até lá, chamar D3–D5 de comportamento documentado e os casos não observados de desconhecidos. Falhas sintéticas por peer do Conversa não são falhas reproduzidas no Discord.
 
@@ -245,7 +251,7 @@ Os IDs MEDIA detalham o recorte sem substituir os IDs STAB. As linhas de código
 | MEDIA-33 | US4 | STAB-01/31/63; A7 | R20/R25 | T9 | Tasks | In Tasks |
 | MEDIA-34 | US4 | STAB-63; A7 | R20 | T9 | Tasks | In Tasks |
 
-**Coverage:** 34 critérios únicos, 34 linhas, quatro histórias e 34/34 mapeados a tarefas. R01–R03/R06 são o núcleo; os demais achados entram apenas pelas fronteiras de suporte listadas. Esta spec não encerra nenhum dos 26 achados nem certifica os 68 STAB. D3/D4 são referências documentais para MEDIA-09/16; os demais contratos não são atribuídos ao Discord.
+**Coverage:** 34 critérios únicos, 34 linhas, quatro histórias e 34/34 mapeados a tarefas. R01–R03/R06 são o núcleo; os demais achados entram apenas pelas fronteiras de suporte listadas. Esta spec não encerra nenhum dos 26 achados nem certifica os 68 STAB. D3/D4 são referências documentais para MEDIA-09/16; D6–D9 acrescentam a pesquisa estática delimitada no relatório, sem certificar atendimento ou equivalência de execução.
 
 ## Success Criteria
 
@@ -253,7 +259,7 @@ Os IDs MEDIA detalham o recorte sem substituir os IDs STAB. As linhas de código
 - [ ] Testes de domínio inventariam todas as tracks e medem os prazos; integração observa callback/IPC, interface, peers e estado remoto nos caminhos críticos. Incluem confirmação antiga e heartbeat desalinhado.
 - [ ] O Verifier independente realiza o fechamento futuro conforme a skill, com falhas semânticas isoladas de captura obsoleta, compensação, saída com cota e prazos; nenhum teste é removido, ignorado ou enfraquecido para passar.
 - [ ] O ensaio físico de A7 passa com voz nos dois sentidos, tela, loopback solicitado e saídas verificadas. Etapa ausente/inconclusiva permanece visível e impede a aprovação física integral.
-- [ ] Afirmações sobre Discord indicam D1–D5 ou observação de runtime versionada. Desconhecidos e diferenças deliberadas, incluindo C2 e A5, permanecem identificados.
+- [ ] Afirmações sobre Discord indicam D1–D9, o tipo de evidência do relatório ou observação de runtime versionada. Desconhecidos e diferenças deliberadas, incluindo C2 e A5, permanecem identificados.
 - [ ] Publicação, causa universal do ruído, qualidade entre redes e os 68 STAB completos não são declarados aprovados por este recorte.
 
 ## Specification Validation
