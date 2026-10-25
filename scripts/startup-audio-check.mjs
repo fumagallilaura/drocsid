@@ -1,18 +1,14 @@
 import { _electron as electron } from 'playwright';
 import { expect } from '@playwright/test';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { readFlag, desktopTarget, createTestProfile, removeTestProfile, closeDesktop, closeResources } from './test-runtime.mjs';
 
-const build = JSON.parse(readFileSync('artifacts/build.json', 'utf8'));
 const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
-const fromSource = process.env.CONVERSA_CHECK_SOURCE === '1';
-const desktop = await electron.launch({
-  ...(fromSource ? {} : { executablePath: process.env.CONVERSA_TEST_EXECUTABLE || build.executable }),
-  args: [...(fromSource ? [resolve('.')] : []), `--user-data-dir=${resolve(tmpdir(), `conversa-startup-${Date.now()}`)}`],
-  env,
-});
+const target = desktopTarget(), checkMuted = readFlag('CONVERSA_CHECK_MUTED');
+const fromSource = target.args.length > 0, profile = createTestProfile();
+let desktop;
 try {
+  desktop = await electron.launch({ ...target, args: [...target.args, `--user-data-dir=${profile}`], env, timeout: 15000 });
   const page = await desktop.firstWindow();
   await expect(page.getByRole('heading', { name: 'Vamos nos encontrar?' })).toBeVisible();
   const samples = [];
@@ -22,10 +18,14 @@ try {
   }
   const dom = await page.evaluate(() => ({ audioElements: document.querySelectorAll('audio').length, videoElements: document.querySelectorAll('video').length, mediaElements: [...document.querySelectorAll('audio,video')].map(m => ({ paused: m.paused, tracks: m.srcObject?.getTracks().map(t => ({ kind: t.kind, readyState: t.readyState })) })) }));
   const report = { target: fromSource ? 'source' : 'packaged', samples, dom };
-  writeFileSync('artifacts/startup-audio.json', JSON.stringify(report, null, 2));
+  mkdirSync('test-results', { recursive: true });
+  writeFileSync('test-results/startup-audio.json', JSON.stringify(report, null, 2));
   expect(samples.flat().some(s => s.audible)).toBe(false);
   expect(dom.audioElements).toBe(0);
   expect(dom.videoElements).toBe(0);
-  if (process.env.CONVERSA_CHECK_MUTED) expect(samples.flat().every(s => s.muted)).toBe(true);
+  if (checkMuted) expect(samples.flat().every(s => s.muted)).toBe(true);
   console.log(JSON.stringify({ startupAudible: false, samples: samples.length, ...dom }));
-} finally { await desktop.close(); }
+} finally {
+  try { await closeResources([() => closeDesktop(desktop)]); }
+  finally { removeTestProfile(profile); }
+}

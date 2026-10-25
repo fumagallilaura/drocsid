@@ -67,9 +67,10 @@ O áudio do sistema pode incluir todos os aplicativos, inclusive a reprodução 
 npm.cmd test
 npm.cmd run build
 node scripts/desktop-smoke.mjs
+node scripts/desktop-profile-check.mjs
 ```
 
-Os testes do servidor verificam entrega e isolamento de mensagens, autorização de sinalização, persistência após reinício e capacidade das chamadas. O teste desktop abre duas janelas Electron, usa microfone sintético, verifica recepção de áudio RTP nos dois sentidos, compartilha uma janela do próprio aplicativo, verifica vídeo recebido e encerra a captura. A saída física de som dos testes fica desativada com `--mute-audio`; os pacotes de áudio continuam sendo verificados. O teste também verifica o bloqueio de reprodução na entrada e após sair da chamada, além dos controles de áudio durante a chamada. Capturas da interface ficam em `artifacts/`.
+Os testes Node verificam contrato, captura, sessão, mensagens, persistência, capacidade, encerramento, staging e limpeza do harness. O smoke desktop usa microfone sintético, verifica áudio RTP nos dois sentidos, vídeo recebido e parada de captura. A saída física fica desativada com `--mute-audio`; os pacotes continuam sendo verificados. O teste de perfil exercita preferências após mudança de porta, instância única, câmera/subframe negados e cancelamento da seleção. Capturas atuais ficam em `test-results/desktop/`; os registros em `artifacts/` são históricos.
 
 Para testar também um servidor separado e um terceiro participante entrando durante a transmissão:
 
@@ -78,16 +79,17 @@ $env:CONVERSA_TEST_EXTERNAL = '1'
 node scripts/desktop-smoke.mjs
 ```
 
-Para verificar a versão empacotada, defina `CONVERSA_TEST_EXECUTABLE` com o caminho `executable` registrado em `artifacts/build.json`. Os testes locais não verificam travessia de NAT entre redes diferentes, desempenho com seis transmissores nem captura do áudio real do sistema.
+Depois de `npm.cmd run dist:win`, execute `node scripts/check-package.mjs` para conferir imports, bundle, versão e SHA-256 do portátil. O manifesto atual fica em `test-results/build.json`; `artifacts/build.json` é histórico. Para testar o aplicativo empacotado, defina `CONVERSA_TEST_EXECUTABLE` com o campo `executable` desse manifesto e execute os scripts desktop. Isso testa o executável win-unpacked. Para abrir e verificar o wrapper portátil real, execute `node scripts/portable-startup-check.mjs`; ele usa perfil temporário, verifica entrada/envio e fecha o aplicativo. Os testes locais não verificam NAT entre redes distintas, desempenho com seis transmissores nem áudio real do sistema.
 
 Para verificar a abertura normal, sem microfone sintético nem flags para silenciar o processo inteiro:
 
 ```powershell
 $env:CONVERSA_CHECK_MUTED = '1'
+$env:CONVERSA_CHECK_SOURCE = '1'
 node scripts/startup-audio-check.mjs
 ```
 
-O diagnóstico observa todas as janelas e verifica que não há reprodução audível nem elementos de áudio/vídeo na entrada. O resultado fica em `artifacts/startup-audio.json`.
+O diagnóstico observa todas as janelas e verifica que não há reprodução audível nem elementos de áudio/vídeo na entrada. O resultado atual fica em `test-results/startup-audio.json`. O modo source não lê manifesto. Para diagnosticar o executável empacotado, use `CONVERSA_CHECK_SOURCE=0` e o manifesto atual ou `CONVERSA_TEST_EXECUTABLE`. As flags booleanas aceitam somente `0` e `1`. Esses ensaios não demonstram a causa do ruído físico relatado.
 
 ## O que falta para um produto completo
 

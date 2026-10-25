@@ -2,8 +2,8 @@ import { _electron as electron } from 'playwright';
 import { expect } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { tmpdir } from 'node:os';
 import { createService } from '../server/service.js';
+import { readFlag, createTestProfile, removeTestProfile, closeDesktop, closeResources } from './test-runtime.mjs';
 
 const output = resolve('test-results/desktop');
 mkdirSync(output, { recursive: true });
@@ -42,18 +42,22 @@ async function instrument(page) {
 const errors = [];
 const desktopEnv = { ...process.env };
 delete desktopEnv.ELECTRON_RUN_AS_NODE;
-const external = process.env.CONVERSA_TEST_EXTERNAL ? createService({ dbPath: ':memory:', iceServers: [] }) : null;
+const externalMode = readFlag('CONVERSA_TEST_EXTERNAL');
+const profile = createTestProfile();
+let external, desktop;
+try {
+external = externalMode ? createService({ dbPath: ':memory:', iceServers: [] }) : null;
 if (external) await new Promise(resolveListen => external.server.listen(0, '127.0.0.1', resolveListen));
 const externalUrl = external ? `http://127.0.0.1:${external.server.address().port}` : '';
-const desktop = await electron.launch({
+desktop = await electron.launch({
   ...(process.env.CONVERSA_TEST_EXECUTABLE ? { executablePath: resolve(process.env.CONVERSA_TEST_EXECUTABLE) } : {}),
-  args: [...(process.env.CONVERSA_TEST_EXECUTABLE ? [] : [resolve('.')]), `--user-data-dir=${resolve(tmpdir(), `conversa-smoke-${Date.now()}`)}`, '--use-fake-device-for-media-stream', '--mute-audio'],
+  args: [...(process.env.CONVERSA_TEST_EXECUTABLE ? [] : [resolve('.')]), `--user-data-dir=${profile}`, '--use-fake-device-for-media-stream', '--mute-audio'],
   env: desktopEnv,
   timeout: 30000,
 });
-try {
   const first = await desktop.firstWindow();
   const firstNativeWindow = await desktop.browserWindow(first);
+  const captureTitle = `Conversa smoke ${Date.now()}`;
   const firstMuted = () => firstNativeWindow.evaluate(window => window.webContents.isAudioMuted());
   first.on('pageerror', error => errors.push(error.message));
   await expect(first.getByRole('heading', { name: 'Vamos nos encontrar?' })).toBeVisible();
@@ -207,10 +211,11 @@ try {
   await first.getByRole('button', { name: 'Ativar microfone', exact: true }).click();
   await first.screenshot({ path: resolve(output, '02-chamada-grupo.png') });
 
+  await firstNativeWindow.evaluate((window, title) => window.setTitle(title), captureTitle);
   await first.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
   const picker = first.getByRole('dialog', { name: 'O que vamos compartilhar?' });
   await expect(picker).toBeVisible({ timeout: 15000 });
-  await picker.getByRole('button', { name: /Conversa/ }).first().click();
+  await picker.getByRole('button', { name: captureTitle, exact: true }).click();
   await expect(second.getByText('Tela de Ana', { exact: true })).toBeVisible({ timeout: 15000 });
   await expect(observer.locator('video')).toHaveCount(0);
   await expect(observer.getByText('AO VIVO', { exact: true })).toHaveCount(0);
@@ -247,4 +252,7 @@ try {
   await expect(second.getByText('1 pessoa na chamada', { exact: true })).toBeVisible();
   if (errors.length) throw new Error(`Renderer errors: ${errors.join('; ')}`);
   console.log('PASS: Windows desktop, two users, group chat, voice RTP, mute, screen video, stop capture, room creation and call cleanup.');
-} finally { await desktop.close(); await external?.close(); }
+} finally {
+  try { await closeResources([() => closeDesktop(desktop), () => external?.close()]); }
+  finally { removeTestProfile(profile); }
+}

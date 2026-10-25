@@ -82,6 +82,8 @@ O cliente compila, mas a suíte falha por módulo ausente e o pacote Windows omi
 
 1. [x] Concluir integração desktop: electron/main.js, preload.cjs, policy.js, integração mínima de erro em src/main.jsx e testes de política/perfil; gate Node 43/43, build, perfil e smoke aprovados. Adequação em evidence.md. Commit fix(desktop).
 2. [x] Corrigir entrada do empacotamento: package.json, prepare-electron.mjs, build-windows.mjs e testes de pacote; gate Node 44/44, build, portátil e inventário ASAR aprovados. Perfil aprovado também no executável win-unpacked. Commit fix(build).
-3. Fechar diagnóstico e teardown: scripts desktop/startup e helper/testes necessários; gate completo, diagnóstico sem manifesto e verificador independente. Commit fix(harness).
+3. [x] Fechar diagnóstico e teardown: scripts desktop/startup e helper/testes necessários; Node 50/50, build, perfil, smoke source/empacotado, diagnóstico sem manifesto e abertura do wrapper portátil aprovados. Commit fix(harness).
 
 Nenhuma extração ou dependência nova é necessária. Os passos são atômicos; cada um registra adequação em evidence.md antes do commit.
+
+O Verifier independente é o fechamento após o último commit; os passos concluídos acima não substituem seu relatório. Gates: npm test, npm run build, node scripts/check-package.mjs, node scripts/desktop-profile-check.mjs, node scripts/desktop-smoke.mjs (também com CONVERSA_TEST_EXTERNAL=1), node scripts/startup-audio-check.mjs (source sem manifesto) e node scripts/portable-startup-check.mjs. Scripts com captura de tela devem rodar sequencialmente.

@@ -1,12 +1,12 @@
 import { _electron as electron } from 'playwright';
 import { expect } from '@playwright/test';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { resolve, join, dirname } from 'node:path';
+import { writeFileSync, readFileSync } from 'node:fs';
+import { resolve, join } from 'node:path';
 import { createServer } from 'node:net';
 import { spawn } from 'node:child_process';
+import { createTestProfile, removeTestProfile, closeDesktop, closeResources } from './test-runtime.mjs';
 
-const profile = mkdtempSync(join(tmpdir(), 'conversa-profile-'));
+const profile = createTestProfile();
 const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
 const executablePath = process.env.CONVERSA_TEST_EXECUTABLE;
 const args = [...(executablePath ? [] : [resolve('.')]), `--user-data-dir=${profile}`, '--use-fake-device-for-media-stream', '--mute-audio'];
@@ -52,7 +52,7 @@ try {
   expect(code).toBe(1); expect(stderr).toContain('ALREADY_RUNNING');
   expect((await desktop.windows()).length).toBe(before.length);
   const oldPort = Number(new URL(page.url()).port);
-  await desktop.close(); desktop = null;
+  const previous = desktop; desktop = null; await closeDesktop(previous);
   blocker = createServer();
   await new Promise((resolveListen, reject) => { blocker.once('error', reject); blocker.listen(oldPort, '127.0.0.1', resolveListen); });
   desktop = await launch(); observeNative(desktop); page = await desktop.firstWindow();
@@ -89,8 +89,6 @@ try {
   expect(nativeErrors).toEqual([]);
   console.log('PASS: profile survives a forced port change; camera/subframe denied; duplicate host exits 1; system audio starts off.');
 } finally {
-  const results = await Promise.allSettled([desktop?.close(), blocker && new Promise((resolveClose, reject) => blocker.close(error => error ? reject(error) : resolveClose()))]);
-  if (dirname(profile) !== resolve(tmpdir()) || !profile.startsWith(join(tmpdir(), 'conversa-profile-'))) throw new Error('Unexpected profile cleanup target');
-  rmSync(profile, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
-  const failure = results.find(result => result.status === 'rejected'); if (failure) throw failure.reason;
+  try { await closeResources([() => closeDesktop(desktop), () => blocker && new Promise((resolveClose, reject) => blocker.close(error => error ? reject(error) : resolveClose()))]); }
+  finally { removeTestProfile(profile); }
 }
