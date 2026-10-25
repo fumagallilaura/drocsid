@@ -295,6 +295,8 @@ T8 -> T9
 
 **R2 (T2)**: testes do serviço recebem ack/error correlacionados e comparam tipo e estado, antes de aguardar presença; retorno de M4/M5 deixa de depender de timeout do helper. Full 78/78 + build + smoke source PASS. R1 em `01f3e1c`; [adequação e limite do sensor](execution.md#r2--respostas-terminais-discriminadas-pelo-valor). Reverify independente pendente.
 
+**R3 (T1/T3)**: conjunções de escuta sem mic com tela e sinalização antiga contra tentativas locais/remotas novas demonstradas por valores em Call/Session, sem mudança de produto. Full 80/80 + build + smoke source PASS. R2 em `ce848a7`; [adequação](execution.md#r3--escuta-com-tela-e-sinalização-antiga).
+
 #### T9: Registrar a aceitação física com dois PCs
 
 **What**: Produzir o relatório do protocolo físico A7 para o mesmo portátil aprovado em T8.

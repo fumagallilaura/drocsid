@@ -206,3 +206,13 @@ test('MEDIA-17/26: the current screen-stop deadline still terminates an unrespon
   f.clock.tick(7999);assert.equal(f.session.state.connected,true);
   f.clock.tick(1);await expired;assert.equal(f.session.state.connected,false);assert.equal(ws.readyState,3);
 });
+
+test('MEDIA-28: signaling addressed to a terminal local attempt never reaches the new Call owner',async()=>{
+  const f=fixture(),ws=await f.connect(),signals=[];f.session.onSignal=event=>signals.push(event);f.setBackend(()=>{});
+  const old=f.session.request({type:'call-join',callId:'old',generation:1,muted:true});ws.receive(callAck(ws.sent.at(-1)));await old;
+  const left=f.session.request({type:'call-leave',callId:'old',generation:1});ws.receive(callAck(ws.sent.at(-1)));await left;
+  const current=f.session.request({type:'call-join',callId:'new',generation:2,muted:false});ws.receive(callAck(ws.sent.at(-1)));await current;
+  const event={type:'signal',context:f.session.roomContext,from:'peer',fromCallId:'remote',signal:{candidate:{candidate:'candidate'}}};
+  ws.receive({...event,callId:'old'});assert.deepEqual(signals,[]);assert.equal(f.session.activeCallId,'new');assert.equal(f.session.state.connected,true);
+  ws.receive({...event,callId:'new'});assert.equal(signals.length,1);assert.equal(signals[0].callId,'new');f.session.disconnect();
+});

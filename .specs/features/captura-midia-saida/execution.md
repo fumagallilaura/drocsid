@@ -279,3 +279,15 @@ R1: `01f3e1c`. Retorno do sensor da rodada 1: M4 admitia join antigo e M5 recusa
 | Regressão STAB-28/29/30/68 | `tests/service.test.js:60`, `:62` mesma verificação de tipos, preservando os estados e repetição anteriores | PASS, sem certificação integral STAB |
 
 Reverso C/D: as novas comparações de tipo e o suporte a lista pertencem exclusivamente às linhas acima. Asserções de código, estado, prazo, capacidade e repetição permanecem intactas. **78/78 = 50 + 28**, zero falhas/skips/cancelled; Full PASS, logs `test-results/media-r2`. Adequação do autor R2: baseline aprovado; a segunda rodada independente deve confirmar seis mortes válidas, sem contar watchdog.
+
+## R3 — escuta com tela e sinalização antiga
+
+R2: `ce848a7`. As conjunções MEDIA-08/28 voltaram aos testes de Call/Session; não exigiram mudar produto. **80/80 = 50 + 30**, zero falhas/skips/cancelled; Full PASS, logs `test-results/media-r3`.
+
+| AC | Evidência e valor esperado | Adequação A/B |
+| --- | --- | --- |
+| MEDIA-08, tela depois de mic negado | `tests/rtc.test.js:199`: requests=1, microphone=null, admitted=true e mesmo callId depois de shareScreen; `:200` mic sender null e video sender igual à captura; `:201` vídeo live | PASS, sem aquisição automática nem nova admissão |
+| MEDIA-28, sinal da chamada remota anterior | `tests/rtc.test.js:290` identidade/queue do peer novo preservadas; `:291` remoteDescription indefinida, mic sender/track live e errors=[] | PASS, nenhum trabalho antigo enfileirado |
+| MEDIA-28, sinal dirigido à tentativa local anterior | `tests/session.test.js:216` signals=[] e activeCallId=new/conectado; `:217` sinal novo chega exatamente uma vez | PASS, guarda não equivale a ignorar todo sinal |
+
+Reverso C/D: a ampliação do teste de escuta e os dois testes novos correspondem exatamente às três linhas. Os resultados anteriores de mic, mute, envio/contexto e terminal permanecem. Guidelines/estilo e frameworks existentes mantidos. Adequação do autor R3: PASS; sem inferência física e com reverify independente ainda pendente.

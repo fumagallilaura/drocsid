@@ -195,6 +195,10 @@ test('MEDIA-02/05/08/30/31: allocated context covers all sends, listen-only need
   assert.equal(requests,1); assert.equal(f.call.peers.get('b').mic.sender.track,null);
   assert.equal(f.errors[0].code,'MEDIA_FAILED'); assert.equal(f.errors[0].phase,'microphone');
   assert.equal(f.errors[0].callId,callId); assert.equal(f.errors[0].generation,41);
+  await f.call.shareScreen(false,'720');
+  assert.equal(requests,1);assert.equal(f.call.microphone,null);assert.equal(f.call.admitted,true);assert.equal(f.call.callId,callId);
+  assert.equal(f.call.peers.get('b').mic.sender.track,null);assert.equal(f.call.peers.get('b').video.sender.track,f.call.display.getVideoTracks()[0]);
+  assert.equal(f.call.display.getVideoTracks()[0].readyState,'live');await f.call.stopScreen();
   await f.call.toggleMicrophone(); const mic=f.call.microphone;
   assert.equal(requests,2); assert.equal(f.call.peers.get('b').mic.sender.track,mic.getAudioTracks()[0]);
   await f.call.toggleMicrophone();
@@ -275,4 +279,14 @@ test('MEDIA-17/28: local stop settles within 1s without its ack and an old failu
   notice.reject(Object.assign(Error('old stop'),{code:'TIMEOUT'}));await drain();
   assert.equal(f.call.display,current);assert.equal(current.getVideoTracks()[0].readyState,'live');assert.equal(f.call.admitted,true);assert.deepEqual(f.errors,[]);
   assert.equal(f.call.peers.get('b').mic.sender.track,f.call.microphone.getAudioTracks()[0]);f.call.close();
+});
+
+test('MEDIA-28: signaling from a terminal remote call cannot mutate the new peer or its microphone',async()=>{
+  const f=fixture();await f.call.join();f.call.sync(members(f.call));await drain();const old=f.call.peers.get('b');
+  await f.call.leave();await f.call.join();
+  f.call.sync([{id:'a',inCall:true,callId:f.call.callId},{id:'b',inCall:true,callId:'new-remote'}]);await drain();
+  const current=f.call.peers.get('b'),queue=current.queue,mic=f.call.microphone;
+  await f.call.signal('b',{description:{type:'offer',sdp:'obsolete-offer'}},'remote-call');await drain();
+  assert.equal(old.pc.connectionState,'closed');assert.equal(f.call.peers.get('b'),current);assert.equal(current.queue,queue);
+  assert.equal(current.pc.remoteDescription,undefined);assert.equal(current.mic.sender.track,mic.getAudioTracks()[0]);assert.equal(mic.getAudioTracks()[0].readyState,'live');assert.deepEqual(f.errors,[]);f.call.close();
 });
