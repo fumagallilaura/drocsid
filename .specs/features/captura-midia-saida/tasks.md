@@ -25,7 +25,7 @@ O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem 
 | Session: pedidos e presença | unit/integration | Falha, timeout, ack incompatível, presença antiga e contrato com servidor real; não regredir rascunhos/mensagens existentes. | `tests/session.test.js` | `node --test tests/session.test.js` |
 | Protocolo | unit/integration | Valores/tipos/limites de todos os campos alterados; v1 incompatível após ativação, v2 válido; integração já ligada aos produtores/consumidores. Não é mera configuração sem comportamento. | `tests/protocol.test.js`, fixtures existentes | `node --test tests/protocol.test.js` e `npm.cmd test` |
 | Host/preload/política de captura | unit/e2e | Frame/origem/remetente negados, chave inválida/antiga, callback único, cancelamento antes/durante inventário, timeout, erro e novo documento. | `tests/desktop-policy.test.js`, `scripts/desktop-capture-check.mjs`, fixture Electron existente | `node --test tests/desktop-policy.test.js`; `node scripts/desktop-capture-check.mjs` |
-| App e integração de chamada | e2e | Controle por teclado, estado pendente/publicado, troca de sala, saída/reentrada, reprodução, erro tardio e diagnóstico sem conteúdo. | `scripts/desktop-smoke.mjs`, `scripts/desktop-profile-check.mjs` | `node scripts/desktop-smoke.mjs`; `node scripts/desktop-profile-check.mjs` |
+| App e integração de chamada | e2e | Controle por teclado, estado pendente/publicado, troca de sala, saída/reentrada, reprodução, erro tardio e diagnóstico sem conteúdo; inventário completo em reload/disconnect/unmount/close. | `scripts/desktop-smoke.mjs`, `scripts/desktop-profile-check.mjs`, `scripts/desktop-lifecycle-check.mjs` | `node scripts/desktop-smoke.mjs`; `node scripts/desktop-profile-check.mjs`; `node scripts/desktop-lifecycle-check.mjs` |
 | Pacote e regressão BUILD | integration/e2e | Bytes/hash atuais, source sem manifesto, win-unpacked e wrapper portátil real. Nenhum resultado histórico substitui execução da candidata. | checkers existentes em `scripts/` | `node scripts/check-package.mjs`; `node scripts/portable-startup-check.mjs` |
 | Áudio/dispositivo real | manual/integration | MEDIA-33/34 completos: três ciclos de 30 s, dois PCs, 10 min, 5/5 frases por sentido em duas medições e todas as etapas físicas. | `.specs/features/captura-midia-saida/uat.md` | Protocolo manual A7 da spec, sem flags de mídia sintética/silêncio. |
 | Banco/mensagens | regression | Nenhuma alteração funcional ou de schema; manter asserções existentes no gate global. | testes atuais de servidor/sessão | `npm.cmd test` |
@@ -40,7 +40,7 @@ Não criar testes para copiar a implementação. Reutilizar asserção atual que
 | --- | --- | --- |
 | Quick | Domínio/unit e regressão Node | `npm.cmd test` |
 | Full | Componente com integração/Electron | Quick + `npm.cmd run build` + `node scripts/desktop-smoke.mjs` em source/servidor interno; somar os checkers específicos do campo Gate da tarefa. |
-| Build | Fim das fases de código e candidata de aceitação | Full + perfil/captura/diagnóstico source, smoke externo, `npm.cmd run dist:win`, `node scripts/check-package.mjs`, perfil e smoke internos/externos no win-unpacked, diagnóstico empacotado e `node scripts/portable-startup-check.mjs`. |
+| Build | Fim das fases de código e candidata de aceitação | Full + perfil/captura/ciclo/diagnóstico source, smoke externo, `npm.cmd run dist:win`, `node scripts/check-package.mjs`, perfil, ciclo e smoke internos/externos no win-unpacked, diagnóstico empacotado e `node scripts/portable-startup-check.mjs`. Ciclo: `node scripts/desktop-lifecycle-check.mjs`; matriz atual de 16 gates. |
 | Physical | Aceitação de hardware | Build já aprovado para o mesmo hash + execução e registro integral de A7. Sem recurso/etapa executada não há PASS físico. |
 
 Baseline observada no relatório BUILD: **50 testes Node, zero falhas/skips**. Antes de Execute, conferir o disco e reexecutar Quick. Cada tarefa exige `N = 50 + Δ` testes, com Δ acumulado documentado e não negativo, zero falhas/skips/cancelled. Registrar o total real e a integridade dos 50 existentes. O número não substitui cobertura: teste novo só é exigido para resultado ainda não demonstrado, sem quota artificial de testes.
@@ -54,7 +54,7 @@ $env:CONVERSA_TEST_EXTERNAL = '0'
 node scripts/desktop-smoke.mjs
 ```
 
-Smoke externo: definir `CONVERSA_TEST_EXTERNAL=1` e repetir o mesmo script. Diagnóstico source: `CONVERSA_CHECK_SOURCE=1`, `CONVERSA_CHECK_MUTED=1` e `CONVERSA_BUILD_MANIFEST` apontando a um caminho temporário inexistente, depois `node scripts/startup-audio-check.mjs`. Esse diagnóstico atual observa seis segundos; não substitui MEDIA-33.
+Smoke externo: definir `CONVERSA_TEST_EXTERNAL=1` e repetir o mesmo script. Diagnóstico source: `CONVERSA_CHECK_SOURCE=1`, `CONVERSA_CHECK_MUTED=1` e `CONVERSA_BUILD_MANIFEST` apontando a um caminho temporário inexistente, depois `node scripts/startup-audio-check.mjs`. Após R5, esse diagnóstico observa seis segundos em nova janela e seis após reload, com contadores pré-App; não substitui MEDIA-33. Executar também `node scripts/desktop-lifecycle-check.mjs` nos dois targets. Sua fixture retém o Root somente na resposta HTTP para testar a API pública unmount; nenhuma mudança no fonte/ASAR. Áudio sintético completa o inventário quando loopback não retorna track; não certifica conteúdo físico.
 
 Após o novo build local, usar o manifesto atual:
 
@@ -298,6 +298,8 @@ T8 -> T9
 **R3 (T1/T3)**: conjunções de escuta sem mic com tela e sinalização antiga contra tentativas locais/remotas novas demonstradas por valores em Call/Session, sem mudança de produto. Full 80/80 + build + smoke source PASS. R2 em `ce848a7`; [adequação](execution.md#r3--escuta-com-tela-e-sinalização-antiga).
 
 **R4 (T5)**: cancelamento voluntário tem resultado inteiro CANCELLED/fase/requestId e chave atual assertados; avisos de áudio global visíveis nos dois pontos de consentimento. Full 80/80 + captura/perfil source PASS, sem mudança de produto. [Adequação](execution.md#r4--cancelamento-estruturado-e-consentimento-visível).
+
+**R5 (T7)**: contadores pré-App na abertura/reload, teclado nas duas pendências e prazos A1, eventos antigos com reprodução silenciada, tela nova antes de ack antigo e inventário completo nos quatro terminais. Full 80/80 + ciclo/startup/externo/captura/perfil source PASS; Build final deve incluir ciclo source e win-unpacked (16 gates). [Adequação](execution.md#r5--fronteiras-de-integração-e-ciclo-da-janela).
 
 #### T9: Registrar a aceitação física com dois PCs
 

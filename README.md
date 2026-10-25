@@ -73,6 +73,7 @@ npm.cmd run build
 node scripts/desktop-smoke.mjs
 node scripts/desktop-profile-check.mjs
 node scripts/desktop-capture-check.mjs
+node scripts/desktop-lifecycle-check.mjs
 ```
 
 Os testes Node verificam contrato, captura, sessão, mensagens, persistência, capacidade, encerramento, staging e limpeza do harness. O smoke desktop usa microfone sintético, verifica áudio RTP nos dois sentidos, vídeo recebido e parada de captura. A saída física fica desativada com `--mute-audio`; os pacotes continuam sendo verificados. O teste de perfil exercita preferências após mudança de porta, instância única, câmera/subframe negados e cancelamento da seleção. Capturas atuais ficam em `test-results/desktop/`; os registros em `artifacts/` são históricos.
