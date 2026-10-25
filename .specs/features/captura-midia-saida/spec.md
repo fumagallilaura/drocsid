@@ -42,14 +42,17 @@ O relatório BUILD aprovou 11 critérios BUILD, 50/50 testes Node e 12 gates em 
 | D7 | [Ponte instalada de voz](../../../../discord-research/2026-10-25-media/voice-findings.md), REA e leitura estática | Fábricas por conexão e operações distintas para destruir conexão, limpar fonte e controlar soundshare. | Efeitos internos do addon não decompilado e vínculo ao renderer ativo permanecem desconhecidos. |
 | D8 | [Chamadores de mídia recuperados](discord-investigation.md), cache histórico, REA e AST | Caminhos separados para parar Go Live e destruir conexão; guardas concretas após destruição; fontes, eventos e alternativas Native/Browser localizados. | Cache parcial, sem versão ativa atribuída; guardas locais não certificam todas as corridas, liberação física ou preservação real da voz. |
 | D9 | [Fuses do executável](../../../../discord-research/2026-10-25-media/fuses-mcp.json), REA MCP | Leitura do executável identifica `EnableNodeCliInspectArguments` desabilitado. | Não demonstra estado de CDP do renderer nem comportamento de mídia em execução. |
+| D10 | [Capacidade, permissões e seletor](../../../../discord-research/2026-10-25-media/capture-gates-evidence.json), REA MCP | Quinze novos extratos do renderer histórico; gate comum de vídeo, dispositivo, autorização e estados do picker. | Zero falhas de parse, grafo parcial e semântica unknown; valor efetivo e ligação ao runtime não demonstrados. |
+| D11 | [Handlers de indisponibilidade](../../../../discord-research/2026-10-25-media/unavailable-evidence.json), REA MCP | Três extratos distinguem indisponibilidade por configuração do produto e suporte. | Não identifica a causa na sessão observada nem cobre módulos lazy importados. |
+| U1 | [Interface/processo do laboratório](../../../../discord-research/2026-10-25-runtime/ui-observations.json), Orca/Windows | Criação autorizada, canal privado, voz conectada, câmera/tela indisponíveis e saída confirmada na UI. | Registro externo ao REA; sem seletor, transmissão, receptor ou prova física de captura/liberação. |
 
-D1 e D2 referem-se ao mesmo ASAR, SHA-256 `0025c02c7241045a12464309604ec4d5b8ec7ed2ce43cce05d5dacb8f253f672`. D2 foi obtido pela CLI existente porque REA MCP não estava exposto; o diagnóstico indicou registro ausente no Codex. O MCP Agent Skills está operacional. A análise estática não abriu o Discord nem realizou chamadas. Fontes públicas atuais não comprovam comportamento daquela versão instalada.
+D1 e D2 referem-se ao mesmo ASAR, SHA-256 `0025c02c7241045a12464309604ec4d5b8ec7ed2ce43cce05d5dacb8f253f672`. D2 foi obtido pela CLI existente porque REA MCP não estava exposto; o diagnóstico indicou registro ausente no Codex. O MCP Agent Skills está operacional. As análises estáticas não executaram o Discord; U1 é uma observação posterior separada. Fontes públicas atuais não comprovam comportamento daquela versão instalada.
 
 **Aplicação da referência:** D3 fundamenta a seleção explícita de fonte; D4 e os chamadores D8 fundamentam a distinção entre parar tela e sair da chamada. D8 também fornece exemplos concretos de guarda após destruição. R01–R03/R06 fundamentam as invariantes de segurança do Conversa. Nenhuma evidência permite atribuir ao Discord nossos prazos, IDs de tentativa, transações, WebRTC em malha ou estratégia de compensação. Não se exige copiar a arquitetura do Discord ou migrar para SFU/LiveKit.
 
-**Aprofundamento em 2026-10-25:** [relatório e rastreabilidade](discord-investigation.md) registram D6–D9, cobertura, três dúvidas abertas no REA e protocolo de observação. O REA foi usado também por conexão MCP stdio temporária, com registros exportados antes de encerrá-la; isso não afirma registro permanente no cliente. Os factories do cache não foram executados nem atribuídos à instalação por inferência. Nenhum AC ou decisão foi alterado.
+**Aprofundamento em 2026-10-25:** [relatório e rastreabilidade](discord-investigation.md) registram D6–D11, U1, cobertura, quatro dúvidas abertas no REA e protocolo de observação. O REA foi usado também por conexão MCP stdio temporária, com registros exportados antes de encerrá-la; isso não afirma registro permanente no cliente. Os factories do cache não foram executados nem atribuídos à instalação por inferência. Os 34 ACs e as decisões de produto permanecem preservados.
 
-**Investigação ainda pendente:** observar no Discord Windows, com versão registrada, seleção/cancelamento, parada de tela, saída e indicadores de microfone; comparar com o Conversa usando os mesmos cenários. Até lá, chamar D3–D5 de comportamento documentado e os casos não observados de desconhecidos. Falhas sintéticas por peer do Conversa não são falhas reproduzidas no Discord.
+**Investigação ainda pendente:** observar seleção/cancelamento, parada de tela, saída durante captura e dispositivos no Discord Windows, além de correlacionar o renderer ativo. U1 confirma apenas entrada/saída na UI; seus controles indisponíveis limitaram o ensaio. A causa desse estado continua hipótese. D3–D5 são comportamento documentado; falhas sintéticas por peer do Conversa não são falhas reproduzidas no Discord.
 
 ## Confirmed Decisions
 
@@ -59,6 +62,8 @@ D1 e D2 referem-se ao mesmo ASAR, SHA-256 `0025c02c7241045a12464309604ec4d5b8ec7
 | C2 | Trocar de sala de texto encerra a chamada, inclusive uma entrada pendente. | Resposta anterior do usuário; a referência Discord não revoga essa decisão. |
 | C3 | Produzir a spec de captura de mídia e saída da chamada considerando a engenharia reversa do Discord. | Pedido de 2026-10-25. Somente Specify nesta entrega. |
 | C4 | Gerar design e tarefas para este recorte, sem iniciar implementação. | Pedido posterior de 2026-10-25: “Gere o design e as tasks”. Documentos técnicos apresentados juntos como Draft. |
+| C5 | O assistente escolhe o ambiente privado de investigação no Discord. | “não sei, tome a decisão”, seguido de “Autorizar a criação e o aceite”. Conversa Lab / Teste de mídia criados sem convites; observação e limpeza em U1. |
+| C6 | Concluir a investigação pelo código e atualizar design/tasks, sem iniciar implementação. | Resposta explícita nesta retomada: “Concluir investigação e atualizar design/tasks”. Reaproveitar o compartilhamento existente; câmera permanece fora deste recorte. |
 
 ## Out of Scope
 
@@ -251,7 +256,7 @@ Os IDs MEDIA detalham o recorte sem substituir os IDs STAB. As linhas de código
 | MEDIA-33 | US4 | STAB-01/31/63; A7 | R20/R25 | T9 | Tasks | In Tasks |
 | MEDIA-34 | US4 | STAB-63; A7 | R20 | T9 | Tasks | In Tasks |
 
-**Coverage:** 34 critérios únicos, 34 linhas, quatro histórias e 34/34 mapeados a tarefas. R01–R03/R06 são o núcleo; os demais achados entram apenas pelas fronteiras de suporte listadas. Esta spec não encerra nenhum dos 26 achados nem certifica os 68 STAB. D3/D4 são referências documentais para MEDIA-09/16; D6–D9 acrescentam a pesquisa estática delimitada no relatório, sem certificar atendimento ou equivalência de execução.
+**Coverage:** 34 critérios únicos, 34 linhas, quatro histórias e 34/34 mapeados a tarefas. R01–R03/R06 são o núcleo; os demais achados entram apenas pelas fronteiras de suporte listadas. Esta spec não encerra nenhum dos 26 achados nem certifica os 68 STAB. D3/D4 são referências documentais para MEDIA-09/16; D6–D11 e U1 acrescentam a pesquisa delimitada no relatório, sem certificar atendimento ou equivalência de execução.
 
 ## Success Criteria
 
@@ -259,7 +264,7 @@ Os IDs MEDIA detalham o recorte sem substituir os IDs STAB. As linhas de código
 - [ ] Testes de domínio inventariam todas as tracks e medem os prazos; integração observa callback/IPC, interface, peers e estado remoto nos caminhos críticos. Incluem confirmação antiga e heartbeat desalinhado.
 - [ ] O Verifier independente realiza o fechamento futuro conforme a skill, com falhas semânticas isoladas de captura obsoleta, compensação, saída com cota e prazos; nenhum teste é removido, ignorado ou enfraquecido para passar.
 - [ ] O ensaio físico de A7 passa com voz nos dois sentidos, tela, loopback solicitado e saídas verificadas. Etapa ausente/inconclusiva permanece visível e impede a aprovação física integral.
-- [ ] Afirmações sobre Discord indicam D1–D9, o tipo de evidência do relatório ou observação de runtime versionada. Desconhecidos e diferenças deliberadas, incluindo C2 e A5, permanecem identificados.
+- [ ] Afirmações sobre Discord indicam D1–D11, U1 e o tipo de evidência do relatório. Desconhecidos e diferenças deliberadas, incluindo C2 e A5, permanecem identificados.
 - [ ] Publicação, causa universal do ruído, qualidade entre redes e os 68 STAB completos não são declarados aprovados por este recorte.
 
 ## Specification Validation
@@ -271,3 +276,5 @@ O fechamento verifica EARS, IDs, rastreabilidade, premissas, nove dimensões, li
 **Fechamento Specify em 2026-10-25:** `validate_spec.py --strict` PASS, exit 0, zero erros e zero avisos. Naquele fechamento: 34 ACs únicos, 34 linhas Specify/Pending, oito links locais existentes e hash do ASAR igual ao de D1/D2. Nenhum achado foi declarado corrigido.
 
 **Atualização de planejamento em 2026-10-25:** design e tarefas em Draft, com alternativas, recomendação, contratos, riscos e mitigação. Nove tarefas em três fases, cobertura/matriz/gates e validação de granularidade, dependências e testes. Os textos dos 34 ACs são preservados; somente fase, status e mapeamento documental avançam. Nenhuma escolha do design é promovida a Decisions ou a aprovação de implementação.
+
+**Retomada da investigação em 2026-10-25:** MCP Agent Skills catálogo `0.17.13`, scripts preparados e verificados na revisão `7bed1026351b`. D10/D11 ampliam a análise estática; U1 confirma somente estados de interface/processo. A atualização reforça o reaproveitamento da tela implementada e preserva a negação de câmera de MEDIA-11.

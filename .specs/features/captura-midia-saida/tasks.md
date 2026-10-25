@@ -10,6 +10,8 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 
 O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem A recomendada; a geração do documento não marca essa arquitetura ou Execute como aprovados. Os padrões A1–A8 permanecem explícitos na spec.
 
+**Atualização de investigação:** C6 confirma somente investigação e atualização documental. O compartilhamento de tela já existe; T4/T5/T7 reforçam seus proprietários e contratos. D10/D11 distinguem disponibilidade, consentimento, seleção e captura no código do Discord. U1 registra entrada/saída na UI, com câmera/tela indisponíveis, sem comprovar captura. Não adicionar câmera, gate de produto ou uma segunda implementação de compartilhamento por causa dessa limitação de referência.
+
 ## Test Coverage Matrix
 
 > Gerada do código, documentação e spec. Guidelines: README, seção Verificação, e scripts de package.json. Não há AGENTS/CONTRIBUTING, configuração de cobertura, lint, format, typecheck ou workflow CI encontrados no projeto/ascendentes consultados. Aplicam-se os padrões fortes da skill. Amostras: protocol, rtc, service, server, session, desktop-policy e harness em tests; desktop-capture-check e desktop-smoke em scripts. Confirmar a matriz ao aprovar Execute.
@@ -163,7 +165,7 @@ T8 -> T9
 **What**: Entregar uma operação de tela com estado, inventário de peers afetados e compensação que resista a resolução tardia.
 **Where**: `src/rtc.js`
 **Depends on**: T3
-**Reuses**: shareScreen, stopScreen, screenGeneration, filas/slots de peer e deadline. A dependência captureDisplay usa o padrão navegador até o adaptador nativo de T5.
+**Reuses**: shareScreen, stopScreen, screenGeneration, filas/slots de peer e deadline já implementados. A dependência captureDisplay usa o padrão navegador até o adaptador nativo de T5; não substitui Electron/WebRTC por um engine reconstruído do Discord.
 **Requirement**: MEDIA-02, MEDIA-03, MEDIA-09 (controlador), MEDIA-10, MEDIA-14, MEDIA-15, MEDIA-16, MEDIA-17, MEDIA-18, MEDIA-19, MEDIA-20, MEDIA-21, MEDIA-23, MEDIA-28, MEDIA-31, MEDIA-32.
 **Tools**: MCP Agent Skills; skill `tlc-spec-driven`; shell/Node e Playwright existentes.
 
@@ -183,7 +185,7 @@ T8 -> T9
 **What**: Entregar um único componente de seleção Electron, do registro da chave no bridge ao callback nativo, com seu adaptador mínimo no App.
 **Where**: `electron/main.js`
 **Depends on**: T4
-**Reuses**: settleCapture, pending, trustedIpc, allowDisplayCapture, modal, eventos/fixture existentes e API de dependência de T4.
+**Reuses**: settleCapture, pending, trustedIpc, allowDisplayCapture, desktopCapturer, modal, eventos/fixture existentes e API de dependência de T4. A enumeração e a seleção já existem; acrescentar somente correlação e resultados ainda sem garantia.
 **Requirement**: MEDIA-09, MEDIA-10, MEDIA-11, MEDIA-12, MEDIA-13, MEDIA-23 (seletor), MEDIA-28, MEDIA-31, MEDIA-32.
 **Tools**: MCP Agent Skills; skill `tlc-spec-driven`; shell/Node/Playwright; documentação primária Electron quando necessário.
 
@@ -254,7 +256,7 @@ T8 -> T9
 **What**: Produzir um relatório único de resultados e limites por MEDIA automatizável, para a candidata source e Windows do mesmo commit.
 **Where**: `.specs/features/captura-midia-saida/evidence.md`
 **Depends on**: T7
-**Reuses**: Testes e checkers ampliados junto de seus proprietários em T1–T7, manifesto atual e evidência D1–D9 no [relatório de investigação](discord-investigation.md), com seus registros e hashes.
+**Reuses**: Testes e checkers ampliados junto de seus proprietários em T1–T7, manifesto atual e evidências D1–D11/U1 no [relatório de investigação](discord-investigation.md), com seus registros e hashes.
 **Requirement**: MEDIA-01–32; critérios de sucesso e fronteiras de evidência de MEDIA-33/34.
 **Tools**: MCP Agent Skills; skill `tlc-spec-driven`; shell/Node/Playwright; REA somente se uma conclusão sobre o artefato Discord exigir inspeção adicional autorizada.
 
@@ -262,7 +264,7 @@ T8 -> T9
 
 - [ ] Build completo passa para a candidata final; versão, git SHA, SHA-256, executável e portátil real são identificados e correspondem ao disco.
 - [ ] Cada MEDIA-01–32 tem arquivo:linha, asserção de valor, resultado e limite de evidência. Nenhum caso é aprovado só pelo nome do teste ou pela sondagem histórica.
-- [ ] D1/D2 continuam estáticos/parciais, D3–D5 documentais e D6–D9 com a autoridade/cobertura do relatório. Renderer do cache não é atribuído à versão ativa e Browser não é presumido como engine Windows. As dúvidas de runtime permanecem abertas sem observação versionada; registrar diferenças deliberadas C2/A5.
+- [ ] D1/D2 continuam estáticos/parciais, D3–D5 documentais e D6–D11 com a autoridade/cobertura do relatório. U1 vale somente para UI/processo; controles indisponíveis não certificam captura ou sua causa. Renderer do cache não é atribuído à versão ativa e Browser não é presumido como engine Windows. As quatro dúvidas de runtime permanecem abertas sem prova correspondente; registrar diferenças deliberadas C2/A5.
 - [ ] O relatório mantém MEDIA-33/34 pendentes de T9. Total Node `50 + Δ`, zero falhas/skips/cancelled e integridade do histórico de asserções são registrados.
 
 **Tests**: integration/e2e já co-localizados nas tarefas de código, reexecutados na candidata final. Esta tarefa consolida a aceitação e não recebe testes que deveriam ter acompanhado uma correção anterior. Gap encontrado volta à tarefa proprietária, com gate e commit próprios antes de repetir a aceitação.
