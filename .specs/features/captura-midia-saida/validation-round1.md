@@ -1,0 +1,149 @@
+# Captura de mídia e saída da chamada: FAIL
+
+## Validation: FAIL
+
+**Verdict: FAIL.** Rodada independente 1. O Build automatizado passou, mas MEDIA-17 tem falha funcional reproduzida. O sensor não obteve detecção por asserção em duas das seis categorias. Oito outros ACs têm conjunções sem evidência completa. MEDIA-33/34 e T9 não foram executados e impedem o fechamento global.
+
+**Data:** 2026-10-25. **Spec:** `.specs/features/captura-midia-saida/spec.md`. **Diff range:** `38062db..f44d268`. **Candidata auditada:** `f44d268`, código de produto `018019c`. **Verifier:** subagente independente, autor diferente do verificador. Esta é a fotografia dessa candidata; correções posteriores do autor exigem outra rodada.
+
+MCP Agent Skills reconfirmado nesta rodada: catálogo `0.17.13`, `tlc-spec-driven`, revisão `7bed1026351b`, scripts preparados com checksum. Spec, tasks, design e referências validate/sub-agents/coding-principles/lessons foram lidos integralmente. Evidence/execution do autor não foram usados como prova presumida. Nenhum status de spec/tasks foi alterado pelo Verifier.
+
+## Task Completion
+
+| Tarefa | Resultado da auditoria |
+| --- | --- |
+| T1–T6 | Commits presentes e gates atuais aprovados; lacunas de evidência abaixo voltam ao proprietário. |
+| T7 | Falha MEDIA-17 confirmada na integração; demais conjunções incompletas indicadas abaixo. |
+| T8 | Build reproduzido 14/14; a alegação de cobertura integral MEDIA-01–32 não é sustentada nesta rodada. |
+| T9 | Não executada. Sem dois PCs/operadores/dispositivos confirmados. Nenhum PASS físico. |
+
+## Spec-Anchored Acceptance Criteria
+
+Todas as referências de código/testes desta tabela se referem a `f44d268`, mesmo que o autor avance a árvore após esta rodada. `ended(s)` significa exatamente `assert.ok(s.getTracks().every(t => t.readyState==='ended'))`, em `tests/rtc.test.js:41`. Os clocks dos testes são controlados; A1=1.000 ms, A2=8.000/60.000 ms e A4=1.000/60.000 ms. PASS abaixo é evidência automatizada do AC, sem aprovação física ou atualização para Verified.
+
+| AC / condição | Valor esperado da spec | `file:line` e expressão exata conferida | Resultado |
+| --- | --- | --- | --- |
+| MEDIA-01: abrir/recarregar fora de chamada | Zero aquisição de mic/tela/áudio do sistema | `tests/rtc.test.js:46`: `assert.equal(requests,0)` cobre mic do controlador; `scripts/startup-audio-check.mjs:24`: `expect(dom.audioElements).toBe(0)` e `:25`: `expect(dom.videoElements).toBe(0)` cobrem DOM, não chamadas de aquisição. Não há contador de todas as APIs instalado antes do App na abertura/reload. | GAP de conjunção; evidência parcial não conta como AC completo. |
+| MEDIA-02: aquisição concorrente do mesmo tipo/tentativa | Uma aquisição ou reutilização/recusa | `tests/rtc.test.js:57`: `assert.equal(requests,1)`; `:76`: `assert.equal(requests,2)` após negação inicial + duas ativações simultâneas; `:246`: `assert.equal(f.call.shareScreen(true,'1080'),old);assert.equal(requests,1)`. | PASS |
+| MEDIA-03: aquisição depois do terminal | Todas as tracks antigas ended, tentativa nova íntegra, em A1 da resolução | `tests/rtc.test.js:159` exercita ambas as ordens; `:161`: `ended(old); assert.equal(f.call.microphone,current); assert.equal(f.call.admitted,true)`; `:162`: `assert.ok(current.getTracks().every(t=>t.readyState==='live'))`. O inventário antigo tem duas tracks. `:251` faz `ended(late)` de vídeo+áudio. | PASS |
+| MEDIA-04: controlador definitivamente fechado | Nenhuma API invocada | `tests/rtc.test.js:183`: `await assert.rejects(()=>f.call.join()); await f.call.toggleMicrophone(); await f.call.shareScreen(false,'720')`; `:184`: `assert.equal(f.captures.length,0)`; `:51`: `assert.equal(requests,2)` após join recusado. | PASS |
+| MEDIA-05: antes do ack vigente | Sem publicação provisória | `tests/rtc.test.js:138`: `assert.equal(f.call.admitted,false); assert.equal(f.call.peers.size,0)` com ack retido; `tests/session.test.js:134`: `assert.rejects(joined,e=>e.code==='INVALID_EVENT')` para ação/callId/geração incompatíveis. | PASS |
+| MEDIA-06: recusa/timeout de admissão | Terminal + todas as tracks ended, independente do idioma; deadline real 8s | `tests/rtc.test.js:65` cobre CALL_FULL/RATE_LIMITED/TIMEOUT/INVALID_EVENT com texto traduzido; `:68`: `ended(f.captures[0]); assert.equal(f.call.active,false)`; `:170`: `assert.rejects(joined,e=>e.code==='TIMEOUT' && e.phase==='call-join' && e.callId===events[0].callId && e.generation===events[0].generation)`; `:172` ainda pending/live em 7.999 ms, `:174` ended/inativo em 8.000 ms. | PASS |
+| MEDIA-07: permissão ou admissão pendente | Cancelamento por teclado torna terminal em A1 sem esperar a permissão | `scripts/desktop-smoke.mjs:175` usa focus + `keyboard.press('Enter')` durante permissão; `:177`: `await expect.poll(() => first.evaluate(() => window.__lateStream.getTracks().every(track => track.readyState === 'ended'))).toBe(true)`. Não há teclado durante ack de admissão retido, nem asserção explícita de A1 nesse fluxo. | GAP de conjunção/prazo |
+| MEDIA-08: mic negado/indisponível | Escuta + tela após admissão; zero nova solicitação automática | `tests/rtc.test.js:193`: `assert.equal(f.call.admitted,true); assert.equal(f.call.microphone,null)`; `:195`: `assert.equal(requests,1); assert.equal(f.call.peers.get('b').mic.sender.track,null)`. A tela não é exercitada depois da negação; `:198` ativa mic explicitamente antes de outros usos. | GAP de conjunção |
+| MEDIA-09: cada compartilhamento | Seleção explícita da lista atual, sem seleção antiga | `scripts/desktop-capture-check.mjs:102`: `expect((await snapshot()).requests[5].calls).toBe(0)` após chave alheia; `:105`: `expect(await desktop.evaluate(() => globalThis.__captureDetails.outcomes.at(-1))).toMatchObject({outcome:'failed',code:'INVALID_EVENT',phase:'capture-selection'})` para fonte não inventariada; `:138` escolhe botão da fonte atual. `tests/rtc.test.js:252`: `assert.equal(f.call.display,current)` após fonte antiga resolver. | PASS |
+| MEDIA-10: obter mídia de tela | Áudio só por consentimento atual/default off e aviso de abrangência global | `scripts/desktop-capture-check.mjs:140`: `expect(...grants.at(-1)).toEqual({audioRequested:audio,audio:audio?'loopback':null,video:true})` para false/true; `tests/rtc.test.js:249`: áudio não solicitado ended/sender null; perfil verifica checkbox off. Aviso existe em `src/main.jsx:231`/`:232`, mas nenhuma asserção da sua apresentação foi encontrada. | GAP de conjunção; sem aprovação de loopback físico. |
+| MEDIA-11: câmera/frame/origem/IPC alheios | Negação | `tests/desktop-policy.test.js:13`: `assert.equal(allowPermissionRequest(contents,'media',{...details,mediaTypes:types},origin),false)` para vídeo/audio+vídeo; `:16`/`:17` frame/origem; `:25`: `assert.equal(trustedIpc({sender:contents,senderFrame:{url:origin+'/'}},origin),false)`; `:32`/`:34` negam frame/origem de display; `scripts/desktop-profile-check.mjs:31`/`:39`: `.toBe('NotAllowedError')` para câmera e subframe real. | PASS |
+| MEDIA-12: escolha/cancelamento/timeout/reload/close | Callback exatamente uma vez, fonte válida ou null | `scripts/desktop-capture-check.mjs:38`: `expect(await snapshot()).toEqual({ requests: [{ calls: 1, results: ['cancelled'], finished: true }], deliveries: 0 })` após reload; `:49` cobre close; `:58` Escape; `:89` ainda calls=0 em 59.999 ms, `:91` calls=1 em 60.000 ms; `:144`: `expect((await snapshot()).requests.every(request => request.calls === 1)).toBe(true)`. | PASS |
+| MEDIA-13: cancelamento/falha/timeout/fonte inválida | Operação terminal sem conservar tela/áudio | `scripts/desktop-capture-check.mjs:93`: `expect(await desktop.evaluate(() => globalThis.__captureDetails.outcomes.at(-1))).toMatchObject({outcome:'failed',code:'TIMEOUT',phase:'capture-selection'})`; `:105`: INVALID_EVENT; `:129`: MEDIA_FAILED/capture-inventory; callbacks cancelados são null, com guarda liberada (`:92`, `:104`). `tests/rtc.test.js:85`: `ended(late); assert.equal(f.call.display,null)` cobre aquisição tardia de vídeo+áudio. | PASS |
+| MEDIA-14: falha/publicação >8s | Abortar captura inteira e ended em A1 | `tests/rtc.test.js:217`: `ended(f.captures[1]);assert.equal(f.states.at(-1).sharingState,'idle')`; `:228` publishing em 7.999 ms; `:229` após +1 ms `ended(f.captures[1])`/idle; `:227` exige TIMEOUT/screen-publication. | PASS |
+| MEDIA-15: publicação parcial | Nenhum envio residual, inclusive remoção recusada/sender tardio | `tests/rtc.test.js:219`: `for(const entry of [healthy,slow,bad,late])assert.ok(entry.pc.connectionState==='closed'||!f.captures[1].getTracks().includes(entry.video.sender.track))` depois de +1.000 ms e resolução tardia; `:217` ended em vídeo+áudio; `:103` peer de remoção rejeitada closed. | PASS |
+| MEDIA-16: parar/onended | Todas as tracks de tela/áudio ended em A1 | `tests/rtc.test.js:102` invoca onended; `:103`: `ended(display); assert.equal(f.call.display,null)`; `:237`: `const first=f.call.stopScreen();ended(display)` antes da espera. | PASS |
+| MEDIA-17: término/repetição/falha | Sem compartilhamento e controles utilizáveis em A1 | O domínio verifica idle (`tests/rtc.test.js:262`) e deadline original (`:238`). Probe independente sobre o smoke, com ack retido por 1.100 ms: `expect(probeState.sharingButtonDisabled).toBe(false)` falhou com true; `allDisplayEnded=true`, texto `Parando…`. Causa em `src/main.jsx:192`/`:193`/`:224` e `src/rtc.js:277`. | FAIL funcional confirmado |
+| MEDIA-18: transporte saudável | Confirmação sem compartilhamento em A2 | `tests/service.test.js:179`: `assert.equal(stopped.sharing,false); assert.equal(stopped.inCall,true)`; `:183`: presença sem sharing e `assert.ok(performance.now()-started<1000)` inclui a parada/saída controladas. Integração `scripts/desktop-smoke.mjs:326`: `await expect(second.getByText('Tela de Ana', { exact: true })).toHaveCount(0)` após liberar ack. O timeout de publicação de `rtc:228`/`:229` não é confundido com teste de parada remota. | PASS automatizado no transporte controlado |
+| MEDIA-19: falha ao iniciar/parar | Voz/admissão/mute anteriores preservados nos peers saudáveis | `tests/rtc.test.js:220`: `assert.equal(healthy.mic.sender.track,f.call.microphone.getAudioTracks()[0]);assert.equal(healthy.pc.connectionState,'new')`; `:221` admitted/live; `:239` admitted/muted=true; `:240` track de mic enabled=false após parar com sender bloqueado. | PASS |
+| MEDIA-20: seleção/publicação pendente | Estado pendente, sem AO VIVO ou mídia pronta só por presença | `tests/rtc.test.js:214`: display null/sharingState publishing; `scripts/desktop-smoke.mjs:288` exige Escolhendo; `:292` Publicando e `await expect(first.getByText('AO VIVO', { exact: true })).toHaveCount(0)`; `:295`/`:296` observador fora de chamada tem zero vídeo/AO VIVO. | PASS |
+| MEDIA-21: sair/cancelar | Todas as capturas ended e peers fechados em A1, sem esperar rede | `tests/rtc.test.js:140`: `ended(oldMic); assert.equal(f.call.active,false)` com departure pendente; `:203`: `ended(mic); assert.equal(f.call.peers.size,0)`; `:253`: `f.call.close();ended(current)` de tela. `scripts/desktop-smoke.mjs:338` exige todas as capturas ended e todos PCs closed antes do ack de nova sala. | PASS |
+| MEDIA-22: troca de sala solicitada | Chamada anterior terminal antes da confirmação nova | `scripts/desktop-smoke.mjs:335` segura confirmação; `:336` mantém heading geral; `:337`: `expect(await firstMuted()).toBe(true)`; `:338`: `expect(await first.evaluate(() => window.__testCaptures.every(stream=>stream.getTracks().every(track=>track.readyState==='ended')) && window.__testConnections.every(pc=>pc.connectionState==='closed'))).toBe(true)` antes de `__releaseNewRoom()`. | PASS |
+| MEDIA-23: desconectar/unmount/reload/close | Todas capturas e seleções terminalizadas em A1 | `scripts/desktop-smoke.mjs:347`/`:354` exigem stop do mic por id em reload/disconnect; capture checker `:38`/`:49` exige callback único em reload/close com inventário pendente. Falta inventário completo adquirido de mic+tela+áudio no fechamento da janela e teardown do componente. | GAP de conjunção |
+| MEDIA-24: saída repetida/antiga | Ack terminal correlacionado sem tocar nova tentativa | `tests/service.test.js:144`: deepEqual `{callId:'old',generation:1,inCall:false,muted:true,sharing:false}`; `:154` saída antiga generation=1/inCall=false; `:160`: tentativa nova `inCall=true,sharing=true,generation=2`; `tests/session.test.js:160` preserva activeCallId da segunda Call. | PASS de resultado; sensor M4 sem morte válida. |
+| MEDIA-25: cotas esgotadas | Stop/leave válidos processados | `tests/service.test.js:174` satura message/media/signal e observa RATE_LIMITED; `:179`: stopped.sharing=false/inCall=true; `:181`: left.inCall=false/sharing=false/generation=1. | PASS de resultado; sensor M5 sem morte válida. |
+| MEDIA-26: saída recebida | Vaga livre e presença sem call/share em <=1s, ack correlacionado | `tests/service.test.js:181`: false/false/generation=1; `:183`: presença sharing=false e `performance.now()-started<1000`; `:186`: `assert.equal(replacement.members.filter(m=>m.inCall).length,6)` após substituição; `:173` recusa sétimo com CALL_FULL. Correlação de requestId no helper `tests/helpers/client.js:35`. | PASS |
+| MEDIA-27: perda silenciosa | Participação termina em <=60s do último pong real, sem reconexão | `tests/service.test.js:119` tick alinhado 60.000; `:120` readyState=3/clients=0; `:197` pong em 12.345 ms; `:198` aberto/1 cliente em +59.999; `:200` fechado/0 clientes/0 timers em +60.000; `:203` zero timers no close. | PASS |
+| MEDIA-28: eventos antigos de tentativa terminal | Descarte de ack/join/inventário/signal/presença sem afetar nova tentativa/captura/reprodução | `tests/rtc.test.js:147`/`:149` preservam identidade/mic/admissão e errors=[] após ack/error antigos; `tests/service.test.js:147` rejeita join tardio INVALID_EVENT; `tests/session.test.js:143`/`:146` mantêm sharing sob revisões/contexto antigos; capture checker `:118` exige INVALID_EVENT para IPC/documento antigos. Falta injeção e asserção da sinalização antiga contra tentativa nova. | GAP de conjunção |
+| MEDIA-29: fora de admissão ou áudio silenciado | Reprodução bloqueada, também depois de reload e eventos tardios | `scripts/desktop-smoke.mjs:238`: `expect.poll(firstMuted).toBe(true)` com Silenciar áudio; `:348`/`:355` native muted=true e zero audio/video após reload/disconnect. Falta injetar evento tardio e comprovar que o bloqueio nativo permanece. | GAP de conjunção |
+| MEDIA-30: mic silenciado | Fala não transmitida pela track; captura pode continuar live | `tests/rtc.test.js:201`: `assert.equal(f.call.muted,true); assert.equal(mic.getAudioTracks()[0].enabled,false); assert.equal(mic.getAudioTracks()[0].readyState,'live')`; `:202` retorno enabled=true. A interpretação de frases reais permanece em T9. | PASS automatizado da track |
+| MEDIA-31: falhas e cancelamento voluntário | Código estável/fase/identidade disponível e cancelamento distinguível | `tests/rtc.test.js:170` exige TIMEOUT/call-join/callId/generation; `:263`/`:264` exigem MEDIA_FAILED/media/operationId/callId/generation; `scripts/desktop-smoke.mjs:188`/`:189` conferem código/fase/versão e IDs UUID. O cancelamento comprova callback null/cardinalidade, mas não faz assert do resultado estruturado CANCELLED, fase e chave em contraste com falha. | GAP de payload/conjunção |
+| MEDIA-32: diagnóstico | Só metadados, nenhum conteúdo sensível | `tests/service.test.js:219`: `assert.equal(warnings.join('').includes('MEDIA_PRIVATE_'),false)`; `:220` deepEqual do objeto inteiro com phase/code/requestId/version/runtime/cause/causeCode/sqliteCode. `scripts/desktop-smoke.mjs:191` confere lista exata de nove chaves e `:192`: `expect(JSON.stringify(diagnostics) + nativeDiagnostics).not.toContain('MEDIA_PRIVATE_')`. | PASS |
+| MEDIA-33: três ciclos físicos de 30s | Sem captura/reprodução não solicitada; ruído registrado por ciclo | Sem evidência. Diagnóstico sintético de 6s não satisfaz A7. | NÃO EXECUTADO / zero cobertura física |
+| MEDIA-34: dois PCs Windows e sessão física 10min | 5/5 frases por sentido no início e após tela; todos passos/prazos A7 aprovados | Sem evidência de operadores, dispositivos, 10min, frases, loopback real ou ruído. | NÃO EXECUTADO / zero cobertura física |
+
+**Contagem:** 23/34 ACs sustentados integralmente no nível automatizado delimitado; 8/34 com evidência parcial/conjunção ausente; 1/34 com falha funcional demonstrada; 2/34 físicos não executados. Nenhum spec-precision gap foi usado para acomodar o resultado. Os ACs permanecem os da spec.
+
+## Edge Cases
+
+| Edge case da spec | Evidência e resultado |
+| --- | --- |
+| Permissão antiga durante chamada nova, nas duas ordens | PASS: `tests/rtc.test.js:159`/`:161`/`:162`, ended antigo e live novo; M1 discrimina. |
+| Saída durante permissão/inventário | Parcial: `rtc:140`, capture checker `:38`/`:49`/`:76` preservam terminal/callback; falta teclado durante admissão e teardown adquirido completo (MEDIA-07/23). |
+| Aceite + rejeição + sender pendente, com peer tardio | PASS: `rtc:217`/`:219`/`:220`; M2 discrimina. |
+| Mic negado e tela disponível | GAP: escuta/zero-retry assertados em `rtc:193`/`:195`; tela após negação sem ação de mic não exercitada. |
+| Stop e saída quase simultâneos | Tracks de domínio são inventariadas; `rtc:85`, `:237` e `:253` comprovam términos. A convergência UI no prazo é FAIL (MEDIA-17). |
+| Saída antiga depois da nova admissão | PASS de valor: `service:154`/`:160`, `session:160`; M4 exige ajuste do sensor de resposta. |
+| Cotas esgotadas com sétimo aguardando | PASS de valor: `service:173`/`:179`/`:181`/`:183`/`:186`; M5 só falha por watchdog do helper. |
+| Último pong entre ticks | PASS: `service:197`/`:198`/`:200`, limites reais do pong. |
+| Mute sem stop não é liberação | PASS: `rtc:201` live/disabled, `:203` ended depois da saída. |
+| Ruído só no hardware | Não executado; não há afirmação de cura, paridade ou aprovação física. |
+
+## Build Gate e integridade
+
+Comando real: `powershell -Command "& ./test-results/run-media-gates.ps1 -Batch media-verifier"`, executado em `C:\Code\conversa`, após criar `test-results/media-verifier`. O caminho temporário inexistente de manifesto foi conferido antes do source startup. Os checkers Electron/captura rodaram sequencialmente. Ambiente definido apenas no processo filho e removido pelo runner ao final.
+
+| Gate | Comando/ambiente efetivo | Exit |
+| --- | --- | --- |
+| Quick | `npm.cmd test` | 0, 75/75, zero fail/skip/cancelled/todo |
+| Build | `npm.cmd run build` | 0 |
+| Source smoke interno | `CONVERSA_CHECK_SOURCE=1`, `CONVERSA_TEST_EXTERNAL=0`, `node scripts/desktop-smoke.mjs` | 0 |
+| Source perfil | `node scripts/desktop-profile-check.mjs` | 0 |
+| Source captura | `node scripts/desktop-capture-check.mjs` | 0 |
+| Source diagnóstico sem manifesto | `CONVERSA_CHECK_SOURCE=1`, `CONVERSA_CHECK_MUTED=1`, `CONVERSA_BUILD_MANIFEST=%TEMP%/conversa-no-manifest-media.json` inexistente, `node scripts/startup-audio-check.mjs` | 0 |
+| Source smoke externo | `CONVERSA_TEST_EXTERNAL=1`, `node scripts/desktop-smoke.mjs` | 0 |
+| Dist Windows | `npm.cmd run dist:win` | 0 |
+| Pacote/bytes/hash | `node scripts/check-package.mjs` | 0 |
+| Win-unpacked perfil | `CONVERSA_TEST_EXECUTABLE=<manifest.executable>`, `CONVERSA_CHECK_SOURCE=0`, `node scripts/desktop-profile-check.mjs` | 0 |
+| Win-unpacked smoke interno | `CONVERSA_TEST_EXTERNAL=0`, `node scripts/desktop-smoke.mjs` | 0 |
+| Win-unpacked smoke externo | `CONVERSA_TEST_EXTERNAL=1`, `node scripts/desktop-smoke.mjs` | 0 |
+| Win-unpacked diagnóstico | `CONVERSA_CHECK_SOURCE=0`, `CONVERSA_CHECK_MUTED=1`, `node scripts/startup-audio-check.mjs` | 0 |
+| Wrapper portátil real | `node scripts/portable-startup-check.mjs`, que executa o `.exe` portátil | 0 |
+
+Logs reais: `test-results/media-verifier/gates.json` e os 14 `.log` correspondentes, ignorados pelo Git. Versão `0.1.1`, Node `24.21.0`, Electron `45.0.0`. Portátil atual: `C:\Code\conversa\release-windows\Conversa-0.1.1-Windows.exe`; SHA-256 **`1bb04b3ca61f611420e42ac17815655cfcf5da46301fc04dee99fcc6b7efa428`**. Executável desempacotado: `.packaging/builds/1792961881845-c135494c-c410-4ae3-84ca-762ab66612b8/win-unpacked/Conversa.exe`. Manifesto copiado em `test-results/media-verifier/build.json`. O hash do portátil mudou pela nova geração local; nenhum resultado físico do hash anterior é herdado.
+
+Baseline pré-feature conferida em `38062db`: 50 testes Node. Atual: 75, delta +25. Todos os 50 nomes originais continuam presentes (4 bootstrap, 4 política, 6 harness, 1 packaging, 4 protocol, 9 rtc, 3 server, 10 service, 9 session). `test-results/media-verifier/test-integrity.json` registra comparação por arquivo. Diff de testes conferido: mudanças anteriores são serialização v2/geração/revisão, dependências do harness e clock injetado; asserções de mensagens, limites, persistência e terminal preservadas. A recusa de v1 tem asserções próprias. Nenhum teste removido, ignorado ou enfraquecido encontrado. Os 25 novos se ligam a ACs/Done-when; os demais mantêm regressão exigida pela matriz, sem declarar STAB completo.
+
+## Discrimination Sensor
+
+Profundidade ampliada: seis falhas semânticas, uma por categoria exigida. Baseline Quick do scratch: 75/75. Depois de restaurar os arquivos do scratch: 75/75. Nenhum mutante foi aprovado por erro de sintaxe/import ou por exit diferente de zero sem asserção.
+
+| Mutante / arquivo:linha em f44d268 | Falha injetada | Comando real no scratch | Resultado |
+| --- | --- | --- | --- |
+| M1 captura obsoleta, `src/rtc.js:75` | Remove `stop(stream)` do ramo de aquisição antiga | `node --test --test-reporter=tap --test-name-pattern="MEDIA-03/28: permissions" tests/rtc.test.js` | MORTO por `ERR_ASSERTION`, `tests/rtc.test.js:41`/`:161`: every readyState ended, esperado true, observado false. Exit 1. |
+| M2 compensação, `src/rtc.js:264` | Remove `stop(operation.stream)` da compensação | `node --test --test-reporter=tap --test-name-pattern="MEDIA-14/15/19/20" tests/rtc.test.js` | MORTO por `ERR_ASSERTION`, `tests/rtc.test.js:41`/`:217`, ended esperado true/observado false. Exit 1. |
+| M3 callback/seleção, `electron/main.js:123` | Ignora `sameCaptureKey` no select, aceitando cancelamento alheio | `node scripts/desktop-capture-check.mjs` | MORTO por ExpectError, `scripts/desktop-capture-check.mjs:102`: calls esperado 0, observado 1. Exit 1. |
+| M4 terminal antes da admissão, `server/service.js:80` | `endCall` grava callState admitted em vez de terminal | `node --test --test-reporter=tap --test-name-pattern="MEDIA-24/28: leave delivered" tests/service.test.js` | SEM DETECÇÃO VÁLIDA. Exit 1 somente por `Timeout error`, `tests/helpers/client.js:19`; o join antigo admitido não chega à asserção `service:147`. Não conta como morto. |
+| M5 cota, `server/service.js:125` | Aplica budget também a terminal (`if(!terminal)` vira `if(true)`) | `node --test --test-reporter=tap --test-name-pattern="MEDIA-25/26: saturated" tests/service.test.js` | SEM DETECÇÃO VÁLIDA. Exit 1 somente por `Timeout ack`, `tests/helpers/client.js:19`; RATE_LIMITED não é comparado como resposta terminal. Não conta como morto. |
+| M6 prazo, `src/rtc.js:57` | Deadline de admissão 1 ms antecipado | `node --test --test-reporter=tap --test-name-pattern="MEDIA-06/31: the actual" tests/rtc.test.js` | MORTO por `ERR_ASSERTION`, `tests/rtc.test.js:172`: pending esperado true em 7.999, observado false. Exit 1. |
+
+**Resultado:** 6 injetados, **4 mortos por asserção**, **0 sobreviventes com exit 0**, **2 sem detecção válida**. Sensor FAIL. Logs: `test-results/media-verifier/M1.log` até `M6.log`, definições/comandos em `sensor.json`. M4/M5 viram gaps de teste; não há alegação de que passaram semanticamente.
+
+Isolamento: worktree detached `f44d268` em `C:\Users\welli\AppData\Local\Temp\conversa-media-sensor-82bcd2f31ff146039b702f5411b2f624`. `node_modules` era junction para a dependência real; dist foi copiado. Todos os mutantes foram escritos apenas nessa worktree, restaurados em bytes depois de cada execução. Não houve stash, alteração de código/testes reais ou commit do Verifier. Caminhos absolutos foram conferidos dentro de TEMP. A junction foi removida por `fs.rmdirSync` não recursivo após `lstatSync(...).isSymbolicLink()`; só depois rodou `git worktree remove --force <scratch>`. A pasta scratch não existe mais e `C:\Code\conversa\node_modules\playwright\package.json` existe.
+
+Porcelain real observado vazio antes do sensor e capturado vazio depois da limpeza, **0 entradas → 0 entradas**, antes de escrever este relatório. A primeira tentativa de persistência com pipeline PowerShell vazio não criou arquivo; a comparação inicial desse arquivo não foi aceita como prova. A comparação efetiva posterior usou os bytes vazios observados inicialmente e a captura final de `git status --porcelain`; ambos foram gravados em `porcelain-before.txt`/`porcelain-after.txt` e comparados com asserção. Isso evita transformar a mensagem impressa pela tentativa anterior em PASS falso.
+
+## Probe independente MEDIA-17
+
+Sem mutar código do produto, uma cópia do smoke no scratch segurou o ack de `media sharing=false`, esperou 1.100 ms e verificou o controle local. Comando: `node scripts/verify-media17.mjs` no scratch. Exit 1 por ExpectError, não por watchdog. Resultado observado em `test-results/media-verifier/media17-probe.log`: `{sharingButtonDisabled:true,allDisplayEnded:true,screenText:"Parando…"}`. A asserção `expect(probeState.sharingButtonDisabled).toBe(false)` falhou. O botão Encerrar continuava separado; isso não satisfaz o controle de compartilhamento utilizável de MEDIA-17. O ack remoto pode ter prazo A2; a liberação local de A1 não pode aguardá-lo.
+
+## Ranked Gaps e encaminhamento
+
+1. **Fechamento global bloqueado por T9/MEDIA-33/34.** Executar A7 no mesmo hash candidato aprovado: dois PCs Windows, fones/mics reais, operadores, três ciclos de 30 s e sessão de 10 min, 5/5 frases nos dois sentidos nas duas medições e todos passos. Não há recurso confirmado neste ambiente. A ausência não é PASS nem precisa de uma correção de código presumida.
+2. **Major, MEDIA-17, proprietário T7/T4.** Separar conclusão local da parada e confirmação remota; controles devem estar utilizáveis em <=1.000 ms. Acrescentar asserção UI com ack retido e nova tela antes do ack/erro antigo; assegurar que a conclusão antiga não altera a operação nova. Causa: `src/main.jsx:192`/`:193`/`:224`, `src/rtc.js:277`. Probe já reproduz.
+3. **Major, sensor M4/M5, proprietário T2 e helper.** Esperar resposta correlacionada ack OU error e comparar o resultado exato antes de esperar eventos subsequentes. M4 deve morrer ao observar admissão antiga indevida; M5 deve morrer ao observar RATE_LIMITED em vez de ack terminal. Timeout do harness não basta. Repetir as duas mutações e exigir AssertionError/ExpectError de valor.
+4. **Evidência incompleta, MEDIA-01/07/08/10/23/28/29/31, proprietários T1/T5/T7.** Acrescentar somente as conjunções listadas na tabela: contadores pré-App de todas APIs em startup/reload; teclado durante admissão com prazo A1; tela sem mic depois de negação sem retry; aviso global visível; inventário completo em close/unmount; sinal antigo e eventos tardios de playback; resultado CANCELLED com fase/chave. Nenhum defeito funcional adicional é afirmado por essa ausência. Reexecutar os gates dos proprietários e Build da nova candidata.
+
+## Code Quality e limites
+
+| Verificação | Resultado |
+| --- | --- |
+| Mudanças cirúrgicas/proprietários, padrões existentes, sem arquitetura/capacidade extra | PASS: Call/Session/host/service existentes, sem câmera, TypeScript, novas dependências ou schema nesta feature. A mudança v2 inclui produtores/consumidores e rejeição explícita de v1. |
+| Integridade e ligação dos testes à spec/Done-when/regressão exigida | PASS de integridade; adequação parcial conforme os 8 gaps e M4/M5. |
+| Resultados exatos/payloads, 1:1 AC de domínio e bordas de integração | FAIL de cobertura integral: não aceitar nomes de testes/exit 0 como prova das conjunções faltantes. |
+| Guidelines do projeto | README/Verificação, scripts de package.json e matriz de tasks; nenhum AGENTS/CONTRIBUTING adicional encontrado no escopo. |
+| UAT física | Não executada; sem PASS integral. |
+
+Os checkers usam mídia sintética/mute quando previsto. RTP, vídeo decodificado, callback e DOM não comprovam fala compreensível, silêncio físico, loopback audível, ruído ou dispositivos reais. STAB (68 ACs), mensagens e shutdown completo continuam escopo separado. D6–D11 são evidência estática/cache histórico sem vínculo ativo demonstrado; U1 só UI/processo; quatro dúvidas de runtime continuam abertas. Não houve nova investigação Discord, comunicação com terceiros, push ou deploy.
+
+## Closing Gate e lessons
+
+Lessons registradas por `lessons.py add`, sem edição manual do estado: L-003–L-012, dez candidates com recorrência 1. Os treze sinais citados são MEDIA-17, M4, M5, MEDIA-01/07/08/10/23/28/29/31/33/34. Textos equivalentes de M4/M5, MEDIA-28/29 e MEDIA-33/34 foram deduplicados pelo script, sem inflar recorrência. Nenhuma lesson foi promovida a confirmed. Saídas reais em `test-results/media-verifier/lessons.json`.
+
+Primeira execução de `validate_state.py captura-midia-saida`: exit 1 por classificação de placeholder, porque o parser não reconheceu o título português e leu PASS/FAIL do corpo inteiro. Foi acrescentado o cabeçalho explícito `Validation: FAIL`; nenhum veredito foi alterado. Segunda execução real com `%TEMP%/conversa-spec-python-3.14.0/python.exe C:/Users/welli/.cache/agent-skills-mcp/tlc-spec-driven/7bed1026351b/scripts/validate_state.py captura-midia-saida`: **exit 1**, `validation.md verdict is FAIL - route the ranked gaps to fix tasks, then re-verify (feature is not done)`. Log em `test-results/media-verifier/validate-state.log`. O gate global ficou corretamente fechado.

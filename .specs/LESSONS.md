@@ -26,6 +26,66 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: BUILD-08; tests/harness.test.js:33; validation.md M9 (tests/harness)
 - last seen: 2026-10-25T02:45:13Z
 
+### L-003 - Separate local screen cleanup completion from remote acknowledgements and discard effects from superseded screen operations.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `src/rtc;src/main` · harmful: 0
+- features: captura-midia-saida
+- evidence: MEDIA-17 (src/rtc;src/main)
+- last seen: 2026-10-25T21:09:53Z
+
+### L-004 - Assert the correlated acknowledgement or error value before waiting for subsequent WebSocket events.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `tests/service` · harmful: 0
+- features: captura-midia-saida
+- evidence: M4 (tests/service) (+1 more)
+- last seen: 2026-10-25T21:09:53Z
+
+### L-005 - Instrument every media acquisition API before renderer startup and reload when asserting zero unsolicited capture.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `desktop/startup` · harmful: 0
+- features: captura-midia-saida
+- evidence: MEDIA-01 (desktop/startup)
+- last seen: 2026-10-25T21:09:54Z
+
+### L-006 - Exercise keyboard cancellation during both acquisition and admission and assert terminal state within one second.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `desktop/call` · harmful: 0
+- features: captura-midia-saida
+- evidence: MEDIA-07 (desktop/call)
+- last seen: 2026-10-25T21:09:54Z
+
+### L-007 - Test screen sharing after microphone denial without retrying microphone acquisition.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `rtc/listen-only` · harmful: 0
+- features: captura-midia-saida
+- evidence: MEDIA-08 (rtc/listen-only)
+- last seen: 2026-10-25T21:09:54Z
+
+### L-008 - Assert the visible global system audio warning alongside per-operation consent and default-off state.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `desktop/capture` · harmful: 0
+- features: captura-midia-saida
+- evidence: MEDIA-10 (desktop/capture)
+- last seen: 2026-10-25T21:09:54Z
+
+### L-009 - Assert every acquired microphone, display and system-audio track ends within one second on window close and component teardown.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `desktop/cleanup` · harmful: 0
+- features: captura-midia-saida
+- evidence: MEDIA-23 (desktop/cleanup)
+- last seen: 2026-10-25T21:09:54Z
+
+### L-010 - Inject obsolete signaling and playback events after leave or reentry and assert the current attempt and playback block remain unchanged.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `desktop/stale-events` · harmful: 0
+- features: captura-midia-saida
+- evidence: MEDIA-28 (desktop/stale-events) (+1 more)
+- last seen: 2026-10-25T21:09:54Z
+
+### L-011 - Assert structured cancellation category, phase and operation identity separately from native callback cardinality.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `desktop/capture` · harmful: 0
+- features: captura-midia-saida
+- evidence: MEDIA-31 (desktop/capture)
+- last seen: 2026-10-25T21:09:54Z
+
+### L-012 - Require versioned two-PC Windows hardware evidence for physical voice, loopback and noise acceptance.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `media/hardware` · harmful: 0
+- features: captura-midia-saida
+- evidence: MEDIA-33 (media/hardware) (+1 more)
+- last seen: 2026-10-25T21:09:54Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.
