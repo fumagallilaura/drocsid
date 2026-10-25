@@ -6,7 +6,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 
 **If the skill cannot be activated, STOP and tell the user - do not proceed without it.**
 
-**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: Draft para revisão conjunta. **Base**: `cd53044`. Nenhuma tarefa executada nesta entrega.
+**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1 concluída; T2–T9 pendentes. Ver [execução](execution.md).
 
 O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem A recomendada; a geração do documento não marca essa arquitetura ou Execute como aprovados. Os padrões A1–A8 permanecem explícitos na spec.
 
@@ -108,15 +108,17 @@ T8 -> T9
 
 **Done when**:
 
-- [ ] Cada envio de chamada carrega callId/geração capturados; leave não lê a tentativa nova para responder à antiga. Os campos são aditivos nesta etapa, mantendo v1 até T6.
-- [ ] A guarda usa identidade/estado da tentativa; Call aceita a função alocadora de geração da Session, com padrão local para testes isolados, sem obter mídia depois de encerrado.
-- [ ] Permissões concorrentes/antigas, close definitivo, recusa genérica e timeout demonstram os resultados da spec; todas as tracks retornadas entram no inventário e terminam em A1 quando obsoletas.
-- [ ] Zero publicação provisória; escuta continua possível; mute não é confundido com stop. Leave local e nova entrada não dependem de ack antigo.
-- [ ] Testes do proprietário escritos/reutilizados no mesmo commit; Quick e Full aprovados. Total Node `50 + Δ` registrado, zero falhas/skips, asserções anteriores preservadas.
+- [x] Cada envio de chamada carrega callId/geração capturados; leave não lê a tentativa nova para responder à antiga. Os campos são aditivos nesta etapa, mantendo v1 até T6.
+- [x] A guarda usa identidade/estado da tentativa; Call aceita a função alocadora de geração da Session, com padrão local para testes isolados, sem obter mídia depois de encerrado.
+- [x] Permissões concorrentes/antigas, close definitivo, recusa genérica e timeout demonstram os resultados da spec; todas as tracks retornadas entram no inventário e terminam em A1 quando obsoletas.
+- [x] Zero publicação provisória; escuta continua possível; mute não é confundido com stop. Leave local e nova entrada não dependem de ack antigo.
+- [x] Testes do proprietário escritos/reutilizados no mesmo commit; Quick e Full aprovados. Total Node `50 + Δ` registrado, zero falhas/skips, asserções anteriores preservadas.
 
 **Tests**: unit em `tests/rtc.test.js`, com relógio, streams e ordens de resolução controlados; integração pelo smoke existente. Incluir falha antiga depois de tentativa nova e deadline real do pedido, não só erro TIMEOUT já fabricado pelo dublê.
 **Gate**: full; Quick + build + smoke source/interno.
 **Commit**: `fix(rtc): bind microphone lifecycle to immutable call attempts`
+
+**Execução T1 em 2026-10-25**: gate Full PASS, 55/55 Node (50 existentes + 5 novos), zero falhas/skips/cancelled. [Adequação e evidência](execution.md#t1--tentativa-e-microfone). Commit desta tarefa inclui código, testes e estes status. T2–T9 pendentes; nenhum MEDIA Verified.
 
 #### T2: Tornar o participante terminal e expirar a vaga no prazo
 

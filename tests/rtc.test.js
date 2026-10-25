@@ -30,6 +30,7 @@ function fixture(overrides = {}) {
   const captures=[], events=[], states=[], errors=[], clock=new Clock();
   const devices={ async getUserMedia() { const s=stream(); captures.push(s); return s; }, async getDisplayMedia() { const s=stream(['video','audio']); captures.push(s); return s; }, ...overrides.devices };
   const call = new Call({ id:'a', iceServers:[], mediaDevices:devices, PeerConnection:PC,
+    nextCallGeneration: overrides.nextCallGeneration,
     Stream: class { tracks=[]; addTrack(t) { this.tracks.push(t); } getTracks() { return this.tracks; } }, clock,
     send: overrides.send || (async e => { events.push(e); return { type:'ack', action:e.type, callId:e.callId, inCall:e.type!=='call-leave' }; }),
     onStreams() {}, onMedia: s=>states.push(s), onError: e=>errors.push(e) });
@@ -120,4 +121,84 @@ test('STAB-42/43: stalled peers terminate at 15s; candidates are bounded and exp
   f.clock.tick(15000); await drain(); assert.equal(peer.pc.connectionState,'closed'); assert.equal(peer.candidates.length,0);
   assert.ok(f.errors.length>0); f.call.sync(members(f.call)); assert.equal(f.call.peers.has('b'),false);
   f.call.retryPeer('b'); assert.equal(f.call.peers.has('b'),true); f.call.close();
+});
+
+test('MEDIA-05/21/28: cancellation keeps the original context while admission and leave replies are delayed', async () => {
+  for (const lateFailure of [false, true]) {
+    const admission=deferred(), departure=deferred(), events=[];
+    const f=fixture({ send:e=>{
+      events.push(e);
+      if(e.type==='call-join' && events.filter(e=>e.type==='call-join').length===1) return admission.promise;
+      if(e.type==='call-leave') return departure.promise;
+      return Promise.resolve({ callId:e.callId, generation:e.generation, inCall:true });
+    } });
+    const oldJoin=f.call.join(); await drain(); const original=events[0];
+    f.call.sync(members(f.call));
+    assert.equal(f.call.admitted,false); assert.equal(f.call.peers.size,0);
+    const oldMic=f.captures[0], leaving=f.call.leave();
+    ended(oldMic); assert.equal(f.call.active,false); assert.equal(f.states.at(-1).pending,false);
+    assert.deepEqual(events[1], { type:'call-leave', callId:original.callId, generation:original.generation });
+    await f.call.join(); const current=f.call.microphone, currentId=f.call.callId, currentGeneration=f.call.generation;
+    if(lateFailure) admission.reject(Object.assign(Error('erro antigo'),{code:'CALL_FULL'}));
+    else admission.resolve({ callId:original.callId, generation:original.generation, inCall:true });
+    await oldJoin;
+    departure.reject(Object.assign(Error('erro antigo de saída'),{code:'TIMEOUT'})); await leaving;
+    assert.equal(f.call.callId,currentId); assert.equal(f.call.generation,currentGeneration);
+    assert.equal(f.call.microphone,current); assert.equal(current.getTracks()[0].readyState,'live');
+    assert.equal(f.call.admitted,true); assert.deepEqual(f.errors,[]); f.call.close(); ended(current);
+  }
+});
+
+test('MEDIA-03/28: permissions resolved in either order release every old track and preserve the new attempt', async () => {
+  for(const oldFirst of [true,false]) {
+    const oldPermission=deferred(), newPermission=deferred(); let requests=0;
+    const f=fixture({ devices:{getUserMedia:()=>++requests===1 ? oldPermission.promise : newPermission.promise} });
+    const oldJoin=f.call.join(); f.call.leave(); const newJoin=f.call.join();
+    const old=stream(['audio','audio']), current=stream(['audio','audio']);
+    if(oldFirst) { oldPermission.resolve(old); await oldJoin; newPermission.resolve(current); await newJoin; }
+    else { newPermission.resolve(current); await newJoin; oldPermission.resolve(old); await oldJoin; }
+    ended(old); assert.equal(f.call.microphone,current); assert.equal(f.call.admitted,true);
+    assert.ok(current.getTracks().every(t=>t.readyState==='live'));
+    f.call.close(); ended(current);
+  }
+});
+
+test('MEDIA-06/31: the actual 8s admission deadline releases the provisional stream and identifies the attempt', async () => {
+  const pending=deferred(), events=[];
+  const f=fixture({ send:e=>{ events.push(e); return e.type==='call-join' ? pending.promise : Promise.resolve(); } });
+  const joined=f.call.join(), rejected=assert.rejects(joined,e=>e.code==='TIMEOUT' && e.phase==='call-join' && e.callId===events[0].callId && e.generation===events[0].generation);
+  await drain(); f.clock.tick(7999); await drain();
+  assert.equal(f.states.at(-1).pending,true); assert.equal(f.captures[0].getTracks()[0].readyState,'live');
+  f.clock.tick(1); await rejected;
+  ended(f.captures[0]); assert.equal(f.call.admitted,false); assert.equal(f.call.active,false);
+  assert.deepEqual(events[1], { type:'call-leave', callId:events[0].callId, generation:events[0].generation });
+  assert.equal(f.clock.jobs.size,0); f.call.close();
+});
+
+test('MEDIA-04/28: a stale generation allocator fails before any capture and close rejects capture actions', async () => {
+  const f=fixture({ nextCallGeneration:()=>{ throw Object.assign(Error('epoch antigo'),{code:'CANCELLED'}); } });
+  await assert.rejects(()=>f.call.join(),e=>e.code==='CANCELLED');
+  assert.equal(f.captures.length,0); assert.equal(f.call.active,false);
+  f.call.close(); await assert.rejects(()=>f.call.join()); await f.call.toggleMicrophone(); await f.call.shareScreen(false,'720');
+  assert.equal(f.captures.length,0);
+});
+
+test('MEDIA-02/05/08/30/31: allocated context covers all sends, listen-only needs an explicit mic action and mute preserves capture', async () => {
+  let generation=40, requests=0;
+  const f=fixture({nextCallGeneration:()=>++generation,devices:{getUserMedia:async()=>{
+    if(++requests===1) throw Error('dispositivo indisponível'); const s=stream(); f.captures.push(s); return s;
+  }}});
+  await f.call.join(); const callId=f.call.callId;
+  assert.equal(f.call.generation,41); assert.equal(f.call.admitted,true); assert.equal(f.call.microphone,null);
+  f.call.sync(members(f.call)); await drain();
+  assert.equal(requests,1); assert.equal(f.call.peers.get('b').mic.sender.track,null);
+  assert.equal(f.errors[0].code,'MEDIA_FAILED'); assert.equal(f.errors[0].phase,'microphone');
+  assert.equal(f.errors[0].callId,callId); assert.equal(f.errors[0].generation,41);
+  await f.call.toggleMicrophone(); const mic=f.call.microphone;
+  assert.equal(requests,2); assert.equal(f.call.peers.get('b').mic.sender.track,mic.getAudioTracks()[0]);
+  await f.call.toggleMicrophone();
+  assert.equal(f.call.muted,true); assert.equal(mic.getAudioTracks()[0].enabled,false); assert.equal(mic.getAudioTracks()[0].readyState,'live');
+  await f.call.toggleMicrophone(); assert.equal(mic.getAudioTracks()[0].enabled,true);
+  await f.call.leave(); ended(mic); assert.equal(f.call.peers.size,0);
+  for(const event of f.events) { assert.equal(event.callId,callId); assert.equal(event.generation,41); }
 });

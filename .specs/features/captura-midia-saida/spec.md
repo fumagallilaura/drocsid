@@ -224,14 +224,14 @@ Os IDs MEDIA detalham o recorte sem substituir os IDs STAB. As linhas de código
 
 | Requirement ID | Story | Origem STAB | Achados | Tasks | Phase | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| MEDIA-01 | US1 | STAB-01 | R01 | T1, T7, T8 | Tasks | In Tasks |
-| MEDIA-02 | US1 | STAB-02 | R01 | T1, T4, T8 | Tasks | In Tasks |
-| MEDIA-03 | US1 | STAB-03/39 | R01 | T1, T4, T8 | Tasks | In Tasks |
-| MEDIA-04 | US1 | STAB-04 | R01 | T1, T8 | Tasks | In Tasks |
-| MEDIA-05 | US1 | STAB-06 | R02 | T1, T3, T6, T8 | Tasks | In Tasks |
-| MEDIA-06 | US1 | STAB-07/38 | R02/R10 | T1, T3, T6, T8 | Tasks | In Tasks |
-| MEDIA-07 | US1 | STAB-08 | R01/R02 | T1, T7, T8 | Tasks | In Tasks |
-| MEDIA-08 | US1 | STAB-09 | R02 | T1, T7, T8 | Tasks | In Tasks |
+| MEDIA-01 | US1 | STAB-01 | R01 | T1, T7, T8 | Execute | Implementing |
+| MEDIA-02 | US1 | STAB-02 | R01 | T1, T4, T8 | Execute | Implementing |
+| MEDIA-03 | US1 | STAB-03/39 | R01 | T1, T4, T8 | Execute | Implementing |
+| MEDIA-04 | US1 | STAB-04 | R01 | T1, T8 | Execute | Implementing |
+| MEDIA-05 | US1 | STAB-06 | R02 | T1, T3, T6, T8 | Execute | Implementing |
+| MEDIA-06 | US1 | STAB-07/38 | R02/R10 | T1, T3, T6, T8 | Execute | Implementing |
+| MEDIA-07 | US1 | STAB-08 | R01/R02 | T1, T7, T8 | Execute | Implementing |
+| MEDIA-08 | US1 | STAB-09 | R02 | T1, T7, T8 | Execute | Implementing |
 | MEDIA-09 | US2 | STAB-10 | R03 | T4, T5, T7, T8 | Tasks | In Tasks |
 | MEDIA-10 | US2 | STAB-10/45 | R03/R11 | T4, T5, T7, T8, T9 | Tasks | In Tasks |
 | MEDIA-11 | US2 | STAB-48 | R17 | T5, T8 | Tasks | In Tasks |
@@ -244,18 +244,18 @@ Os IDs MEDIA detalham o recorte sem substituir os IDs STAB. As linhas de código
 | MEDIA-18 | US2 | STAB-68 | R03/R06 | T2, T3, T4, T8 | Tasks | In Tasks |
 | MEDIA-19 | US2 | STAB-16 | R03 | T4, T8 | Tasks | In Tasks |
 | MEDIA-20 | US2 | STAB-06/44 | R02/R26 | T4, T7, T8 | Tasks | In Tasks |
-| MEDIA-21 | US3 | STAB-05 | R01/R02/R06 | T1, T4, T7, T8, T9 | Tasks | In Tasks |
+| MEDIA-21 | US3 | STAB-05 | R01/R02/R06 | T1, T4, T7, T8, T9 | Execute | Implementing |
 | MEDIA-22 | US3 | STAB-05; C2 | R01/R06 | T7, T8 | Tasks | In Tasks |
-| MEDIA-23 | US3 | STAB-05/36 (capturas) | R01/R03/R07 | T1, T4, T5, T7, T8 | Tasks | In Tasks |
+| MEDIA-23 | US3 | STAB-05/36 (capturas) | R01/R03/R07 | T1, T4, T5, T7, T8 | Execute | Implementing |
 | MEDIA-24 | US3 | STAB-30/39 | R06/R13 | T2, T3, T6, T8 | Tasks | In Tasks |
 | MEDIA-25 | US3 | STAB-28/68 | R06 | T2, T6, T8 | Tasks | In Tasks |
 | MEDIA-26 | US3 | STAB-29 | R06 | T2, T3, T6, T8 | Tasks | In Tasks |
 | MEDIA-27 | US3 | STAB-32 | R06/R14 | T2, T8 | Tasks | In Tasks |
-| MEDIA-28 | US3 | STAB-03/06/39; terminal explícito | R01/R02/R06/R13 | T1, T2, T3, T4, T5, T6, T7, T8 | Tasks | In Tasks |
+| MEDIA-28 | US3 | STAB-03/06/39; terminal explícito | R01/R02/R06/R13 | T1, T2, T3, T4, T5, T6, T7, T8 | Execute | Implementing |
 | MEDIA-29 | US3 | STAB-31 | R06/R26 | T7, T8, T9 | Tasks | In Tasks |
-| MEDIA-30 | US3 | A5; controle existente | R26 (recorte mídia) | T1, T7, T8, T9 | Tasks | In Tasks |
-| MEDIA-31 | US4 | STAB-41/67 | R13/R25 | T1, T2, T3, T4, T5, T6, T7, T8 | Tasks | In Tasks |
-| MEDIA-32 | US4 | STAB-67 | R25 | T1, T2, T3, T4, T5, T7, T8 | Tasks | In Tasks |
+| MEDIA-30 | US3 | A5; controle existente | R26 (recorte mídia) | T1, T7, T8, T9 | Execute | Implementing |
+| MEDIA-31 | US4 | STAB-41/67 | R13/R25 | T1, T2, T3, T4, T5, T6, T7, T8 | Execute | Implementing |
+| MEDIA-32 | US4 | STAB-67 | R25 | T1, T2, T3, T4, T5, T7, T8 | Execute | Implementing |
 | MEDIA-33 | US4 | STAB-01/31/63; A7 | R20/R25 | T9 | Tasks | In Tasks |
 | MEDIA-34 | US4 | STAB-63; A7 | R20 | T9 | Tasks | In Tasks |
 
@@ -281,3 +281,5 @@ O fechamento verifica EARS, IDs, rastreabilidade, premissas, nove dimensões, li
 **Atualização de planejamento em 2026-10-25:** design e tarefas em Draft, com alternativas, recomendação, contratos, riscos e mitigação. Nove tarefas em três fases, cobertura/matriz/gates e validação de granularidade, dependências e testes. Os textos dos 34 ACs são preservados; somente fase, status e mapeamento documental avançam. Nenhuma escolha do design é promovida a Decisions ou a aprovação de implementação.
 
 **Retomada da investigação em 2026-10-25:** MCP Agent Skills catálogo `0.17.13`, scripts preparados e verificados na revisão `7bed1026351b`. D10/D11 ampliam a análise estática; U1 confirma somente estados de interface/processo. A atualização reforça o reaproveitamento da tela implementada e preserva a negação de câmera de MEDIA-11.
+
+**Execução iniciada em 2026-10-25:** T1 tem gate Full e evidência incremental em [execution.md](execution.md). Os critérios tocados estão Implementing, sem Verified; o restante permanece In Tasks. O usuário escolheu execução inline e Verifier independente no fechamento. Referências a nenhum item executado acima descrevem o planejamento histórico.
