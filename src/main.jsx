@@ -98,9 +98,10 @@ function App() {
       if (!callRef.current?.admitted) { window.desktop?.selectCapture(value.requestId, null); return; }
       setModal(null); captureRef.current = value; setCapture(value);
     });
+    const unsubscribeError = window.desktop?.onCaptureError(value => report(Object.assign(new Error('Não foi possível listar as fontes de tela.'), value), 'capture-inventory'));
     const cleanup = () => { sessionRef.current.disconnect(); clearTimeout(toastTimer.current); };
     window.addEventListener('beforeunload', cleanup);
-    return () => { unsubscribe?.(); window.removeEventListener('beforeunload', cleanup); cleanup(); };
+    return () => { unsubscribe?.(); unsubscribeError?.(); window.removeEventListener('beforeunload', cleanup); cleanup(); };
   }, []);
   useEffect(() => { if (autoScroll.current) scrollRef.current?.scrollIntoView({ behavior: 'auto' }); }, [messages]);
   useEffect(() => { window.desktop?.setPlaybackEnabled(inCall && !deafened); }, [inCall, deafened]);
