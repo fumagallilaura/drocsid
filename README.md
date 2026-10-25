@@ -98,7 +98,7 @@ O diagnóstico observa todas as janelas e verifica que não há reprodução aud
 
 ## O que falta para um produto completo
 
-Em 2026-10-25, o usuário autorizou a sequência: revisão documental, continuidade da estabilização por uma sessão nova e, somente depois da estabilização, migração de todo o JavaScript próprio para TypeScript. A [revisão de coerência](docs/revisao-coerencia-documental.md) registra as correções e pendências; o [Handoff](.specs/STATE.md) informa o próximo passo. As nove [tarefas MEDIA](.specs/features/captura-midia-saida/tasks.md) continuam Draft, sem execução nesta revisão. A [preparação TypeScript](docs/migracao-typescript.md) inventaria a futura migração e não a inicia.
+Em 2026-10-25, o usuário autorizou a sequência: revisão documental, continuidade da estabilização por uma sessão nova e, somente depois da estabilização, migração de todo o JavaScript próprio para TypeScript. A [revisão de coerência](docs/revisao-coerencia-documental.md) registra a entrega documental; o [Handoff](.specs/STATE.md) informa o estado atual. T1–T8 das [tarefas MEDIA](.specs/features/captura-midia-saida/tasks.md) têm execução local: [75 testes e 14 gates automatizados](.specs/features/captura-midia-saida/evidence.md), com Verifier ainda pendente. T9 e MEDIA-33/34 exigem ensaio físico e continuam sem aprovação. Os 68 STAB não são certificados por esse lote. A [preparação TypeScript](docs/migracao-typescript.md) não inicia a migração.
 
 Para o produto futuro, o [plano proposto](PLANO_PRODUTO.md) mantém estas etapas, sujeitas às decisões e validações indicadas:
 

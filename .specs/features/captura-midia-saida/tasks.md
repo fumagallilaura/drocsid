@@ -6,7 +6,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 
 **If the skill cannot be activated, STOP and tell the user - do not proceed without it.**
 
-**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T7 concluídas; T8/T9 pendentes. Ver [execução](execution.md).
+**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T8 concluídas pelo autor; Verifier pendente e T9 física não executada. Ver [execução](execution.md) e [evidência](evidence.md).
 
 O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem A recomendada; a geração do documento não marca essa arquitetura ou Execute como aprovados. Os padrões A1–A8 permanecem explícitos na spec.
 
@@ -280,14 +280,16 @@ T8 -> T9
 
 **Done when**:
 
-- [ ] Build completo passa para a candidata final; versão, git SHA, SHA-256, executável e portátil real são identificados e correspondem ao disco.
-- [ ] Cada MEDIA-01–32 tem arquivo:linha, asserção de valor, resultado e limite de evidência. Nenhum caso é aprovado só pelo nome do teste ou pela sondagem histórica.
-- [ ] D1/D2 continuam estáticos/parciais, D3–D5 documentais e D6–D11 com a autoridade/cobertura do relatório. U1 vale somente para UI/processo; controles indisponíveis não certificam captura ou sua causa. Renderer do cache não é atribuído à versão ativa e Browser não é presumido como engine Windows. As quatro dúvidas de runtime permanecem abertas sem prova correspondente; registrar diferenças deliberadas C2/A5.
-- [ ] O relatório mantém MEDIA-33/34 pendentes de T9. Total Node `50 + Δ`, zero falhas/skips/cancelled e integridade do histórico de asserções são registrados.
+- [x] Build completo passa para a candidata final; versão, git SHA, SHA-256, executável e portátil real são identificados e correspondem ao disco.
+- [x] Cada MEDIA-01–32 tem arquivo:linha, asserção de valor, resultado e limite de evidência. Nenhum caso é aprovado só pelo nome do teste ou pela sondagem histórica.
+- [x] D1/D2 continuam estáticos/parciais, D3–D5 documentais e D6–D11 com a autoridade/cobertura do relatório. U1 vale somente para UI/processo; controles indisponíveis não certificam captura ou sua causa. Renderer do cache não é atribuído à versão ativa e Browser não é presumido como engine Windows. As quatro dúvidas de runtime permanecem abertas sem prova correspondente; registrar diferenças deliberadas C2/A5.
+- [x] O relatório mantém MEDIA-33/34 pendentes de T9. Total Node `50 + Δ`, zero falhas/skips/cancelled e integridade do histórico de asserções são registrados.
 
 **Tests**: integration/e2e já co-localizados nas tarefas de código, reexecutados na candidata final. Esta tarefa consolida a aceitação e não recebe testes que deveriam ter acompanhado uma correção anterior. Gap encontrado volta à tarefa proprietária, com gate e commit próprios antes de repetir a aceitação.
 **Gate**: build, incluindo source sem manifesto, internos/externos, win-unpacked e wrapper portátil real.
 **Commit**: `docs(media): record automated acceptance of the Windows candidate`
+
+**Execução T8 em 2026-10-25**: 75/75 Node (50 + 25), 14/14 gates Build PASS no código `018019c`; portátil SHA-256 `fe9ee1feab3765c210a8033a8b3b70789d22fcf7525af792b37d2b97a9f2202a`. [Resultados por MEDIA, integridade e limites](evidence.md). Nenhum MEDIA Verified pelo autor. Despachar Verifier do lote automatizado; T9 impede aprovação integral.
 
 #### T9: Registrar a aceitação física com dois PCs
 

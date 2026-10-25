@@ -8,7 +8,7 @@ Usar tlc-spec-driven pelo MCP Agent Skills e seu ciclo de Execute: teste derivad
 
 **Reconciliação em 2026-10-25:** T1–T6 abaixo preservam as marcas e gates relatados pelo autor, nos commits `5c1a05a`, `ae07a55`, `7d24f4b`, `5626a06`, `d456168` e `dc8d7a1`, respectivamente. A spec corrigiu a atribuição original de autorização; nenhuma marca equivale a Verified dos 68 STAB. T7/T8 continuam incompletas neste plano: BUILD verificou parte de seus resultados em escopo próprio, sem fechar automaticamente seus requisitos transversais. Não refazer integrações já verificadas nem marcar esses itens completos apenas por essa sobreposição.
 
-A autorização atual é revisão documental seguida de estabilização pela sessão nova, conforme C6 da [spec](spec.md) e [Handoff](../../STATE.md). O planejamento posterior de captura/saída está nas nove [tarefas MEDIA](../captura-midia-saida/tasks.md), todas Draft e não executadas. Na retomada, reconciliar gaps e cobertura entre os dois planos; não executar duas soluções de tela em paralelo. Gates e contagens abaixo permanecem históricos, sem nova execução nesta revisão.
+A autorização atual é revisão documental seguida de estabilização pela sessão nova, conforme C6 da [spec](spec.md) e [Handoff](../../STATE.md). O recorte posterior de captura/saída está nas nove [tarefas MEDIA](../captura-midia-saida/tasks.md); T1–T8 têm execução e evidência no código `018019c`, ainda sem Verifier, e T9 física não foi executada. Isso não certifica os 68 STAB nem fecha automaticamente T7/T8 abaixo. Reconciliar gaps e cobertura entre os dois planos; não executar duas soluções de tela em paralelo. Gates e contagens dos itens históricos abaixo preservam suas referências originais.
 
 ## Test Coverage Matrix
 
