@@ -293,6 +293,8 @@ T8 -> T9
 
 **Retorno do Verifier, rodada 1 (`f44d268`)**: MEDIA-17 falhou funcionalmente com ack de parada retido; controles ainda bloqueados em 1.100 ms. Sensor M4/M5 dependeu de timeout do helper, sem morte por asserção válida. Conjunções adicionais de evidência voltam aos proprietários T1/T5/T7 antes de repetir T8. Sem aprovação automatizada integral nesta rodada. Correção R1 (T4/T3/T7): parada local independente do ack e deadline de parada antigo incapaz de desconectar tela posterior na mesma chamada. Testes co-localizados e adequação em [execution.md](execution.md#r1--parada-local-sem-esperar-confirmação-remota).
 
+**R2 (T2)**: testes do serviço recebem ack/error correlacionados e comparam tipo e estado, antes de aguardar presença; retorno de M4/M5 deixa de depender de timeout do helper. Full 78/78 + build + smoke source PASS. R1 em `01f3e1c`; [adequação e limite do sensor](execution.md#r2--respostas-terminais-discriminadas-pelo-valor). Reverify independente pendente.
+
 #### T9: Registrar a aceitação física com dois PCs
 
 **What**: Produzir o relatório do protocolo físico A7 para o mesmo portátil aprovado em T8.

@@ -267,3 +267,15 @@ Dois testes novos falharam por asserção de estado antes da correção, sem wat
 | MEDIA-26, parada atual ainda tem limite | `tests/session.test.js:207` connected em 7999; `:208` desconectado/WS fechado em 8000, mesmo após mute independente | PASS; preserva recuperação segura quando não há novo estado de tela |
 
 Reverso C/D: cada um dos três testes novos e a instrumentação de timing do smoke corresponde a uma linha acima. Nenhuma expectativa de tracks, voz preservada, erros ou controles foi retirada. O teste de Parando usa remoção realmente pendente; o estado não é prolongado por ack de rede para satisfazer a asserção. Sem API de teste na produção, nova abstração ou mudança de layout. Adequação do autor R1: PASS; Verifier e T9 permanecem pendentes.
+
+## R2 — respostas terminais discriminadas pelo valor
+
+R1: `01f3e1c`. Retorno do sensor da rodada 1: M4 admitia join antigo e M5 recusava terminais por cota, mas o helper esperava apenas um tipo de resposta; os testes terminavam por timeout. O helper agora aceita uma lista de tipos sem mudar o comportamento dos consumidores existentes. Nos testes proprietários, o primeiro resultado correlacionado ack/error é recebido e seu tipo/estado é comparado antes de esperar presença. Não há mudança de produto nesta correção de adequação.
+
+| AC / sensor | Evidência e asserção de valor | Adequação A/B |
+| --- | --- | --- |
+| MEDIA-24/28, M4 | `tests/service.test.js:149` refused.type=error antes de INVALID_EVENT/call-join; aceita ack na espera para expor admissão indevida | PASS do baseline; sensor independente deve matar por tipo divergente |
+| MEDIA-25/26, M5 | `tests/service.test.js:182` stopped.type=ack, sharing=false/inCall=true; `:184` left.type=ack e terminal correlacionado | PASS do baseline; RATE_LIMITED deixa de virar timeout de ack |
+| Regressão STAB-28/29/30/68 | `tests/service.test.js:60`, `:62` mesma verificação de tipos, preservando os estados e repetição anteriores | PASS, sem certificação integral STAB |
+
+Reverso C/D: as novas comparações de tipo e o suporte a lista pertencem exclusivamente às linhas acima. Asserções de código, estado, prazo, capacidade e repetição permanecem intactas. **78/78 = 50 + 28**, zero falhas/skips/cancelled; Full PASS, logs `test-results/media-r2`. Adequação do autor R2: baseline aprovado; a segunda rodada independente deve confirmar seis mortes válidas, sem contar watchdog.

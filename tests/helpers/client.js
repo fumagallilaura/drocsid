@@ -13,7 +13,7 @@ export async function client(url, name = 'Ana', initialRoom = 'geral', options =
     else { events.push(event); if (events.length > 256) events.shift(); }
   });
   const next = (type, match = () => true) => new Promise((resolve,reject) => {
-    const matches = e => e.type === type && match(e), i=events.findIndex(matches);
+    const matches = e => (Array.isArray(type) ? type.includes(e.type) : e.type === type) && match(e), i=events.findIndex(matches);
     if (i>=0) return resolve(events.splice(i,1)[0]);
     if (ws.readyState===WebSocket.CLOSED) return reject(new Error('WS closed'));
     const waiter={matches,resolve,reject}; waiter.timer=setTimeout(() => { waiters.splice(waiters.indexOf(waiter),1); reject(new Error(`Timeout ${type}`)); },2500); waiters.push(waiter);

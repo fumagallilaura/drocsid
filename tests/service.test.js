@@ -56,8 +56,10 @@ test('STAB-28/29/30/68: leave and stop-screen bypass exhausted action budgets',a
   await a.request({type:'call-join'}); await b.request({type:'call-join'}); await a.request({type:'media',sharing:true});
   for(let i=0;i<110;i++) a.send({type:'signal',to:b.id,signal:{candidate:{candidate:'candidate'}}});
   await a.next('error',e=>e.code==='RATE_LIMITED');
-  const stopped=await a.request({type:'media',sharing:false}); assert.equal(stopped.sharing,false);
-  const left=await a.request({type:'call-leave'}); assert.equal(left.inCall,false); assert.equal(left.sharing,false);
+  const stopId=a.send({type:'media',sharing:false}),stopped=await a.next(['ack','error'],e=>e.requestId===stopId);
+  assert.equal(stopped.type,'ack');assert.equal(stopped.sharing,false);
+  const leaveId=a.send({type:'call-leave'}),left=await a.next(['ack','error'],e=>e.requestId===leaveId);
+  assert.equal(left.type,'ack');assert.equal(left.inCall,false); assert.equal(left.sharing,false);
   const repeated=await a.request({type:'call-leave'}); assert.equal(repeated.inCall,false); assert.equal(repeated.callId,a.callId);
   const presence=await b.next('presence',e=>e.members.some(m=>m.id===a.id&&!m.inCall));
   assert.equal(presence.members.find(m=>m.id===a.id).sharing,false);
@@ -143,7 +145,8 @@ test('MEDIA-24/28: leave delivered before a held join makes that generation term
   const left=await a.request({type:'call-leave',callId:'old',generation:1});
   assert.deepEqual({callId:left.callId,generation:left.generation,inCall:left.inCall,muted:left.muted,sharing:left.sharing},
     {callId:'old',generation:1,inCall:false,muted:true,sharing:false});
-  const oldId=a.send(delayedJoin), refused=await a.next('error',e=>e.requestId===oldId);
+  const oldId=a.send(delayedJoin), refused=await a.next(['error','ack'],e=>e.requestId===oldId);
+  assert.equal(refused.type,'error');
   assert.equal(refused.code,'INVALID_EVENT'); assert.equal(refused.phase,'call-join');
   const admitted=await a.request({type:'call-join',callId:'new',generation:2,muted:false});
   assert.equal(admitted.generation,2); assert.equal(admitted.inCall,true);
@@ -175,10 +178,10 @@ test('MEDIA-25/26: saturated message, media and signaling budgets still allow st
     for(let i=0;i<101;i++)a.send({type,text:'quota',muted:false,sharing:true,to:b.id,signal:{candidate:{candidate:''}}});
     await a.next('error',e=>e.code==='RATE_LIMITED'&&e.phase===type);
   }
-  const started=performance.now(), stopped=await a.request({type:'media',sharing:false});
-  assert.equal(stopped.sharing,false); assert.equal(stopped.inCall,true);
-  const left=await a.request({type:'call-leave',generation:1});
-  assert.equal(left.inCall,false); assert.equal(left.sharing,false); assert.equal(left.generation,1);
+  const started=performance.now(),stopId=a.send({type:'media',sharing:false}),stopped=await a.next(['ack','error'],e=>e.requestId===stopId);
+  assert.equal(stopped.type,'ack');assert.equal(stopped.sharing,false); assert.equal(stopped.inCall,true);
+  const leaveId=a.send({type:'call-leave',generation:1}),left=await a.next(['ack','error'],e=>e.requestId===leaveId);
+  assert.equal(left.type,'ack');assert.equal(left.inCall,false); assert.equal(left.sharing,false); assert.equal(left.generation,1);
   const terminal=await b.next('presence',e=>e.members.find(m=>m.id===a.id)?.inCall===false);
   assert.equal(terminal.members.find(m=>m.id===a.id).sharing,false); assert.ok(performance.now()-started<1000);
   await extra.request({type:'call-join'});
