@@ -81,7 +81,7 @@ O cliente compila, mas a suíte falha por módulo ausente e o pacote Windows omi
 ## Execution Plan
 
 1. [x] Concluir integração desktop: electron/main.js, preload.cjs, policy.js, integração mínima de erro em src/main.jsx e testes de política/perfil; gate Node 43/43, build, perfil e smoke aprovados. Adequação em evidence.md. Commit fix(desktop).
-2. Corrigir entrada do empacotamento: package.json, prepare-electron.mjs, build-windows.mjs e testes de pacote; gate Node, build e portátil local. Commit fix(build).
+2. [x] Corrigir entrada do empacotamento: package.json, prepare-electron.mjs, build-windows.mjs e testes de pacote; gate Node 44/44, build, portátil e inventário ASAR aprovados. Perfil aprovado também no executável win-unpacked. Commit fix(build).
 3. Fechar diagnóstico e teardown: scripts desktop/startup e helper/testes necessários; gate completo, diagnóstico sem manifesto e verificador independente. Commit fix(harness).
 
 Nenhuma extração ou dependência nova é necessária. Os passos são atômicos; cada um registra adequação em evidence.md antes do commit.

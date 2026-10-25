@@ -1,5 +1,17 @@
 # Evidência do build confiável
 
+## Passo 2: empacotamento
+
+Gate em 2026-10-24: npm test **44/44**, zero falhas/skips; npm run dist:win e check-package aprovados. Portátil local: release-windows/Conversa-0.1.1-Windows.exe, SHA-256 `cedb8048fedec3463e529401a4b71364e0d571eb65b376dd75042d4226b4f9c4`. Manifesto atual em test-results/build.json. O executável win-unpacked passou no desktop-profile-check; o wrapper portátil ainda não recebeu essa aprovação. Nenhuma publicação externa ou assinatura foi realizada.
+
+| Critério | Evidência / asserção | Resultado |
+| --- | --- | --- |
+| BUILD-05 | scripts/check-package.mjs:20 `assert.equal(entries.has(path),true)` para cada import local e :28 `assert.equal(checked.has('shared/protocol.js'),true)` | Seis módulos locais acessíveis no ASAR, incluindo contrato e preload; dist/index.html presente (:30). |
+| BUILD-06 | tests/packaging.test.js:18–23 conteúdo atual/seguinte, `existsSync(...obsolete.dll) === false` e `existsSync(...default_app.asar) === false` | Staging não mescla arquivos antigos e preserva dados atuais do runtime. |
+| BUILD-11 | scripts/check-package.mjs:9–14 versão igual, arquivos existentes e digest SHA-256 igual ao manifesto; :29 versão interna igual | Manifesto identifica o artefato produzido, sem depender de artifacts/build.json histórico. |
+
+Mapeamento reverso: packaging.test.js contém apenas BUILD-06; check-package contém BUILD-05/11 e a presença do bundle requerida por BUILD-01. Nenhum teste anterior alterado. Adequação do passo 2: resultados de inventário, conteúdo e hash, além da abertura do aplicativo empacotado, substituem a suposição de que o glob correto basta.
+
 ## Passo 1: integração desktop
 
 Gate em 2026-10-24: npm test **43/43**, zero falhas/skips; npm run build aprovado; desktop-profile-check e desktop-smoke aprovados pelo código. O primeiro smoke identificou a origem serializada com barra final e o cancelamento incompatível com Electron 45; ambos foram corrigidos. Nenhuma asserção anterior foi removida ou enfraquecida.

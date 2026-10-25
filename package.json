@@ -34,7 +34,7 @@
     "productName": "Conversa",
     "electronDist": ".packaging/electron",
     "directories": { "output": "release-windows" },
-    "files": ["dist/**/*", "electron/**/*", "server/service.js", "package.json"],
+    "files": ["dist/**/*", "electron/**/*", "server/service.js", "shared/**/*", "package.json"],
     "win": { "target": "portable", "signAndEditExecutable": false },
     "portable": { "artifactName": "Conversa-${version}-Windows.exe" }
   }
