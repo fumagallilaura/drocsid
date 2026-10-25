@@ -12,6 +12,7 @@ async function instrument(page) {
   await page.evaluate(protocolVersion => {
     window.__testConnections = [];
     window.__testCaptures = [];
+    window.__testDisplays = [];
     window.__testCallEvents = [];
     const Original = window.RTCPeerConnection;
     window.RTCPeerConnection = class extends Original { constructor(...args) { super(...args); window.__testConnections.push(this); } };
@@ -36,13 +37,20 @@ async function instrument(page) {
     const getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
     navigator.mediaDevices.getUserMedia = async options => {
       const stream = await getUserMedia(options);
+      for (const track of stream.getTracks()) {
+        const stop = track.stop.bind(track);
+        track.stop = () => { stop(); console.info('CONVERSA_TEST_STOP ' + JSON.stringify({id:track.id,state:track.readyState})); };
+      }
       window.__testCaptures.push(stream);
       if (window.__holdMicrophone) { window.__lateStream = stream; await new Promise(resolve => { window.__releaseMicrophone = resolve; }); }
       return stream;
     };
+    const getDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
+    navigator.mediaDevices.getDisplayMedia = async options => { const stream = await getDisplayMedia(options); window.__testDisplays.push(stream); return stream; };
   }, PROTOCOL_VERSION);
 }
 const errors = [];
+const diagnostics = [], stops = []; let nativeDiagnostics = '';
 const desktopEnv = { ...process.env };
 delete desktopEnv.ELECTRON_RUN_AS_NODE;
 const externalMode = readFlag('CONVERSA_TEST_EXTERNAL');
@@ -58,13 +66,20 @@ desktop = await electron.launch({
   env: desktopEnv,
   timeout: 30000,
 });
+  desktop.process().stderr.on('data', bytes => { nativeDiagnostics += bytes.toString(); });
   const first = await desktop.firstWindow();
+  first.on('console', message => {
+    const value = message.text();
+    if (value.startsWith('CONVERSA_TEST_STOP ')) stops.push(JSON.parse(value.slice(19)));
+    else if (message.type() === 'warning') { try { diagnostics.push(JSON.parse(value)); } catch {} }
+  });
   const firstNativeWindow = await desktop.browserWindow(first);
   const captureTitle = `Conversa smoke ${Date.now()}`;
   const firstMuted = () => firstNativeWindow.evaluate(window => window.webContents.isAudioMuted());
   first.on('pageerror', error => errors.push(error.message));
   await expect(first.getByRole('heading', { name: 'Vamos nos encontrar?' })).toBeVisible();
   expect(await firstMuted()).toBe(true);
+
   await first.screenshot({ path: resolve(output, '01-entrada.png') });
   await instrument(first);
   await first.getByLabel('Seu nome', { exact: true }).fill('Ana');
@@ -153,6 +168,31 @@ desktop = await electron.launch({
   await expect.poll(() => first.evaluate(() => window.__lateStream.getTracks().every(track => track.readyState === 'ended'))).toBe(true);
   expect(await firstMuted()).toBe(true);
 
+  // MEDIA-07/31/32: keyboard cancellation and a technical inventory failure.
+  await first.evaluate(() => { window.__holdMicrophone = true; window.__releaseMicrophone = null; });
+  await first.getByRole('button', { name: 'Entrar na chamada', exact: true }).click();
+  await expect.poll(() => first.evaluate(() => !!window.__releaseMicrophone)).toBe(true);
+  await first.getByRole('button', { name: 'Cancelar entrada', exact: true }).focus();await first.keyboard.press('Enter');
+  await first.evaluate(() => { window.__holdMicrophone = false; window.__releaseMicrophone(); });
+  await expect.poll(() => first.evaluate(() => window.__lateStream.getTracks().every(track => track.readyState === 'ended'))).toBe(true);
+  await first.getByRole('button', { name: 'Entrar na chamada', exact: true }).click();
+  await expect(first.getByText('VOCÊ ESTÁ NA CHAMADA', { exact: true })).toBeVisible();
+  await desktop.evaluate(({ desktopCapturer }) => {
+    globalThis.__mediaOriginalInventory = desktopCapturer.getSources;
+    desktopCapturer.getSources = async () => { const error = new Error('MEDIA_PRIVATE_MESSAGE');error.name='MEDIA_PRIVATE_TITLE';error.sdp='MEDIA_PRIVATE_SDP';error.credential='MEDIA_PRIVATE_SECRET';throw error; };
+  });
+  await first.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
+  await expect(first.getByText('Não foi possível listar as fontes de tela.', { exact: true })).toBeVisible();
+  await expect.poll(() => diagnostics.filter(value => value.phase === 'capture-inventory').length).toBe(1);
+  const captureDiagnostic = diagnostics.find(value => value.phase === 'capture-inventory');
+  expect(captureDiagnostic).toMatchObject({code:'MEDIA_FAILED',phase:'capture-inventory',version:'0.1.1'});
+  for (const field of ['requestId','callId','operationId']) expect(captureDiagnostic[field]).toMatch(/^[a-f0-9-]{36}$/);
+  expect(captureDiagnostic.generation).toBeGreaterThan(0);
+  expect(Object.keys(captureDiagnostic).sort()).toEqual(['callId','cause','code','generation','operationId','phase','requestId','runtime','version']);
+  expect(JSON.stringify(diagnostics) + nativeDiagnostics).not.toContain('MEDIA_PRIVATE_');
+  await desktop.evaluate(({ desktopCapturer }) => { desktopCapturer.getSources = globalThis.__mediaOriginalInventory; });
+  await first.getByRole('button', { name: 'Encerrar chamada', exact: true }).click();
+
   const secondWindow = desktop.waitForEvent('window');
   await desktop.evaluate(({ Menu }) => Menu.getApplicationMenu().items[0].submenu.items[0].click());
   const second = await secondWindow;
@@ -196,6 +236,7 @@ desktop = await electron.launch({
   await expect.poll(firstMuted).toBe(false);
   await first.getByRole('button', { name: 'Silenciar áudio', exact: true }).click();
   await expect.poll(firstMuted).toBe(true);
+  expect(await first.evaluate(() => window.__testCaptures.at(-1).getAudioTracks().every(track => track.enabled && track.readyState === 'live'))).toBe(true);
   await first.getByRole('button', { name: 'Ativar áudio', exact: true }).click();
   await expect.poll(firstMuted).toBe(false);
   await second.getByRole('button', { name: 'Participar', exact: true }).click();
@@ -222,10 +263,34 @@ desktop = await electron.launch({
   await first.screenshot({ path: resolve(output, '02-chamada-grupo.png') });
 
   await firstNativeWindow.evaluate((window, title) => window.setTitle(title), captureTitle);
+  await firstNativeWindow.evaluate(window => {
+    const send = window.webContents.send.bind(window.webContents);
+    window.webContents.send = (channel, payload) => { if (channel === 'capture-sources') window.__capturePayload = payload; return send(channel, payload); };
+  });
+  await first.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
+  const cancelledPicker = first.getByRole('dialog', { name: 'O que vamos compartilhar?' });
+  await expect(cancelledPicker).toBeVisible();await first.keyboard.press('Escape');await expect(cancelledPicker).toHaveCount(0);
+  await firstNativeWindow.evaluate(window => { window.__oldCapturePayload = window.__capturePayload; });
+  await expect(first.getByRole('button', { name: 'Compartilhar tela', exact: true })).toBeEnabled();
+  await first.evaluate(() => {
+    const socket = window.__testSocket, receive = socket.onmessage;
+    window.__holdMedia = 'start'; window.__heldMedia = [];
+    socket.onmessage = event => {
+      const value = JSON.parse(event.data);
+      if (value.type === 'ack' && value.action === 'media' && ((window.__holdMedia === 'start' && value.sharing) || (window.__holdMedia === 'stop' && !value.sharing))) window.__heldMedia.push(event);
+      else receive(event);
+    };
+    window.__releaseMedia = () => { window.__holdMedia = null; window.__heldMedia.splice(0).forEach(event => receive(event)); };
+  });
   await first.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
   const picker = first.getByRole('dialog', { name: 'O que vamos compartilhar?' });
   await expect(picker).toBeVisible({ timeout: 15000 });
+  await expect(first.getByText('Escolhendo…', { exact: true })).toBeVisible();
+  await firstNativeWindow.evaluate(window => { window.webContents.send('capture-error', {...window.__oldCapturePayload,code:'MEDIA_FAILED',phase:'capture-inventory'}); });
+  await expect(picker).toBeVisible();expect(diagnostics.filter(value => value.phase === 'capture-inventory').length).toBe(1);
   await picker.getByRole('button', { name: captureTitle, exact: true }).click();
+  await expect(first.getByText('Publicando…', { exact: true })).toBeVisible();await expect(first.getByText('AO VIVO', { exact: true })).toHaveCount(0);
+  await first.evaluate(() => window.__releaseMedia());
   await expect(second.getByText('Tela de Ana', { exact: true })).toBeVisible({ timeout: 15000 });
   await expect(observer.locator('video')).toHaveCount(0);
   await expect(observer.getByText('AO VIVO', { exact: true })).toHaveCount(0);
@@ -252,14 +317,42 @@ desktop = await electron.launch({
     await third.getByRole('button', { name: 'Encerrar chamada', exact: true }).click();
     console.log('PASS: separate group server, cross-origin desktop connection and third participant joining an active screen share.');
   }
+  await first.evaluate(() => { window.__holdMedia = 'stop'; });
   await first.getByRole('button', { name: 'Parar compartilhamento', exact: true }).click();
+  await expect(first.getByText('Parando…', { exact: true })).toBeVisible();
+  expect(await first.evaluate(() => window.__testDisplays.at(-1).getTracks().every(track => track.readyState === 'ended'))).toBe(true);
+  expect(await first.evaluate(() => window.__testCaptures.at(-1).getTracks().every(track => track.readyState === 'live'))).toBe(true);
+  await first.evaluate(() => window.__releaseMedia());
   await expect(second.getByText('Tela de Ana', { exact: true })).toHaveCount(0);
+  await first.evaluate(() => {
+    const socket = window.__testSocket, receive = socket.onmessage;window.__delayedRoom = [];
+    socket.onmessage = event => { const value=JSON.parse(event.data);if(value.type==='joined')window.__delayedRoom.push(event);else receive(event); };
+    window.__releaseNewRoom = () => { socket.onmessage=receive;window.__delayedRoom.splice(0).forEach(event=>receive(event)); };
+  });
   await first.getByRole('button', { name: 'Adicionar sala', exact: true }).click();
   await first.getByLabel('Nome da sala', { exact: true }).fill('Estúdio');
   await first.getByRole('button', { name: 'Criar sala', exact: true }).last().click();
+  await expect.poll(() => first.evaluate(() => window.__delayedRoom.length)).toBe(1);
+  await expect(first.getByRole('heading', { name: 'geral', exact: true })).toBeVisible();
+  expect(await firstMuted()).toBe(true);
+  expect(await first.evaluate(() => window.__testCaptures.every(stream=>stream.getTracks().every(track=>track.readyState==='ended')) && window.__testConnections.every(pc=>pc.connectionState==='closed'))).toBe(true);
+  await first.evaluate(() => window.__releaseNewRoom());
   await expect(first.getByRole('heading', { name: 'Estúdio', exact: true })).toBeVisible();
   await expect.poll(firstMuted).toBe(true);
   await expect(second.getByText('1 pessoa na chamada', { exact: true })).toBeVisible();
+  await first.getByRole('button', { name: 'Entrar na chamada', exact: true }).click();
+  await expect(first.getByText('VOCÊ ESTÁ NA CHAMADA', { exact: true })).toBeVisible();
+  const reloadedIds = await first.evaluate(() => window.__testCaptures.at(-1).getTracks().map(track=>track.id));
+  await first.reload();
+  for (const id of reloadedIds) await expect.poll(() => stops.some(track=>track.id===id&&track.state==='ended')).toBe(true);
+  await expect.poll(firstMuted).toBe(true);expect(await first.locator('audio,video').count()).toBe(0);
+  await instrument(first);await first.getByRole('button', { name: 'Entrar no Conversa', exact: true }).click();
+  await first.getByRole('button', { name: 'Participar', exact: true }).click();
+  await expect(first.getByText('VOCÊ ESTÁ NA CHAMADA', { exact: true })).toBeVisible();
+  const disconnectedIds = await first.evaluate(() => window.__testCaptures.at(-1).getTracks().map(track=>track.id));
+  await settings.click();await first.getByRole('button', { name: 'Sair e trocar de servidor', exact: true }).click();
+  for (const id of disconnectedIds) await expect.poll(() => stops.some(track=>track.id===id&&track.state==='ended')).toBe(true);
+  await expect.poll(firstMuted).toBe(true);expect(await first.locator('audio,video').count()).toBe(0);
   if (errors.length) throw new Error(`Renderer errors: ${errors.join('; ')}`);
   console.log('PASS: Windows desktop, two users, group chat, voice RTP, mute, screen video, stop capture, room creation and call cleanup.');
 } finally {

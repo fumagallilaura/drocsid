@@ -245,14 +245,14 @@ Os IDs MEDIA detalham o recorte sem substituir os IDs STAB. As linhas de código
 | MEDIA-19 | US2 | STAB-16 | R03 | T4, T8 | Execute | Implementing |
 | MEDIA-20 | US2 | STAB-06/44 | R02/R26 | T4, T7, T8 | Execute | Implementing |
 | MEDIA-21 | US3 | STAB-05 | R01/R02/R06 | T1, T4, T7, T8, T9 | Execute | Implementing |
-| MEDIA-22 | US3 | STAB-05; C2 | R01/R06 | T7, T8 | Tasks | In Tasks |
+| MEDIA-22 | US3 | STAB-05; C2 | R01/R06 | T7, T8 | Execute | Implementing |
 | MEDIA-23 | US3 | STAB-05/36 (capturas) | R01/R03/R07 | T1, T4, T5, T7, T8 | Execute | Implementing |
 | MEDIA-24 | US3 | STAB-30/39 | R06/R13 | T2, T3, T6, T8 | Execute | Implementing |
 | MEDIA-25 | US3 | STAB-28/68 | R06 | T2, T6, T8 | Execute | Implementing |
 | MEDIA-26 | US3 | STAB-29 | R06 | T2, T3, T6, T8 | Execute | Implementing |
 | MEDIA-27 | US3 | STAB-32 | R06/R14 | T2, T8 | Execute | Implementing |
 | MEDIA-28 | US3 | STAB-03/06/39; terminal explícito | R01/R02/R06/R13 | T1, T2, T3, T4, T5, T6, T7, T8 | Execute | Implementing |
-| MEDIA-29 | US3 | STAB-31 | R06/R26 | T7, T8, T9 | Tasks | In Tasks |
+| MEDIA-29 | US3 | STAB-31 | R06/R26 | T7, T8, T9 | Execute | Implementing |
 | MEDIA-30 | US3 | A5; controle existente | R26 (recorte mídia) | T1, T7, T8, T9 | Execute | Implementing |
 | MEDIA-31 | US4 | STAB-41/67 | R13/R25 | T1, T2, T3, T4, T5, T6, T7, T8 | Execute | Implementing |
 | MEDIA-32 | US4 | STAB-67 | R25 | T1, T2, T3, T4, T5, T7, T8 | Execute | Implementing |

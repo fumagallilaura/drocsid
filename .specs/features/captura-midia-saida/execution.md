@@ -217,3 +217,38 @@ Guidelines: matriz/README/skill. Nenhuma coerção, skip, exclusão de teste ou 
 **Veredito do autor T6: 14/14 gates Build PASS**, mais integração do cliente v1 real PASS. Adequação aprovada; sem Verified global. Assinatura/instalador, hardware e ruído continuam fora desta evidência.
 
 Mensagem do commit T6: a primeira chamada do check_commit recebeu apenas o título e recusou a ausência do footer; o comando composto continuou indevidamente até o commit. Corrigido antes de T7: mensagem completa, título menor que 72 caracteres e footer BREAKING CHANGE validados com PASS, e commit T6 local amendado. Nenhuma mudança de código ou teste nesse ajuste.
+
+## T7 — controles, reprodução e diagnóstico
+
+T6: `5a8f657`. UI distingue seleção, publicação, ativo e parada, sem AO VIVO local antes do commit de tela. Vídeo remoto exige conexão e track recebida, em vez de só presença. Reprodução consulta o controlador e a Session atuais; o botão de silenciar saída bloqueia imediatamente e conserva o microfone. Saída e troca de sala bloqueiam reprodução antes da confirmação. O aviso de loopback explicita que pode incluir a própria chamada.
+
+Diagnóstico tem lista de campos/códigos/fases/causas permitidos. Call preserva requestId do erro nativo, além de callId/geração/operationId. O teste de resultado encontrou requestId perdido no repasse; a implementação foi corrigida. LogFailure não serializa nomes de causa arbitrários. Não há nova plataforma de logging.
+
+Arquivos: `src/main.jsx`, campo de correlação em `src/rtc.js`, sanitização no `server/service.js`, E2E em `scripts/desktop-smoke.mjs`, teste do logger em `tests/service.test.js`, registros. Um novo teste Node e cenários Electron; os primeiros testes de teclado foram reposicionados para depois da entrada real na sala, mantendo asserções. **75/75 Node = 50 + 25**, zero falhas/skips/cancelled. Full, captura/perfil e smoke externo **PASS**, com terceiro participante recebendo tela ativa.
+
+### Adequação A/B
+
+| Critério | Evidência e expressão | Resultado esperado | Coberto |
+| --- | --- | --- | --- |
+| MEDIA-07, cancelamento por teclado | `scripts/desktop-smoke.mjs:175` foco/Enter em Cancelar entrada; `:177` todas as tracks tardias ended | Cancela sem aguardar permissão | Sim |
+| MEDIA-17/20, fases reais | `scripts/desktop-smoke.mjs:288` Escolhendo visível; `:292` Publicando visível/AO VIVO count 0 enquanto ack retido; `:322` Parando visível | Não anuncia publicação antes de commit; parada distinta | Sim |
+| MEDIA-28, erro antigo | `scripts/desktop-smoke.mjs:289` injeta erro com chave da seleção anterior; `:290` picker atual visível e só um diagnóstico de inventário | Erro antigo não fecha seleção nova nem reapresenta falha | Sim |
+| MEDIA-10/29/30, saída e mute | `scripts/desktop-smoke.mjs:239` todas tracks de mic enabled/live com saída silenciada; teste anterior do mesmo fluxo confere isAudioMuted true/false; aviso explícito no App | Silenciar áudio só reprodução; microfone separado | Sim, controles; áudio físico em T9 |
+| MEDIA-21/22, sala confirmada atrasada | `scripts/desktop-smoke.mjs:336` cabeçalho geral ainda visível; `:337` isAudioMuted true; `:338` todas tracks ended e PCs closed antes de liberar joined | Troca de texto termina a chamada imediatamente | Sim |
+| MEDIA-23/29, recarga e desconexão | `scripts/desktop-smoke.mjs:347`, `:354` IDs de tracks observados ended; `:348`, `:355` isAudioMuted true/zero elementos de mídia | Encerramento local antes de perder contexto; sem reprodução reativada | Sim, sintético; controlador fechado e close nativo em T1/T5 |
+| MEDIA-31/32, diagnóstico do fluxo real | `scripts/desktop-smoke.mjs:188` MEDIA_FAILED/capture-inventory/versão; `:189` requestId/callId/operationId UUIDs; `:190` geração positiva; `:191` chaves exatas; `:192` resultado inteiro sem MEDIA_PRIVATE_ | Categoria/fase/correlação sem nome/título/SDP/segredo/mensagem | Sim |
+| Sanitização no host | `tests/service.test.js:219` ausência de sentinelas no resultado inteiro; `:220` deepEqual de todos os campos permitidos | Nomes de causa não viram canal de conteúdo | Sim |
+| Geração após troca de controlador | Smoke mantém asserções de T3 de geração crescente/callId distinto, reexecutadas com v2 | Não reinicia número na mesma conexão | Sim |
+
+### Adequação C/D
+
+| Teste / expressão | Âncora | Manter |
+| --- | --- | --- |
+| `scripts/desktop-smoke.mjs:175`, `:177` teclado e ended | MEDIA-07/21/28 | Sim |
+| `scripts/desktop-smoke.mjs:188`–`:192` valores/campos/ausência de sentinela | MEDIA-31/32 | Sim |
+| `scripts/desktop-smoke.mjs:239` mic enabled/live | MEDIA-29/30; sem deafen | Sim |
+| `scripts/desktop-smoke.mjs:290`, `:292`, `:322` seletor/publicação/parada | MEDIA-17/20/28 | Sim |
+| `scripts/desktop-smoke.mjs:338`, `:347`, `:354` ended/peers closed | MEDIA-21/22/23/29 | Sim |
+| `tests/service.test.js:219`, `:220` log inteiro sanitizado/exato | MEDIA-32 | Sim |
+
+Guidelines: matriz/README/skill. Layout preservado; nenhuma funcionalidade extra, deafen, câmera ou TypeScript. **Veredito do autor T7: gate e adequação aprovados; falta a consolidação T8 e o Verifier independente. T9 físico pendente.**

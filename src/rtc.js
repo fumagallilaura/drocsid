@@ -24,7 +24,7 @@ export class Call {
   report(error) { this.onError(error instanceof Error ? error : new Error(String(error))); }
   failure(error, phase, attempt) {
     return Object.assign(new ProtocolError(error.code || 'MEDIA_FAILED', error.message), {
-      phase: error.phase || phase, callId: attempt.callId, generation: attempt.generation,
+      phase: error.phase || phase, requestId: error.requestId || null, callId: attempt.callId, generation: attempt.generation,
     });
   }
   announce(event, attempt = this.attempt, operation = null) {

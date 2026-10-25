@@ -14,7 +14,7 @@ export function logFailure(phase, code, requestId, error) {
   const cause = error?.cause || error;
   const causeCode = ['EADDRINUSE','EADDRNOTAVAIL','EACCES','ENOENT','ERR_SQLITE_ERROR','SHUTDOWN_FAILED'].includes(cause?.code) ? cause.code : null;
   console.warn(JSON.stringify({ phase, code, requestId: requestId || null, version: metadata.version,
-    runtime: process.versions.electron || process.versions.node, cause: cause?.name || 'Error', causeCode,
+    runtime: process.versions.electron || process.versions.node, cause: ['Error','TypeError','RangeError','SyntaxError','DOMException','AbortError','NotAllowedError','ProtocolError'].includes(cause?.name) ? cause.name : 'Error', causeCode,
     sqliteCode: Number.isInteger(cause?.errcode) ? cause.errcode : null }));
 }
 const messages = {

@@ -6,7 +6,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { createService } from '../server/service.js';
+import { createService, logFailure } from '../server/service.js';
 import { client } from './helpers/client.js';
 
 async function start(t, options={}) {
@@ -210,4 +210,12 @@ test('MEDIA-05/24/28: v1 requests cannot enter a v2 service or occupy its call',
   const present=await observer.request({type:'join',name:'Bia',room:'geral'});assert.equal(present.room.id,'geral');
   const snapshot=await observer.next('presence',e=>e.members.some(m=>m.id===a.id));assert.equal(snapshot.members.find(m=>m.id===a.id).inCall,false);
   const next=await a.request({type:'call-join'});assert.equal(next.inCall,true);assert.equal(next.generation,1);
+});
+
+test('MEDIA-32: media diagnostics exclude sensitive error properties and untrusted cause names',t=>{
+  const warnings=[],original=console.warn;console.warn=value=>warnings.push(value);t.after(()=>{console.warn=original;});
+  const error=Object.assign(Error('MEDIA_PRIVATE_AUDIO'),{name:'MEDIA_PRIVATE_TITLE',sdp:'MEDIA_PRIVATE_SDP',candidate:'MEDIA_PRIVATE_ICE',credential:'MEDIA_PRIVATE_SECRET',thumbnail:'MEDIA_PRIVATE_IMAGE',messageText:'MEDIA_PRIVATE_CHAT'});
+  logFailure('capture-inventory','MEDIA_FAILED','technical-request',error);
+  assert.equal(warnings.length,1);assert.equal(warnings.join('').includes('MEDIA_PRIVATE_'),false);
+  assert.deepEqual(JSON.parse(warnings[0]),{phase:'capture-inventory',code:'MEDIA_FAILED',requestId:'technical-request',version:'0.1.1',runtime:process.versions.node,cause:'Error',causeCode:null,sqliteCode:null});
 });

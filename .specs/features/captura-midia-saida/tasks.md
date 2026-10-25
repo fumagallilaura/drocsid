@@ -6,7 +6,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 
 **If the skill cannot be activated, STOP and tell the user - do not proceed without it.**
 
-**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T6 concluídas; T7–T9 pendentes. Ver [execução](execution.md).
+**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T7 concluídas; T8/T9 pendentes. Ver [execução](execution.md).
 
 O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem A recomendada; a geração do documento não marca essa arquitetura ou Execute como aprovados. Os padrões A1–A8 permanecem explícitos na spec.
 
@@ -254,16 +254,18 @@ T8 -> T9
 
 **Done when**:
 
-- [ ] Seleção/publicação/ativo/parada são distintos; callback/erro antigo não fecha ou altera a seleção nova. Cancelar e sair continuam acessíveis por teclado.
-- [ ] A ligação da alocadora feita em T3 permanece íntegra ao integrar os controles; substituir controlador na conexão atual não volta a usar uma geração terminal.
-- [ ] Troca de sala, desconexão, recarga e saída invalidam a tentativa e bloqueiam reprodução antes da confirmação remota. Efeito antigo não reabilita reprodução.
-- [ ] Mute e “Silenciar áudio” preservam o contrato da spec; consentimento de loopback informa abrangência global. Não se adiciona deafen ou sons de chamada.
-- [ ] Logs usam somente campos permitidos; a prova de sanitização contém valores sentinela sensíveis e verifica sua ausência no resultado inteiro.
-- [ ] E2E do proprietário entra no mesmo commit; Full + captura/perfil aprovados, `50 + Δ` registrado e zero falhas/skips. Layout não é redesenhado.
+- [x] Seleção/publicação/ativo/parada são distintos; callback/erro antigo não fecha ou altera a seleção nova. Cancelar e sair continuam acessíveis por teclado.
+- [x] A ligação da alocadora feita em T3 permanece íntegra ao integrar os controles; substituir controlador na conexão atual não volta a usar uma geração terminal.
+- [x] Troca de sala, desconexão, recarga e saída invalidam a tentativa e bloqueiam reprodução antes da confirmação remota. Efeito antigo não reabilita reprodução.
+- [x] Mute e “Silenciar áudio” preservam o contrato da spec; consentimento de loopback informa abrangência global. Não se adiciona deafen ou sons de chamada.
+- [x] Logs usam somente campos permitidos; a prova de sanitização contém valores sentinela sensíveis e verifica sua ausência no resultado inteiro.
+- [x] E2E do proprietário entra no mesmo commit; Full + captura/perfil aprovados, `50 + Δ` registrado e zero falhas/skips. Layout não é redesenhado.
 
 **Tests**: e2e em `scripts/desktop-smoke.mjs`, com observação dos estados e logs, cancelamento por teclado, sala com confirmação atrasada, saída/reentrada e erro de inventário antigo. Reusar checks de RTP, vídeo recebido e saída; não tratá-los como qualidade física.
 **Gate**: full + captura/perfil source; repetir smoke source com `CONVERSA_TEST_EXTERNAL=1`.
 **Commit**: `fix(ui): keep media controls bound to the current call operation`
+
+**Execução T7 em 2026-10-25**: Full + captura/perfil + smoke externo PASS, 75/75 Node (50 + 25), zero falhas/skips/cancelled. [Adequação](execution.md#t7--controles-reprodução-e-diagnóstico). T6 em `5a8f657`; T7 neste commit.
 
 ### Phase 3: Aceitação
 
