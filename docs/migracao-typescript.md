@@ -4,6 +4,8 @@ O usuário confirmou que todo código JavaScript próprio será migrado para Typ
 
 Leitura do disco em 2026-10-25, branch `main`, base `a07702f`, último commit de código/testes `58be3ed`. Havia alterações documentais de investigação de mídia em andamento. O inventário precisa ser atualizado quando a estabilização terminar, pois ela ainda pode mudar os arquivos e os contratos abaixo.
 
+**Reconferência documental em 2026-10-25, base `7eedac8`:** o Git mantém 39 arquivos nas extensões inventariadas, dos quais 37 são fontes próprias e dois são saídas históricas. Há 50 definições de teste Node; isso é contagem por leitura, sem nova execução. Nenhuma fonte, dependência ou configuração TypeScript foi criada. A [revisão de coerência](revisao-coerencia-documental.md) e o [Handoff](../.specs/STATE.md) mantêm a sequência revisão → estabilização → futura spec de migração. A autorização de continuar a estabilização não antecipa a conversão.
+
 ## Escopo confirmado e limites deste documento
 
 - Migrar as fontes próprias `.js`, `.jsx`, `.cjs` e `.mjs`: aplicativo, servidor, protocolo compartilhado, Electron, configuração executável, scripts, testes, fixtures e ferramentas próprias de revisão.

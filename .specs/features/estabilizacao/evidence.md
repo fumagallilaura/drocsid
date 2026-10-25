@@ -1,5 +1,7 @@
 # Evidência incremental da estabilização
 
+**Nota de reconciliação, 2026-10-25:** as seções T1–T6 abaixo são registros históricos de adequação do autor nos commits relacionados em [tasks.md](tasks.md). Seus PASS parciais e contagens não certificam os 68 STAB. A [validação BUILD](../build-confiavel/validation.md) é posterior e limitada aos 11 BUILD; os [34 MEDIA](../captura-midia-saida/spec.md) continuam sem Verified. A [revisão documental](../../../docs/revisao-coerencia-documental.md) não reexecutou estes ensaios nem alterou suas medições. Pendências descritas em cada passo pertencem àquele momento e precisam de reconciliação na retomada.
+
 Esta é a revisão de adequação do autor por tarefa. As linhas de cada seção referem-se ao commit da respectiva entrega; se um teste for ampliado depois, a validação independente final resolve as referências novamente em HEAD. Nenhum teste usa o exit zero das sondagens históricas como aprovação.
 
 ## T1 — Contrato

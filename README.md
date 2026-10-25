@@ -15,7 +15,9 @@ npm.cmd run desktop
 
 Requisito de desenvolvimento: Node.js 24.15 ou posterior compatível com `node:sqlite`. O executável inclui seu próprio runtime e não requer Node.js instalado.
 
-## O que funciona
+## Capacidades implementadas
+
+O [BUILD em `58be3ed`](.specs/features/build-confiavel/validation.md) tem PASS local de 11 critérios, 50 testes Node e 12 gates. Isso não certifica integralmente os [68 STAB](.specs/features/estabilizacao/spec.md) nem os [34 MEDIA](.specs/features/captura-midia-saida/spec.md). A lista abaixo descreve capacidades existentes, ainda sujeitas à estabilização.
 
 - Salas compartilhadas, criação de salas e lista de participantes online.
 - Mensagens reais por WebSocket; os 200 últimos registros da sala são carregados ao entrar.
@@ -42,14 +44,14 @@ npm.cmd start
 
 No aplicativo de cada pessoa, informe `http://IP-DO-COMPUTADOR:4310` no campo **Servidor do grupo**. O firewall do computador servidor precisa permitir essa porta para a rede usada. O aplicativo desktop mantém a interface local e conecta apenas os dados e a sinalização a esse endereço.
 
-Para uso pela internet, hospede esse servidor atrás de HTTPS/WSS e configure TURN. O servidor inicia com STUN público do Google; STUN sozinho não estabelece conexão em todas as redes. Configure os servidores ICE no processo que hospeda o grupo:
+Publicação futura exige contas, grupos privados e TURN autenticado, além de HTTPS/WSS. Esses bloqueadores continuam abertos. Para ensaios restritos com pessoas de confiança, o servidor inicia com STUN público do Google; STUN sozinho não estabelece conexão em todas as redes. O processo que hospeda o grupo aceita esta configuração ICE de teste:
 
 ```powershell
 $env:ICE_SERVERS = '[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:SEU-TURN:3478","username":"USUARIO","credential":"SENHA"}]'
 npm.cmd start
 ```
 
-O protótipo distribui essa configuração aos participantes. Em produção, credenciais TURN devem ter curta duração e exigir sessão autenticada.
+O protótipo distribui essa configuração sem autenticação. O exemplo é somente para um relay de teste restrito; não usar credenciais de produção. A emissão de credenciais TURN de curta duração após sessão autenticada pertence a uma entrega futura.
 
 ## Dados e limites
 
@@ -57,7 +59,9 @@ No desktop, o banco fica no diretório `userData` do Electron, normalmente `%APP
 
 Esta versão usa convidados, sem autenticação: nomes não comprovam identidade, salas não são privadas e qualquer pessoa com acesso ao servidor pode entrar e ler o histórico das salas. Use em testes com pessoas de confiança. Não é uma versão pronta para hospedagem pública.
 
-A mídia usa uma malha de conexões diretas entre os participantes, ou relay TURN quando configurado. O limite de seis pessoas é imposto pelo servidor, mas não representa uma garantia de qualidade: o consumo de upload cresce com o grupo. Antes de ampliar, substituir a malha por um SFU e acrescentar contas, permissões, convites autenticados, limites de armazenamento e monitoramento.
+A mídia usa uma malha de conexões diretas entre os participantes, ou relay TURN quando configurado. O limite de seis pessoas é imposto pelo servidor, mas não representa uma garantia de qualidade: o consumo de upload cresce com o grupo. Uma eventual adoção de SFU/LiveKit depende de avaliação e decisão futura; não foi aprovada.
+
+Trocar de sala de texto encerra a chamada. “Silenciar áudio” bloqueia somente a reprodução; não altera automaticamente o microfone como deafen. Compartilhamento de tela já existe e será estabilizado nos caminhos atuais. Câmera permanece negada.
 
 O áudio do sistema pode incluir todos os aplicativos, inclusive a reprodução da própria chamada. Use fones e mantenha essa opção desligada quando não for necessária. A opção está desligada por padrão.
 
@@ -94,20 +98,24 @@ O diagnóstico observa todas as janelas e verifica que não há reprodução aud
 
 ## O que falta para um produto completo
 
-Para o objetivo de conversar e compartilhar tela com amigos, as próximas etapas são:
+Em 2026-10-25, o usuário autorizou a sequência: revisão documental, continuidade da estabilização por uma sessão nova e, somente depois da estabilização, migração de todo o JavaScript próprio para TypeScript. A [revisão de coerência](docs/revisao-coerencia-documental.md) registra as correções e pendências; o [Handoff](.specs/STATE.md) informa o próximo passo. As nove [tarefas MEDIA](.specs/features/captura-midia-saida/tasks.md) continuam Draft, sem execução nesta revisão. A [preparação TypeScript](docs/migracao-typescript.md) inventaria a futura migração e não a inicia.
+
+Para o produto futuro, o [plano proposto](PLANO_PRODUTO.md) mantém estas etapas, sujeitas às decisões e validações indicadas:
 
 1. **Uso pela internet sem configuração manual:** hospedar servidor HTTPS/WSS e TURN, abrir convites diretamente no aplicativo e validar chamadas entre computadores em redes diferentes.
 2. **Identidade e privacidade:** contas, login, salas privadas, convites com expiração, papéis e permissões; hoje o acesso é de convidado.
 3. **Áudio no uso diário:** escolher microfone e fone/alto-falante, controlar volumes, push-to-talk e testar eco, Bluetooth e áudio real do sistema. Hoje são usados os dispositivos padrão.
 4. **Resiliência:** reconexão automática do servidor e recuperação da mídia após mudanças de rede. Hoje, a reconexão é manual; mensagens sem confirmação permanecem disponíveis para reenvio manual idempotente durante a mesma execução.
 5. **Distribuição e operação:** instalador, assinatura do executável, atualização automática, recuperação de falhas e backups do servidor.
-6. **Qualidade e capacidade:** testes prolongados com hardware real, redes lentas e seis participantes. Para grupos maiores, acrescentar um SFU em lugar da malha atual.
+6. **Qualidade e capacidade:** testes prolongados com hardware real, redes lentas e seis participantes. Avaliar com essas medidas se grupos maiores exigem SFU; a troca da malha não está aprovada.
 
 Anexos, busca, edição de mensagens, reações, notificações e mensagens privadas são expansões adicionais; não são necessários para validar primeiro o fluxo de grupo, voz e tela.
 
 ## Relação com a investigação do Discord
 
-Foi inspecionado com REA apenas o `package.json` do `app.asar` da instalação local `app-1.0.9265`. O manifesto declarou `bundle.js` como entrada Electron. Essa inspeção não estabeleceu a implementação interna das chamadas, codecs, infraestrutura ou compartilhamento do Discord. Nenhum código proprietário foi copiado para este projeto.
+A inspeção inicial D1 examinou o `package.json` do `app.asar` da instalação local `app-1.0.9265`, que declarou `bundle.js` como entrada Electron. A [investigação de 2026-10-25](.specs/features/captura-midia-saida/discord-investigation.md) acrescentou D2 e D6–D11: análises estáticas delimitadas de artefatos instalados e de um renderer histórico recuperado do cache. Esse cache não foi vinculado ao renderer ativo. D3–D5 são referências documentais. Nenhum código proprietário foi incorporado ao Conversa.
+
+U1 é evidência de UI/processo externa ao REA: o laboratório Conversa Lab / Teste de mídia foi criado com aceite explícito, sem convites; entrada e saída de voz foram confirmadas somente na interface. Câmera e tela estavam indisponíveis; a fonte artificial não foi compartilhada e foi encerrada. O gate de vídeo encontrado é hipótese de causa, e quatro dúvidas REA permanecem abertas. Os registros ficam fora do Git em `../discord-research/2026-10-25-media/` e `../discord-research/2026-10-25-runtime/`.
 
 Evidência original: `../discord-research/discord-package-evidence.json`, ID `ev_9300ac6c7d10ca4a8f8a67a55a85ae0c5da52cc25ea05a77addabf037502c158`. Artefato SHA-256: `0025c02c7241045a12464309604ec4d5b8ec7ed2ce43cce05d5dacb8f253f672`. A estrutura, transporte, limites e interface do Conversa são decisões próprias de implementação.
 

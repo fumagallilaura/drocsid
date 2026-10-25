@@ -2,6 +2,8 @@
 
 **Data:** 2026-10-24. **Escopo:** Large/Complex. **Estado:** spec elaborada e validada na etapa Specify. Os 68 critérios descrevem o resultado exigido e permanecem sem certificação integral. O pedido posterior de concluir o build originou a entrega separada [build-confiavel](../build-confiavel/spec.md), aprovada em seu escopo local; não equivale a executar ou aprovar toda esta spec.
 
+**Reconciliação em 2026-10-25:** C3 descreve o limite da entrega original; C5 autorizou BUILD depois dela. A nova autorização C6 determina revisão documental primeiro e continuidade da estabilização pela sessão nova depois. Não houve implementação nesta revisão. O [relatório de coerência](../../../docs/revisao-coerencia-documental.md) registra as correções e o [Handoff](../../STATE.md) define o próximo passo. Os textos dos 68 ACs, prazos e estados Pending foram preservados.
+
 ## Problem Statement
 
 O Conversa oferece texto, voz e tela em um protótipo desktop Windows. A revisão dessa referência registrou 26 achados, incluindo capturas sem controle, mensagens enviadas à sala errada, perda de texto e recursos que impedem o servidor de terminar. Esta especificação define a estabilização para testes com pessoas de confiança. Alterações locais posteriores à revisão ainda precisam de verificação contra estes requisitos.
@@ -55,6 +57,7 @@ Os 26 achados permanecem com destinação aberta nesta spec. Os registros increm
 | C3 | A entrega original foi somente a spec, sem correções, refatorações, novas funcionalidades, design, tarefas ou execução. Atualizar somente Handoff em STATE.md e preservar Decisions. | Instrução original do usuário; limite da entrega documental. C5 autoriza a entrega posterior de build. |
 | C4 | Trabalhar autonomamente, usando skills do MCP Agent Skills e evitando Code SLOP. Ignorar o pedido de conexão a repositório Git remoto. | Instruções posteriores do usuário; autonomia sozinha não revogou C3. |
 | C5 | Concluir o build e suas integrações locais; manter a certificação dos 68 STAB separada. | Pedido posterior “O build deve estar redondo e sem pontas soltas”, seguido de “Continue where you left off”. Escopo técnico registrado em build-confiavel. |
+| C6 | Revisar/corrigir a documentação e, depois de seu término comprovado, continuar a estabilização por uma sessão nova. TypeScript somente após a estabilização. | Autorização sequencial do usuário em 2026-10-25, registrada em `7eedac8` e no encaminhamento desta revisão. Não aprova por silêncio propostas técnicas nem altera C1/C2. |
 
 Estas confirmações não preenchem nem alteram a seção Decisions de STATE.md. A stack observada é contexto atual, não aprovação de arquitetura futura.
 
@@ -75,7 +78,7 @@ Estas confirmações não preenchem nem alteram a seção Decisions de STATE.md.
 
 ## Assumptions & Open Questions
 
-Os padrões abaixo são propostas do agente para tornar os resultados verificáveis. Não são respostas explícitas do usuário nem decisões arquiteturais aprovadas. Valem como premissas desta spec; alterá-los exige revisar os critérios correspondentes. A autonomia C4 não aprovou sua implementação integral; C5 autorizou apenas a entrega posterior de build. Publicação continua excluída.
+Os padrões abaixo são propostas do agente para tornar os resultados verificáveis. Não são respostas explícitas do usuário nem decisões arquiteturais aprovadas. Valem como premissas desta spec; alterá-los exige revisar os critérios correspondentes. Na cronologia original, a autonomia C4 não aprovou sua implementação integral e C5 autorizou BUILD. A continuidade posterior de C6 preserva esses critérios e exige distinguir premissas de escolhas confirmadas. Publicação continua excluída.
 
 | Assumption / decision | Chosen default | Rationale | Confirmed? |
 | --- | --- | --- | --- |
@@ -321,6 +324,8 @@ Prioridades das histórias orientam esta estabilização: P1 protege captura, te
 Todos os requisitos ficam em Specify/Pending nesta entrega documental. Os apontamentos identificam a origem do requisito na referência revisada, não evidência de atendimento no código atual. Para arquivos de implementação, as linhas são as do commit imutável `63810f4` e podem ser consultadas com `git show 63810f4:caminho`; as referências `review/` pertencem ao relatório preservado. A tabela de inspeção acima usa linhas do snapshot `dc8d7a1`.
 
 O plano e a evidência incremental já existentes foram preservados como registro do avanço anterior. Esta spec não os aprova nem inicia novo planejamento ou execução.
+
+As marcas T1–T6 no [plano histórico](tasks.md) são relatos do autor com commits, não estados Verified destes ACs. T7/T8 históricos têm sobreposição com BUILD, mas não devem ser marcados concluídos integralmente sem conferir os critérios restantes. O recorte [MEDIA](../captura-midia-saida/spec.md) detalha captura/saída; suas nove tarefas Draft também não substituem a certificação dos 68 STAB. O protocolo atual é v1; o v2 do design MEDIA permanece proposta, a reconciliar com A14 antes de eventual ativação.
 
 | Requirement ID | Story | Achados | Origem na referência revisada (file:line) | Phase | Status |
 | --- | --- | --- | --- | --- | --- |

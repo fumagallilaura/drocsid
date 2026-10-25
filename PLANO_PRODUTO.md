@@ -1,6 +1,8 @@
 # Evolução do Conversa para uma primeira versão confiável
 
-Este é um plano proposto, baseado na revisão do código da versão 0.1.1. As metas abaixo são critérios de aceitação futuros; não representam resultados já medidos.
+Este é um plano proposto, baseado na revisão do código da versão 0.1.1. Atualização de coerência: 2026-10-25, base `7eedac8`, último código/testes `58be3ed`. As metas de produto abaixo continuam futuras; resultados locais existentes estão separados na situação atual.
+
+O trabalho autorizado agora é revisar a documentação e depois continuar a estabilização do protótipo com convidados para pessoas de confiança, em uma sessão nova. Contas, grupos privados e TURN autenticado bloqueiam publicação futura e não fazem parte dessa estabilização. LiveKit/SFU permanece proposta. Todo JavaScript próprio será migrado para TypeScript somente depois da estabilização; o [inventário preparatório](docs/migracao-typescript.md) não inicia essa mudança.
 
 ## Objetivo inicial
 
@@ -12,9 +14,11 @@ Uma pessoa instala o aplicativo no Windows, cria sua conta, aceita um convite e 
 - Os testes atuais de comunicação usam janelas no mesmo computador e microfone sintético.
 - O acesso é de convidado. O servidor aceita nomes informados pelo cliente e não implementa contas, associação a grupos ou autorização por sala.
 - A mídia usa conexões entre cada par de participantes. Há um limite de seis pessoas, sem avaliação de qualidade com seis usuários reais.
-- Uma queda de conexão exige intervenção manual. Mensagens não têm confirmação/reenvio com deduplicação.
+- Uma queda de conexão exige intervenção manual. O código atual confirma mensagens após persistência e deduplica pelo identificador de operação; o cliente mantém texto sem confirmação para reenvio manual na mesma execução. Isso ainda não certifica integralmente os critérios STAB correspondentes.
 - O ruído relatado na entrada não foi reproduzido. Foram adicionados bloqueio de reprodução fora das chamadas e silêncio na saída dos testes.
-- O Windows bloqueou o teste do novo executável por política Device Guard. A execução pelo código foi validada; a distribuição Windows permanece pendente.
+- O bloqueio por Device Guard pertence ao ensaio histórico em `artifacts/VALIDACAO.md`. Depois, o [Verifier BUILD](.specs/features/build-confiavel/validation.md) aprovou localmente source, win-unpacked e abertura/envio pelo wrapper portátil de `58be3ed`: 11 critérios, 50 testes Node e 12 gates. Assinatura, instalador, distribuição pública e outras políticas Windows continuam pendentes.
+- Os [68 STAB](.specs/features/estabilizacao/spec.md) permanecem sem certificação integral. Os [34 MEDIA](.specs/features/captura-midia-saida/spec.md) estão In Tasks; nove tarefas Draft, nenhuma executada. A [revisão de coerência](docs/revisao-coerencia-documental.md) distingue o histórico das próximas ações.
+- Trocar texto encerra a chamada; “Silenciar áudio” afeta somente reprodução. Tela já existe e será estabilizada; câmera permanece negada.
 
 ## Etapa 1 — estabelecer uma base verificável
 
@@ -42,7 +46,7 @@ Aceitação: uma pessoa sem acesso ao grupo não consegue obter seu histórico n
 
 ## Etapa 3 — voz e tela com infraestrutura de mídia
 
-Proposta técnica: manter Electron/React para o cliente e Node para contas, autorização e mensagens; avaliar e integrar LiveKit para transportar voz e tela. O servidor LiveKit pode ser hospedado pela equipe e oferece uma arquitetura SFU, na qual o servidor encaminha mídia entre participantes. A escolha de hospedagem e seu custo ficam pendentes de avaliação antes de contratar ou publicar qualquer serviço.
+Proposta técnica ainda não aprovada: avaliar LiveKit/SFU depois de estabilizar a mídia existente e medir seus limites. Uma integração depende de decisão explícita sobre arquitetura, hospedagem e custo; esta etapa não autoriza contratar, publicar nem substituir a malha. Electron/React, Node e WebRTC em malha são a implementação atual.
 
 Trabalho:
 
@@ -58,9 +62,9 @@ Aceitação: computadores em redes diferentes recebem áudio nos dois sentidos e
 
 Trabalho:
 
-- Confirmar envio e persistência com identificador fornecido pelo cliente e deduplicação no servidor.
+- Verificar e completar o contrato já implementado de confirmação após persistência e deduplicação por identificador do cliente, sem recriá-lo em paralelo.
 - Reconectar com atraso progressivo e recuperar mensagens posteriores ao último registro recebido.
-- Mostrar mensagens pendentes e falhas de envio; preservar rascunhos e preferências.
+- Verificar os estados pendente/falho, rascunhos e preferências já implementados; ampliar sua recuperação somente conforme os requisitos futuros aprovados.
 - Paginar o histórico e definir limites de armazenamento e de uso por conta.
 
 Aceitação: interromper e restaurar a rede não perde mensagens confirmadas nem duplica mensagens reenviadas; reiniciar o servidor preserva contas, grupos e histórico; a interface mostra corretamente os estados de envio e conexão.
@@ -87,11 +91,12 @@ Metas propostas para aprovação:
 4. Há evidência de isolamento entre grupos e de autorização de ações administrativas.
 5. A versão instalada é a mesma versão aprovada nos testes, com limites e problemas conhecidos registrados.
 
-A primeira entrega sugerida é a etapa 1 e o fluxo completo de conta → grupo privado → convite → entrada autorizada da etapa 2. Depois, a integração de mídia e os testes entre computadores passam a ser o foco.
+A próxima entrega autorizada é a continuidade da estabilização, após a revisão documental, reaproveitando a tela existente e verificando os gaps contra STAB/MEDIA. O fluxo conta → grupo privado → convite → entrada autorizada da etapa 2 pertence ao produto futuro e continua necessário antes de publicação. As metas de 60 minutos e seis pessoas acima não são o ensaio físico MEDIA de dois PCs por 10 minutos; nenhum deles foi aprovado por BUILD.
 
 ## Referências técnicas consultadas
 
 - [LiveKit: opções de hospedagem e arquitetura](https://docs.livekit.io/transport/self-hosting/)
 - [LiveKit: tokens e permissões](https://docs.livekit.io/frontends/reference/tokens-grants/)
 - [Electron: assinatura de código](https://www.electronjs.org/docs/latest/tutorial/code-signing)
-- Evidências locais atuais: `artifacts/VALIDACAO.md`.
+- Evidência local BUILD: [validation.md](.specs/features/build-confiavel/validation.md), em `58be3ed`; pendências STAB/MEDIA e próximo passo no [STATE](.specs/STATE.md).
+- Registro histórico anterior: [artifacts/VALIDACAO.md](artifacts/VALIDACAO.md). Seus resultados e bloqueios não substituem o relatório BUILD posterior.

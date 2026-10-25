@@ -2,6 +2,8 @@
 
 **Data:** 2026-10-25. **Escopo:** Large/Complex. **Fase:** planejamento Design/Tasks, Draft para revisão conjunta. **Referência do código:** `1d97d46`; base do planejamento `cd53044`, branch `main`, árvore limpa no início da retomada. O pedido posterior autorizou [design](design.md) e [tarefas](tasks.md), sem implementação. Os 34 critérios estão In Tasks, nenhum Verified.
 
+**Cronologia atualizada em 2026-10-25:** as restrições C3/C4/C6 delimitam as respectivas entregas históricas de spec, planejamento e investigação. Depois delas, C7 autorizou revisão/correção documental e continuidade da estabilização em sequência. A revisão atual não executa tarefas; os nove itens continuam Draft. A sessão nova retoma após o término comprovado da revisão, conferindo código, gates e propostas técnicas. Ver [relatório de coerência](../../../docs/revisao-coerencia-documental.md) e [Handoff](../../STATE.md).
+
 ## Problem Statement
 
 O build local do Conversa foi aprovado, mas essa aprovação não certificou todo o ciclo de vida da mídia. Os achados R01–R03 e R06 da revisão original tratam de microfone perdido entre tentativas, captura mantida após recusa, tela parcialmente publicada e saída bloqueada pela cota. O código mudou desde aquela revisão; é necessário verificar os resultados atuais, aproveitando o que já existe e corrigindo futuramente apenas os gaps demonstrados.
@@ -64,6 +66,7 @@ D1 e D2 referem-se ao mesmo ASAR, SHA-256 `0025c02c7241045a12464309604ec4d5b8ec7
 | C4 | Gerar design e tarefas para este recorte, sem iniciar implementação. | Pedido posterior de 2026-10-25: “Gere o design e as tasks”. Documentos técnicos apresentados juntos como Draft. |
 | C5 | O assistente escolhe o ambiente privado de investigação no Discord. | “não sei, tome a decisão”, seguido de “Autorizar a criação e o aceite”. Conversa Lab / Teste de mídia criados sem convites; observação e limpeza em U1. |
 | C6 | Concluir a investigação pelo código e atualizar design/tasks, sem iniciar implementação. | Resposta explícita nesta retomada: “Concluir investigação e atualizar design/tasks”. Reaproveitar o compartilhamento existente; câmera permanece fora deste recorte. |
+| C7 | Revisar/corrigir a documentação e depois continuar a estabilização pela sessão nova; migrar todo JavaScript próprio para TypeScript somente após estabilizar. | Autorização sequencial do usuário de 2026-10-25, registrada em `7eedac8` e no encaminhamento desta revisão. Não transforma propostas do Draft em decisões confirmadas nem autoriza publicação. |
 
 ## Out of Scope
 

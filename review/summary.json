@@ -15,5 +15,15 @@
   "isolatedBuild": "passed",
   "npmAuditReportedVulnerabilities": 0,
   "rendererErrorsInUiProbes": [],
-  "report": "review/REVISAO_COMPLETA.md"
+  "report": "review/REVISAO_COMPLETA.md",
+  "historicalContext": {
+    "reviewDate": "2026-10-24",
+    "reviewedCommit": "63810f4f8bb8882b4381669822e7a0218045add1",
+    "noteDate": "2026-10-25",
+    "scope": "Historical defect review; confirmed probes and exit 0 reproduce defects, not product acceptance.",
+    "originalMeasurementsPreserved": true,
+    "currentDocumentationReport": "docs/revisao-coerencia-documental.md",
+    "laterBuildValidation": ".specs/features/build-confiavel/validation.md",
+    "regeneration": "review/verify-review.mjs writes the original snapshot format; it is not a current-health check and was not run for this documentation review."
+  }
 }

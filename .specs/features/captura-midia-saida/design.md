@@ -1,6 +1,8 @@
 # Captura de mídia e saída da chamada Design
 
-**Spec**: [spec.md](spec.md). **Status**: Draft para revisão conjunta com [tasks.md](tasks.md). **Base inspecionada**: `cd53044`, código inalterado desde `58be3ed`. O pedido atual autoriza gerar os dois documentos; nenhuma tarefa de implementação é iniciada. Os 34 resultados MEDIA permanecem sem certificação.
+**Spec**: [spec.md](spec.md). **Status**: Draft para revisão conjunta com [tasks.md](tasks.md). **Base inspecionada**: `cd53044`, código inalterado desde `58be3ed`. O pedido que originou o planejamento autorizou gerar os dois documentos sem iniciar implementação. Os 34 resultados MEDIA permanecem sem certificação.
+
+**Nota de 2026-10-25:** a autorização posterior C7 da spec determina revisão documental e depois estabilização pela sessão nova. Nesta revisão nenhuma tarefa foi executada. As escolhas técnicas deste Draft, inclusive protocolo v2 e bridge síncrona de captura, continuam propostas que exigem reconciliação antes da alteração correspondente. Autorização geral de continuidade não é confirmação silenciosa dessas escolhas. Preservar os prazos e critérios da spec.
 
 ## Architecture Overview
 
@@ -151,7 +153,7 @@ Não alterar mensagens, banco ou limites de conteúdo. `signal` recebido continu
 
 Para manter os commits intermediários executáveis, primeiro os produtores enviam os campos aditivos, o serviço os emite e Session os confere quando presentes. O caminho antigo de saída da chamada já admitida pode permanecer somente durante essa sequência local. T6 ativa v2 e remove essa tolerância. Nenhuma versão intermediária é candidata à aprovação MEDIA ou à distribuição. Não há flags, módulo de compatibilidade ou duplicação permanente de parsers.
 
-`Session.request` captura epoch, contexto de sala e tentativa. A Session também aloca gerações monotônicas por epoch de conexão; App fornece essa função ao criar Call. Cancelar entrada invalida e rejeita os pedidos daquela tentativa; ack/error antigo é consumido sem afetar a atual. Revisão de presença reinicia apenas com mudança de conexão/contexto, não com cada render. O timeout terminal continua encerrando transporte caso a confirmação não venha; a liberação local já ocorreu.
+`Session.request` captura epoch, contexto de sala e tentativa. A Session também aloca gerações monotônicas por epoch de conexão; App fornece essa função ao criar Call. A ligação mínima do produtor acompanha T3, antes da ativação v2 em T6; T7 integra os controles preservando essa ligação. Cancelar entrada invalida e rejeita os pedidos daquela tentativa; ack/error antigo é consumido sem afetar a atual. Revisão de presença reinicia apenas com mudança de conexão/contexto, não com cada render. O timeout terminal continua encerrando transporte caso a confirmação não venha; a liberação local já ocorreu.
 
 ### 6. App, reprodução e diagnóstico
 
@@ -179,7 +181,8 @@ Diagnóstico usa lista de campos permitidos: código, fase, requestId/operationI
 | Microfone recusado | Escuta permitida; sem nova permissão automática. | Nenhuma track de mic; admissão e tela ainda funcionam. |
 | Recusa/timeout de admissão | Terminal local e notificação de saída com contexto capturado. | Todas as tracks ended; geração antiga não ocupa vaga depois. |
 | Cancelamento nativo | Callback `null` uma vez; operação cancelada, sem toast técnico. | Contagem/resultados e nenhuma entrega tardia. |
-| Inventário falho ou fonte inválida | `MEDIA_FAILED` para falha técnica, terminal sem captura; fonte inválida não concede recurso. | UI reutilizável e ausência de conteúdo nos logs. |
+| Inventário falho | `MEDIA_FAILED`, terminal sem captura. | UI reutilizável e ausência de conteúdo nos logs. |
+| Fonte inválida | `INVALID_EVENT`, terminal sem conceder recurso, conforme o contrato da seleção acima. | Nenhuma fonte alheia ao pedido é capturada. |
 | Publicação parcial | Para tracks, compensa todos os peers atingidos e preserva voz saudável. | Resolução tardia também não restaura envio. |
 | Falha/timeout de notificação terminal | Limpeza local mantida; Session encerra transporte conforme o timeout existente. | Vaga remota segue A4 e reprodução não volta. |
 | Pacote/contrato incompatível | Recusa por versão antes da chamada. | Nenhuma aquisição; mensagem acionável. |

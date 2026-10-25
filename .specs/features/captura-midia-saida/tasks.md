@@ -12,6 +12,8 @@ O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem 
 
 **Atualização de investigação:** C6 confirma somente investigação e atualização documental. O compartilhamento de tela já existe; T4/T5/T7 reforçam seus proprietários e contratos. D10/D11 distinguem disponibilidade, consentimento, seleção e captura no código do Discord. U1 registra entrada/saída na UI, com câmera/tela indisponíveis, sem comprovar captura. Não adicionar câmera, gate de produto ou uma segunda implementação de compartilhamento por causa dessa limitação de referência.
 
+**Reconciliação de 2026-10-25:** C7 da spec autoriza a sequência revisão documental → estabilização pela sessão nova. As limitações de não implementar acima descrevem as entregas históricas; esta revisão também é apenas documental e não inicia T1–T9. O status Draft e todos os itens abertos foram preservados. Antes da execução correspondente, reconciliar as escolhas técnicas do design, inclusive v2 versus STAB/A14 v1, com a spec e o código atual. Não promover propostas a decisões confirmadas nem alterar critérios para acomodar a implementação. Ver [relatório de coerência](../../../docs/revisao-coerencia-documental.md) e [Handoff](../../STATE.md).
+
 ## Test Coverage Matrix
 
 > Gerada do código, documentação e spec. Guidelines: README, seção Verificação, e scripts de package.json. Não há AGENTS/CONTRIBUTING, configuração de cobertura, lint, format, typecheck ou workflow CI encontrados no projeto/ascendentes consultados. Aplicam-se os padrões fortes da skill. Amostras: protocol, rtc, service, server, session, desktop-policy e harness em tests; desktop-capture-check e desktop-smoke em scripts. Confirmar a matriz ao aprovar Execute.
@@ -146,15 +148,17 @@ T8 -> T9
 **Requirement**: MEDIA-05, MEDIA-06, MEDIA-18, MEDIA-24, MEDIA-26, MEDIA-28, MEDIA-31, MEDIA-32.
 **Tools**: MCP Agent Skills; skill `tlc-spec-driven`; shell/Node e transporte controlado/real existentes.
 
+**Integration boundary**: A alocação por conexão precisa chegar ao produtor junto da Session. A ligação mínima em `src/main.jsx`, fornecendo a função vinculada ao epoch ao construir Call, acompanha T3 e seus testes; não fica para depois da ativação v2 em T6. Os controles e estados visuais continuam em T7. Essa ligação já prevista é antecipada para cumprir o gate de produtores/consumidores integrados, sem acrescentar comportamento de produto.
+
 **Done when**:
 
 - [ ] Cancelamento rejeita pedidos da tentativa antiga; ack/error antigo não muda nem reporta falha da chamada nova.
 - [ ] Presença de revisão menor/igual e contexto antigo é descartada; nova conexão/sala reinicia somente o domínio correspondente.
-- [ ] A Session aloca geração por conexão: duas instâncias sucessivas de Call recebem números crescentes; epoch antigo não aloca nem inicia captura. A ligação no App é concluída em T7.
+- [ ] A Session aloca geração por conexão e o App fornece essa função a Call neste commit: duas instâncias sucessivas recebem números crescentes; epoch antigo não aloca nem inicia captura. Nenhum produtor usa o padrão local de testes na integração desktop após T3.
 - [ ] Campos aditivos presentes já são conferidos; a exigência definitiva é ativada em T6. Timeout terminal preserva a limpeza local e termina o transporte conforme contrato.
 - [ ] Testes unitários e com serviço real entram no mesmo commit; Full aprovado, `50 + Δ` registrado e regressões de mensagens/rascunhos preservadas.
 
-**Tests**: unit/integration em `tests/session.test.js`; respostas com ação/callId/geração divergentes, ack e presença após cancelamento/reentrada, contexto de sala antigo, reconexão e geração preservada ao substituir Call na mesma conexão.
+**Tests**: unit/integration em `tests/session.test.js`; respostas com ação/callId/geração divergentes, ack e presença após cancelamento/reentrada, contexto de sala antigo, reconexão e geração preservada ao substituir Call na mesma conexão. O smoke source observa também a ligação real App/Session/Call nessa substituição, no mesmo commit.
 **Gate**: full; Quick + build + smoke source/interno.
 **Commit**: `fix(session): reject stale call replies and presence snapshots`
 
@@ -239,7 +243,7 @@ T8 -> T9
 **Done when**:
 
 - [ ] Seleção/publicação/ativo/parada são distintos; callback/erro antigo não fecha ou altera a seleção nova. Cancelar e sair continuam acessíveis por teclado.
-- [ ] Cada Call recebe a alocadora da Session vinculada ao epoch; substituir controlador na conexão atual não volta a usar uma geração terminal.
+- [ ] A ligação da alocadora feita em T3 permanece íntegra ao integrar os controles; substituir controlador na conexão atual não volta a usar uma geração terminal.
 - [ ] Troca de sala, desconexão, recarga e saída invalidam a tentativa e bloqueiam reprodução antes da confirmação remota. Efeito antigo não reabilita reprodução.
 - [ ] Mute e “Silenciar áudio” preservam o contrato da spec; consentimento de loopback informa abrangência global. Não se adiciona deafen ou sons de chamada.
 - [ ] Logs usam somente campos permitidos; a prova de sanitização contém valores sentinela sensíveis e verifica sua ausência no resultado inteiro.
@@ -308,7 +312,7 @@ Depois do último commit de tarefa, o Verifier fresco obrigatório avalia os 34 
 | --- | --- | --- |
 | T1 | Ciclo de tentativa/microfone de Call | Um proprietário e seus testes. |
 | T2 | Estado terminal do participante no serviço | Um componente; admissão, presença e expiração compartilham a participação que deve terminar. |
-| T3 | Correlação de resposta/presença da Session | Um componente e seus testes. |
+| T3 | Correlação e geração da Session, com ligação mínima ao produtor | Um componente e sua integração necessária, com unit/integration e smoke no mesmo commit. |
 | T4 | Operação de tela de Call | Um ciclo de publicação/compensação e seus testes. |
 | T5 | Seleção Electron, bridge e adaptador inseparável | Um componente de captura nativa; wiring entra junto para conservar teste de integração utilizável. Escopo adicional explicitado, sem tarefa sem teste. |
 | T6 | Ativação do contrato compartilhado | Um limite de protocolo; integrações restringem-se à retirada da tolerância e atualização de formato, sem mudança adicional de negócio. |
@@ -336,7 +340,7 @@ Depois do último commit de tarefa, o Verifier fresco obrigatório avalia os 34 
 | --- | --- | --- | --- | --- |
 | T1 | Call | unit + integração | rtc + smoke no mesmo commit | Match |
 | T2 | Serviço | integration | service/server + smoke | Match |
-| T3 | Session | unit/integration | session controlada/real + smoke | Match |
+| T3 | Session e ligação App/Call | unit/integration + e2e da ligação | session controlada/real + smoke da substituição | Match |
 | T4 | Call/tela | unit + integração | rtc + smoke | Match |
 | T5 | Host/preload/política | unit/e2e | desktop-policy + captura/perfil + smoke | Match |
 | T6 | Protocolo | unit/integration | protocol + fixtures preservadas + Build | Match |
@@ -354,7 +358,7 @@ Depois do último commit de tarefa, o Verifier fresco obrigatório avalia os 34 
 | MEDIA-21–23 | T1/T4 liberam recursos, T5 seleção, T7 eventos da UI | T8/T9. |
 | MEDIA-24–28 | T2/T3; T1 contexto, T5 fontes, T6 contrato final | T8. |
 | MEDIA-29–30 | T1/T7 | T8/T9. |
-| MEDIA-31–32 | T1/T2/T3/T4/T5/T7; T6 valida envelope | T8. |
+| MEDIA-31–32 | T1/T2/T3/T4/T5/T7; T6 valida envelope de MEDIA-31 | T8. |
 | MEDIA-33–34 | T9 | Relatório físico e Verifier. |
 
 34/34 ACs mapeados; os dez edge cases da spec constam dos testes e resultados das tarefas proprietárias. Nenhum AC é marcado como implementado pelo planejamento. A validação estrutural obrigatória é `validate_tasks.py captura-midia-saida --strict`, seguida da conferência semântica das três tabelas acima e da spec.

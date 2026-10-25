@@ -1,3 +1,9 @@
+> **Contexto histórico, nota de 2026-10-25:** o corpo abaixo é o relatório original da referência preservada em `63810f4`. Suas afirmações de estado “atual”, ausência de Git, três testes e bloqueio Device Guard descrevem aquele momento, não o HEAD. As referências `file:line` do corpo usam essa referência imutável; consultar `git show 63810f4:caminho`. Os links de código servem somente para navegação ao arquivo, que pode ter mudado.
+>
+> A [spec STAB](../.specs/features/estabilizacao/spec.md) dá destinação aos 26 achados. O [BUILD posterior](../.specs/features/build-confiavel/validation.md) aprovou 11 critérios locais, 50 testes Node e 12 gates em `58be3ed`, sem certificar os 68 STAB ou 34 MEDIA. A [revisão de coerência](../docs/revisao-coerencia-documental.md) registra a situação documental reconciliada. Nenhum resultado ou medição do relatório original foi reescrito.
+>
+> [summary.json](summary.json), snapshots e probes continuam históricos. Seus 17 `confirmed` e exit 0 significam reprodução de defeito. O bloco de reprodução abaixo só é válido contra a referência histórica em ambiente isolado; rodá-lo no HEAD não reproduz automaticamente a revisão e pode sobrescrever evidências. Não foi executado nesta revisão documental.
+
 **Revisão crítica do Conversa 0.1.1 — 24/10/2026**
 
 **Parecer:** a implementação realiza os fluxos básicos de um protótipo, mas ainda não constitui uma base suficientemente estável para ampliar funcionalidades ou distribuir o serviço publicamente. Os principais problemas são de ciclo de vida de recursos, consistência de estado e definição do protocolo. Há defeitos reproduzíveis além das funcionalidades ainda ausentes, como cadastro e administração.

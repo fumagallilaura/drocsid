@@ -1,6 +1,8 @@
 # Estabilização: design
 
-**Spec:** [spec.md](spec.md). **Status:** execução local autorizada pela instrução de continuidade autônoma. Baseline Git: `63810f4`. Não há autorização de publicação ou operação pública.
+**Spec:** [spec.md](spec.md). **Status:** design histórico do avanço T1–T6, ainda sem aprovação integral STAB. Baseline Git: `63810f4`. Não há autorização de publicação ou operação pública.
+
+**Nota de 2026-10-25:** o autor tratou a continuidade autônoma como autorização durante aquele avanço; a reconciliação da spec registrou que ele excedeu o limite documental original C3. O pedido C5 autorizou depois a entrega BUILD. A nova autorização C6 é sequencial: revisão documental, depois estabilização pela sessão nova. Esta nota corrige a atribuição de autorização sem apagar os commits ou promover A1–A14 a decisões confirmadas. O [recorte MEDIA](../captura-midia-saida/design.md) é o planejamento posterior de captura/saída; não há dois planos de implementação concorrentes aprovados.
 
 ## Architecture Overview
 
@@ -39,7 +41,7 @@ Eventos de cliente: `v`, `type`, `requestId` nas operações confirmáveis; `roo
 
 Mensagens novas preservam id, room, author, text e created, acrescentando authorId e operationId únicos. Migrar de forma aditiva e transacional; dados legados continuam legíveis. A ordenação usa sequência de inserção e índice compatível com a seleção dos últimos 200. Reenvio da mesma operação/sala/texto retorna a mensagem original; conflito não modifica dados. Confirmação ocorre após commit, separada de broadcast.
 
-Configuração valida PORT, lista ICE e limites da spec. Sem credenciais de produção, migração destrutiva ou expiração de registros. A1–A14 passam a padrões adotados sob a autonomia solicitada; continuam identificados como escolhas técnicas do agente, não respostas explícitas do usuário.
+Configuração valida PORT, lista ICE e limites da spec. Sem credenciais de produção, migração destrutiva ou expiração de registros. A1–A14 foram usadas pelo autor como padrões técnicos naquele avanço. Permanecem premissas da spec, sem confirmação explícita do usuário; a autonomia não as promove a decisões aprovadas. Mudanças futuras precisam preservar ou revisar expressamente os critérios correspondentes.
 
 ## Error Handling Strategy
 
@@ -58,6 +60,8 @@ Erros usam os códigos da spec e correlação, sem depender de texto traduzido. 
 | Banco existente | server/service.js:11 | Perda em alteração de schema | Migração aditiva transacional e teste com cópia legada |
 | Ausência de autenticação | server/service.js:51 | Não há salas privadas | Manter C1 e bloqueadores R08/R09 explícitos |
 | Captura física não disponível para aprovação automática | review/REVISAO_COMPLETA.md:382 | Falsa conclusão sobre ruído/qualidade | Registrar limite de evidência e não declarar resolução física |
+
+As localizações desta tabela são da referência `63810f4`, inclusive a linha 382 do relatório original. Consultar `git show 63810f4:caminho` para essas linhas; não usá-las como coordenadas do HEAD após notas e correções documentais.
 
 ## Tech Decisions
 

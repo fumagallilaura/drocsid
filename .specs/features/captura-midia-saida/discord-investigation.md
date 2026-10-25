@@ -4,6 +4,8 @@
 
 Data: 2026-10-25. Conversa reconferido em `a07702f`, sem alterações de implementação desde `58be3ed`. Este relatório amplia a pesquisa que fundamenta [spec](spec.md), [design](design.md) e [tasks](tasks.md). Os 34 MEDIA continuam In Tasks, nenhum Verified. O usuário confirmou que esta etapa conclui a investigação e atualiza design/tasks, sem implementação.
 
+**Nota documental de 2026-10-25:** o limite acima pertence à entrega de investigação. A autorização posterior de revisão e continuidade sequencial está em C7 da spec e no [Handoff](../../STATE.md). Esta revisão consultou apenas os registros existentes, sem nova análise REA ou operação do Discord. D6–D11 continuam evidência estática delimitada; U1 continua UI/processo externo ao REA. As quatro dúvidas abaixo permanecem open, e o gate de vídeo continua hipótese de causa da indisponibilidade. Ver [revisão de coerência](../../../docs/revisao-coerencia-documental.md).
+
 ## Perguntas e resultado
 
 | Pergunta | Resultado desta passagem |

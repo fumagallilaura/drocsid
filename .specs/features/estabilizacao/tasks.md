@@ -2,9 +2,13 @@
 
 ## Execution Protocol
 
-Usar tlc-spec-driven pelo MCP Agent Skills e seu ciclo de Execute: teste derivado da spec, implementação mínima, gate, revisão de adequação e commit atômico. A instrução de continuidade autônoma autoriza as escolhas locais e substitui pedidos repetidos de aprovação de plano/ferramenta. Oito entregáveis coesos cabem em um lote: execução inline, sem workers de implementação. Verificador independente obrigatório ao final.
+Usar tlc-spec-driven pelo MCP Agent Skills e seu ciclo de Execute: teste derivado da spec, implementação mínima, gate, revisão de adequação e commit atômico. Este protocolo pertence ao plano histórico de oito entregáveis; não é prova de autorização daquela execução nem de atendimento integral da spec. Verificador independente obrigatório para o fechamento funcional.
 
-**Design:** [design.md](design.md). **Status:** In Progress.
+**Design:** [design.md](design.md). **Status:** In Progress no registro histórico, pausado e sem certificação integral STAB.
+
+**Reconciliação em 2026-10-25:** T1–T6 abaixo preservam as marcas e gates relatados pelo autor, nos commits `5c1a05a`, `ae07a55`, `7d24f4b`, `5626a06`, `d456168` e `dc8d7a1`, respectivamente. A spec corrigiu a atribuição original de autorização; nenhuma marca equivale a Verified dos 68 STAB. T7/T8 continuam incompletas neste plano: BUILD verificou parte de seus resultados em escopo próprio, sem fechar automaticamente seus requisitos transversais. Não refazer integrações já verificadas nem marcar esses itens completos apenas por essa sobreposição.
+
+A autorização atual é revisão documental seguida de estabilização pela sessão nova, conforme C6 da [spec](spec.md) e [Handoff](../../STATE.md). O planejamento posterior de captura/saída está nas nove [tarefas MEDIA](../captura-midia-saida/tasks.md), todas Draft e não executadas. Na retomada, reconciliar gaps e cobertura entre os dois planos; não executar duas soluções de tela em paralelo. Gates e contagens abaixo permanecem históricos, sem nova execução nesta revisão.
 
 ## Test Coverage Matrix
 
