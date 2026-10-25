@@ -1,5 +1,18 @@
 # Evidência do build confiável
 
+## Correção dos gaps G1/G2 da primeira verificação
+
+O primeiro relatório independente foi FAIL apesar dos gates verdes: a remoção de pending.delete sobreviveu aos testes e o prazo alterado para 6000 ms deixou o teste suspenso. Foram fortalecidos somente testes/fixtures, sem alterar produção ou o portátil. As duas lições candidatas foram registradas pelo Verifier via lessons.py.
+
+| Gap / resultado exigido | Evidência de adequação da correção |
+| --- | --- |
+| G1, callback exatamente uma vez e null em reload durante inventário | scripts/desktop-capture-check.mjs:33 observa zero callbacks enquanto pendente; :39 exige `{calls:1,results:['cancelled'],finished:true}` e `deliveries:0` após reload, resolução tardia e fechamento. |
+| G1, fechamento enquanto inventário está pendente | scripts/desktop-capture-check.mjs:49 exige os dois pedidos com um cancelamento cada e zero entregas após resolução tardia. |
+| G1, Escape seguido de nova limpeza | scripts/desktop-capture-check.mjs:57 fecha seletor real; :60 exige três pedidos com um cancelamento cada e somente uma entrega, a do seletor efetivamente aberto. |
+| G2, terminal até 5 s | tests/harness.test.js:35 `assert.equal(settled,true)` após clock de 5000 e flush de microtasks, antes de aguardar o assert.rejects original. :40 exige kill do desktop travado no mesmo limite. O teste não aguarda indefinidamente quando a implementação excede o prazo. |
+
+A fixture tests/fixtures/desktop-main.mjs intercepta apenas os pontos públicos de registro do Electron antes de importar o entrypoint real. Não existe flag ou hook de teste na produção. Mapeamento reverso: todas as observações novas são G1/edge case de captura e BUILD-08/G2. Gates do autor: captura exata aprovada, Node 50/50, build/check-package, perfil e smoke aprovados. Re-verificação independente pendente.
+
 ## Passo 3: diagnóstico e fechamento
 
 Gate em 2026-10-24: npm test **50/50**, zero falhas/skips; build e check-package aprovados. Diagnóstico source com CONVERSA_BUILD_MANIFEST apontando a arquivo inexistente: oito amostras, nenhuma reprodução audível, zero elementos audio/video, sem flags de silêncio ou microfone sintético. Perfil e smoke com servidor externo aprovados; smoke aprovado também no win-unpacked, incluindo terceiro participante durante tela ativa.

@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "promote_threshold": 2,
+  "window_days": 45,
+  "quarantine_threshold": 2,
+  "next_id": 3,
+  "lessons": [
+    {
+      "id": "L-001",
+      "key": "surviving_mutant::assert callback cardinality and pending state removal when electron capture is cancelled before inventory resolves",
+      "text": "Assert callback cardinality and pending-state removal when Electron capture is cancelled before inventory resolves.",
+      "signal": "surviving_mutant",
+      "scope": "electron/capture",
+      "status": "candidate",
+      "features": [
+        "build-confiavel"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "validation.md M8; electron/main.js:53 (electron/capture)"
+      ],
+      "created": "2026-10-25T02:45:07Z",
+      "last_seen": "2026-10-25T02:45:07Z"
+    },
+    {
+      "id": "L-002",
+      "key": "ac_gap::assert that mocked clock cleanup promises are terminal at the deadline before awaiting their result",
+      "text": "Assert that mocked-clock cleanup promises are terminal at the deadline before awaiting their result.",
+      "signal": "ac_gap",
+      "scope": "tests/harness",
+      "status": "candidate",
+      "features": [
+        "build-confiavel"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "BUILD-08; tests/harness.test.js:33; validation.md M9 (tests/harness)"
+      ],
+      "created": "2026-10-25T02:45:13Z",
+      "last_seen": "2026-10-25T02:45:13Z"
+    }
+  ]
+}

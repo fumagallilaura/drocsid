@@ -29,8 +29,15 @@ test('BUILD-08: failed desktop cleanup still closes a listening test server', as
 test('BUILD-08: a stalled cleanup has a terminal result within five seconds', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const waiting = closeResources([() => new Promise(() => {})]);
+  let settled = false; waiting.catch(() => {}).finally(() => { settled = true; });
   const result = assert.rejects(waiting, error => error instanceof AggregateError && error.errors.some(cause => /timed out/.test(cause.message)));
-  t.mock.timers.tick(5000); await result;
+  t.mock.timers.tick(5000); await new Promise(setImmediate);
+  assert.equal(settled, true); await result;
+  let killed = false;
+  const closing = closeDesktop({ close: () => new Promise(() => {}), process: () => ({ kill: () => { killed = true; } }) });
+  const desktopResult = assert.rejects(closing, /timed out/);
+  t.mock.timers.tick(5000); await new Promise(setImmediate);
+  assert.equal(killed, true); await desktopResult;
 });
 
 test('BUILD-08: WS closure rejects a pending event instead of waiting for its timeout', async () => {
