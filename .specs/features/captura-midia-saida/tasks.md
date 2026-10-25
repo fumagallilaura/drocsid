@@ -6,7 +6,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 
 **If the skill cannot be activated, STOP and tell the user - do not proceed without it.**
 
-**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T5 concluídas; T6–T9 pendentes. Ver [execução](execution.md).
+**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T6 concluídas; T7–T9 pendentes. Ver [execução](execution.md).
 
 O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem A recomendada; a geração do documento não marca essa arquitetura ou Execute como aprovados. Os padrões A1–A8 permanecem explícitos na spec.
 
@@ -232,14 +232,16 @@ T8 -> T9
 
 **Done when**:
 
-- [ ] v2 aceita campos corretos e rejeita geração/revisão ausentes, inválidas ou fora dos limites; mesmo número de geração com callId distinto não altera estado.
-- [ ] Cliente v2 diante de servidor v1 e cliente v1 diante de servidor v2 terminam a conexão por incompatibilidade antes de capturar mídia.
-- [ ] Nenhum caminho de tolerância v1 ou fixture apenas trocada para mascarar um erro permanece; a rejeição de v1 é uma asserção explícita. Contrato da spec anterior é reconciliado como mudança técnica aprovada, sem marcar os 68 STAB como Verified.
-- [ ] Testes de protocolo e integração ligados entram no mesmo commit; Build aprovado com `50 + Δ` testes, zero falhas/skips e bytes atuais no pacote.
+- [x] v2 aceita campos corretos e rejeita geração/revisão ausentes, inválidas ou fora dos limites; mesmo número de geração com callId distinto não altera estado.
+- [x] Cliente v2 diante de servidor v1 e cliente v1 diante de servidor v2 terminam a conexão por incompatibilidade antes de capturar mídia.
+- [x] Nenhum caminho de tolerância v1 ou fixture apenas trocada para mascarar um erro permanece; a rejeição de v1 é uma asserção explícita. Contrato da spec anterior é reconciliado como mudança técnica aprovada, sem marcar os 68 STAB como Verified.
+- [x] Testes de protocolo e integração ligados entram no mesmo commit; Build aprovado com `50 + Δ` testes, zero falhas/skips e bytes atuais no pacote.
 
 **Tests**: unit/integration em `tests/protocol.test.js`, fixtures de `tests/session.test.js`, helper e scripts existentes que serializam eventos. Manter todas as asserções de mensagens, limites, persistência e terminal; atualização de formato acompanha a versão aprovada, sem reduzir casos.
 **Gate**: build; executar toda a matriz source/empacotado, incluindo o wrapper real.
-**Commit**: `feat(protocol)!: require correlated call generations and presence revisions`
+**Commit**: `feat(protocol)!: require call generations and presence revisions`
+
+**Execução T6 em 2026-10-25**: 14/14 gates Build PASS e cliente v1 real recusado antes de WS/captura; 74/74 Node (50 + 24), zero falhas/skips/cancelled. [Adequação](execution.md#t6--contrato-v2-obrigatório). STAB/A14 reconciliada sem alterar ACs. T5 em `325c340`; T6 neste commit.
 
 #### T7: Integrar estados, reprodução e diagnóstico no App
 

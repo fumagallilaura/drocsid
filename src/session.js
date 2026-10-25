@@ -157,7 +157,7 @@ export class Session {
       if (event.type !== 'error' && event.type !== responseTypes[sent.type]) return;
       if (event.type === 'joined' && event.room.id !== sent.room) throw new ProtocolError('INVALID_EVENT');
       if (event.type === 'message-accepted' && (event.message.operationId !== sent.operationId || event.message.room !== sent.room)) throw new ProtocolError('INVALID_EVENT');
-      if (event.type === 'ack' && (event.action !== sent.type || event.callId !== sent.callId || (event.generation !== undefined && event.generation !== sent.generation))) throw new ProtocolError('INVALID_EVENT');
+      if (event.type === 'ack' && (event.action !== sent.type || event.callId !== sent.callId || event.generation !== sent.generation)) throw new ProtocolError('INVALID_EVENT');
       if (event.type === 'joined') {
         this.roomContext = event.requestId;
         this.presenceRevision = 0;
@@ -175,11 +175,8 @@ export class Session {
     if (event.context !== this.roomContext) return;
     if (event.type === 'message' && event.message.room === this.state.room?.id) this.addMessage(event.message);
     else if (event.type === 'presence' && event.room === this.state.room?.id) {
-      if (event.revision !== undefined) {
-        if (!Number.isSafeInteger(event.revision) || event.revision <= 0) throw new ProtocolError('INVALID_EVENT');
-        if (event.revision <= this.presenceRevision) return;
-        this.presenceRevision = event.revision;
-      }
+      if (event.revision <= this.presenceRevision) return;
+      this.presenceRevision = event.revision;
       const members = event.members.map(member => member.id === this.state.session?.id && (member.callId !== this.activeCallId || member.generation !== this.activeCallGeneration) ? { ...member, inCall: false, sharing: false } : member);
       this.publish({ members }); this.onPresence(members);
     } else if (event.type === 'signal' && event.callId === this.activeCallId) this.onSignal(event);

@@ -19,11 +19,11 @@ function fixture(fetcher) {
     readyState=0; sent=[];
     constructor(url){this.url=url;sockets.push(this);}
     open(){this.readyState=1;this.onopen?.();}
-    receive(event){this.onmessage?.({data:JSON.stringify({v:1,...event})});}
+    receive(event){this.onmessage?.({data:JSON.stringify({v:2,...event})});}
     send(bytes){const e=JSON.parse(bytes);this.sent.push(e);backend?.(this,e);}
     close(){this.readyState=3;this.onclose?.();}
   }
-  const session=new Session({fetch:fetcher|| (async()=>({ok:true,json:async()=>({protocolVersion:1,iceServers:[],maxCallMembers:6,version:'0.1.1'})})),WebSocket:Socket,clock,onState:s=>snapshots.push(s),onError:e=>errors.push(e)});
+  const session=new Session({fetch:fetcher|| (async()=>({ok:true,json:async()=>({protocolVersion:2,iceServers:[],maxCallMembers:6,version:'0.1.1'})})),WebSocket:Socket,clock,onState:s=>snapshots.push(s),onError:e=>errors.push(e)});
   backend=(ws,e)=>{if(e.type==='join')ws.receive({type:'joined',requestId:e.requestId,room:room(e.room),messages:[]});};
   const connect=async(server='http://localhost:4310',requestedRoom)=>{
     const operation=session.connect({name:'Ana',server,room:requestedRoom});await drain();const ws=sockets.at(-1);ws.open();ws.receive({type:'hello',id:'me',rooms:['geral','cafe','projetos'].map(room)});await operation;return ws;
@@ -40,13 +40,13 @@ test('STAB-38: opening WS does not cancel the hello deadline; next attempt can s
 
 test('STAB-39: old fetch/socket callbacks cannot overwrite a newer connection',async()=>{
   let release;const response=new Promise(resolve=>{release=resolve;});let requests=0;
-  const config={ok:true,json:async()=>({protocolVersion:1,iceServers:[],maxCallMembers:6})};
+  const config={ok:true,json:async()=>({protocolVersion:2,iceServers:[],maxCallMembers:6})};
   const f=fixture(()=>++requests===1?response:Promise.resolve(config));
   const old=f.session.connect({name:'Antiga',server:'http://old.example'});
   await f.connect('http://new.example');release(config);await old;
   assert.equal(f.sockets.length,1);assert.equal(f.session.state.session.server,'http://new.example');
   const stale=f.sockets[0].onmessage;await f.connect('http://third.example');
-  stale({data:JSON.stringify({v:1,type:'hello',id:'wrong',rooms:[room('geral')]})});
+  stale({data:JSON.stringify({v:2,type:'hello',id:'wrong',rooms:[room('geral')]})});
   assert.equal(f.session.state.session.server,'http://third.example');assert.equal(f.session.state.session.id,'me');f.session.disconnect();
 });
 
@@ -58,8 +58,8 @@ test('STAB-17/20/39: room transition blocks sending and preserves separate draft
   ws.receive({type:'joined',requestId:joining.requestId,room:room('cafe'),messages:[]});await changed;
   f.session.setDraft('rascunho B');const back=f.session.changeRoom('geral');ws.receive({type:'joined',requestId:joining.requestId,room:room('geral'),messages:[]});await back;
   assert.equal(f.session.state.draft,'rascunho A');
-  ws.receive({type:'presence',context:f.session.roomContext,room:'geral',members:[{id:'peer',name:'Bia',inCall:false,muted:true,sharing:false,callId:null,generation:0}]});
-  ws.receive({type:'presence',context:'obsolete-room',room:'geral',members:[]});assert.equal(f.session.state.members[0].id,'peer');f.session.disconnect();
+  ws.receive({type:'presence',context:f.session.roomContext,room:'geral',revision:1,members:[{id:'peer',name:'Bia',inCall:false,muted:true,sharing:false,callId:null,generation:0}]});
+  ws.receive({type:'presence',context:'obsolete-room',room:'geral',revision:1,members:[]});assert.equal(f.session.state.members[0].id,'peer');f.session.disconnect();
 });
 
 test('STAB-18/21/22/23: rejected text is recoverable and retry reconciles one persisted message',async()=>{
@@ -175,4 +175,14 @@ test('MEDIA-28: an old terminal deadline cannot disconnect a newer admitted atte
   const joined=f.session.request({type:'call-join',callId:'new',generation:2,muted:true});
   ws.receive(callAck(ws.sent.at(-1)));await joined;f.clock.tick(8000);await expired;
   assert.equal(f.session.state.connected,true);assert.equal(f.session.activeCallId,'new');assert.deepEqual(f.errors,[]);f.session.disconnect();
+});
+
+test('MEDIA-05/06/28: v2 client rejects v1 config before opening WS or acquiring media',async()=>{
+  const f=fixture(async()=>({ok:true,json:async()=>({protocolVersion:1,iceServers:[],maxCallMembers:6})}));
+  await assert.rejects(()=>f.session.connect({name:'Ana',server:'http://localhost:4310'}),e=>e.code==='INCOMPATIBLE_PROTOCOL');
+  assert.equal(f.sockets.length,0);assert.equal(f.session.state.connected,false);
+  let captures=0;
+  const call=new Call({id:'me',send:e=>f.session.request(e),nextCallGeneration:()=>f.session.nextCallGeneration(f.session.epoch),
+    mediaDevices:{getUserMedia:async()=>{captures++;throw Error();}},onMedia(){},onStreams(){},onError(){}});
+  await assert.rejects(()=>call.join(),e=>e.code==='CANCELLED');assert.equal(captures,0);
 });

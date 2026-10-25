@@ -76,7 +76,7 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers, clo
   const revisions=new Map();
   const presence=room=>{if(room){const revision=(revisions.get(room)||0)+1;revisions.set(room,revision);broadcast(room,{type:'presence',room,revision,members:members(room)});}};
   const error=(c,code,requestId,phase='protocol')=>send(c,{type:'error',code,message:messages[code]||'Não foi possível processar esta ação.',requestId:requestId||null,phase});
-  const ack=(c,e,state=c)=>send(c,{type:'ack',requestId:e.requestId,action:e.type,callId:e.callId,generation:e.generation??c.generation,inCall:state.inCall,muted:state.muted,sharing:state.sharing});
+  const ack=(c,e,state=c)=>send(c,{type:'ack',requestId:e.requestId,action:e.type,callId:e.callId,generation:e.generation,inCall:state.inCall,muted:state.muted,sharing:state.sharing});
   const endCall=c=>Object.assign(c,{inCall:false,muted:true,sharing:false,callId:null,callState:'terminal'});
   function expire(c) {
     clock.clearTimeout(c.expiryTimer);
@@ -115,7 +115,6 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers, clo
       if(closing)return error(c,'INVALID_EVENT',requestId,e.type);
       try {
         if(['call-join','call-leave','media','signal'].includes(e.type)){
-          if(e.generation!==undefined&&(!Number.isSafeInteger(e.generation)||e.generation<1))return error(c,'INVALID_EVENT',requestId,e.type);
           if(e.generation===c.generation&&e.callId!==c.lastCallId)return error(c,'INVALID_EVENT',requestId,e.type);
         }
         if(e.type==='call-join'){
@@ -154,20 +153,19 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers, clo
           if([...clients.values()].filter(x=>x.room===c.room&&x.inCall&&x!==c).length>=LIMITS.callMembers)return error(c,'CALL_FULL',requestId,e.type);
           Object.assign(c,{inCall:true,callId:e.callId,lastCallId:e.callId,generation:e.generation,callState:'admitted',muted:e.muted,sharing:false});ack(c,e);presence(c.room);
         }else if(e.type==='call-leave'){
-          if(e.generation===undefined&&e.callId!==c.lastCallId)return error(c,'INVALID_EVENT',requestId,e.type);
-          if(e.generation>c.generation||e.generation===c.generation||e.generation===undefined){
+          if(e.generation>=c.generation){
             const changed=c.inCall;
-            if(e.generation!==undefined)Object.assign(c,{generation:e.generation,lastCallId:e.callId});
+            Object.assign(c,{generation:e.generation,lastCallId:e.callId});
             endCall(c);if(changed)presence(c.room);
           }
           ack(c,e,{inCall:false,muted:true,sharing:false});
         }else if(e.type==='media'){
-          if(!c.inCall||e.callId!==c.callId||(e.generation!==undefined&&e.generation!==c.generation))return error(c,'INVALID_EVENT',requestId,e.type);
+          if(!c.inCall||e.callId!==c.callId||e.generation!==c.generation)return error(c,'INVALID_EVENT',requestId,e.type);
           if(e.muted!==undefined)c.muted=e.muted;if(e.sharing!==undefined)c.sharing=e.sharing;
           ack(c,e);presence(c.room);
         }else if(e.type==='signal'){
           const target=clients.get(e.to);
-          if(e.generation!==undefined&&e.generation!==c.generation)return error(c,'INVALID_EVENT',requestId,e.type);
+          if(e.generation!==c.generation)return error(c,'INVALID_EVENT',requestId,e.type);
           if(!c.inCall||c.callId!==e.callId||!target?.inCall||target.room!==c.room||target.callId!==e.toCallId)return error(c,'PARTICIPANT_UNAVAILABLE',requestId,e.type);
           send(target,{type:'signal',from:c.id,fromCallId:c.callId,callId:target.callId,signal:e.signal});
         }

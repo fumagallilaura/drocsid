@@ -1,5 +1,6 @@
 import { WebSocket } from 'ws';
 import { randomUUID } from 'node:crypto';
+import { PROTOCOL_VERSION } from '../../shared/protocol.js';
 
 export async function client(url, name = 'Ana', initialRoom = 'geral', options = {}) {
   const ws = new WebSocket(url, options), events = [], waiters = [];
@@ -21,10 +22,10 @@ export async function client(url, name = 'Ana', initialRoom = 'geral', options =
   const send = event => {
     if (event.type==='join') room=event.room;
     if (event.type==='call-join') { callId=event.callId || callId; generation=event.generation || generation; }
-    const defaults={v:1,requestId:randomUUID()};
+    const defaults={v:PROTOCOL_VERSION,requestId:randomUUID()};
     if(event.type==='message') Object.assign(defaults,{room,operationId:randomUUID()});
     if(event.type==='call-join') Object.assign(defaults,{callId,generation,muted:true});
-    if(['call-leave','media','signal'].includes(event.type)) defaults.callId=callId;
+    if(['call-leave','media','signal'].includes(event.type)) Object.assign(defaults,{callId,generation});
     if(event.type==='signal') defaults.toCallId=callIds.get(event.to) || 'not-admitted';
     const value={...defaults,...event}; callIds.set(hello.id,callId); ws.send(JSON.stringify(value)); return value.requestId;
   };

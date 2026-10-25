@@ -217,7 +217,7 @@ Observações por inspeção em `cd53044`; caminhos ainda não reproduzidos nest
 | Compatibilidade final | Protocolo 2, sem suporte permanente a v1. | Novos campos obrigatórios mudam o contrato; rejeitar mistura antes de capturar. A referência STAB/A14 v1 permanece histórica e precisa de reconciliação ao aprovar a mudança, sem certificar os 68 STAB. |
 | Validação | Automatizada por AC e ensaio físico A7 separados. | BUILD, RTP e tela decodificada não demonstram qualidade sonora real. |
 
-Nenhuma decisão deste Draft foi promovida ao log de Decisions. Uma alteração futura do recorte ou dos prazos exige revisão da spec, não ajuste de teste para caber no código.
+Nenhuma decisão deste Draft foi promovida ao log de Decisions. Na execução autorizada de T6 foi adotada a escolha técnica de protocolo 2, com geração/revisão obrigatórias e recusa de v1 antes da captura; STAB/A14 e seu vocabulário foram reconciliados preservando a origem histórica v1. Isso não confirma arquitetura de produto nem certifica STAB. Uma alteração futura do recorte ou dos prazos exige revisão da spec, não ajuste de teste para caber no código.
 
 ## Validation Strategy and Research
 

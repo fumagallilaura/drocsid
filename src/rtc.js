@@ -56,7 +56,7 @@ export class Call {
         attempt.state = 'admitting';
         const ack = await this.deadline(Promise.resolve(this.send({ type: 'call-join', callId: attempt.callId, generation, muted: this.muted })), LIMITS.requestMs);
         if (!this.current(attempt)) return;
-        if (ack?.callId !== attempt.callId || ack?.inCall !== true || (ack.generation !== undefined && ack.generation !== generation)) throw new ProtocolError('INVALID_EVENT');
+        if (ack?.callId !== attempt.callId || ack?.inCall !== true || ack.generation !== generation) throw new ProtocolError('INVALID_EVENT');
         attempt.state = 'admitted'; this.admitted = true; this.notify(); this.sync(this.members);
       } catch (error) {
         if (!this.current(attempt)) return;

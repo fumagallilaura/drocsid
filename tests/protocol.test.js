@@ -1,25 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseClientEvent, parseServerEvent, readIceServers, parsePort, LIMITS } from '../shared/protocol.js';
+import { parseClientEvent, parseServerEvent, readIceServers, parsePort, LIMITS, PROTOCOL_VERSION } from '../shared/protocol.js';
 
-const event = (type, fields = {}) => ({ v: 1, type, requestId: 'request-1', ...fields });
+const event = (type, fields = {}) => ({ v: PROTOCOL_VERSION, type, requestId: 'request-1', ...fields });
 const decode = value => parseClientEvent(JSON.stringify(value));
 const rejects = (fn, code) => assert.throws(fn, e => e.code === code);
 
 test('STAB-40/41: version and malformed client events have stable distinct outcomes', () => {
   for (const value of [null, [], 12, {}, { type: 'join' }, event('unknown')]) {
-    rejects(() => decode(value), value && typeof value === 'object' && !Array.isArray(value) && value.v !== 1 ? 'INCOMPATIBLE_PROTOCOL' : 'INVALID_EVENT');
+    rejects(() => decode(value), value && typeof value === 'object' && !Array.isArray(value) && value.v !== PROTOCOL_VERSION ? 'INCOMPATIBLE_PROTOCOL' : 'INVALID_EVENT');
   }
   rejects(() => parseClientEvent('{'), 'INVALID_EVENT');
-  rejects(() => decode({ ...event('join'), v: 2 }), 'INCOMPATIBLE_PROTOCOL');
+  rejects(() => decode({ ...event('join'), v: 1 }), 'INCOMPATIBLE_PROTOCOL');
   const valid = [
     event('join', { name: 'Ana', room: 'geral' }),
     event('message', { room: 'geral', operationId: 'operation-1', text: 'oi' }),
     event('create-room', { name: 'Jogos' }),
     event('call-join', { callId: 'call-1', generation: 1, muted: false }),
-    event('call-leave', { callId: 'call-1' }),
-    event('media', { callId: 'call-1', sharing: false }),
-    event('signal', { callId: 'call-1', to: 'peer-2', toCallId: 'call-2', signal: { candidate: { candidate: '', sdpMid: null, sdpMLineIndex: 0 } } }),
+    event('call-leave', { callId: 'call-1', generation:1 }),
+    event('media', { callId: 'call-1', generation:1, sharing: false }),
+    event('signal', { callId: 'call-1', generation:1, to: 'peer-2', toCallId: 'call-2', signal: { candidate: { candidate: '', sdpMid: null, sdpMLineIndex: 0 } } }),
   ];
   for (const value of valid) assert.deepEqual(decode(value), value);
   for (const value of valid) rejects(() => decode({ ...value, requestId: [] }), 'INVALID_EVENT');
@@ -32,8 +32,8 @@ test('STAB-27: trimmed message bounds accept 1 and 2000 UTF-16 units', () => {
 });
 
 test('STAB-40: server data is validated before rendering or signaling', () => {
-  assert.equal(parseServerEvent(JSON.stringify({ v: 1, type: 'hello', id: 'client', rooms: [{ id: 'geral', name: 'geral', description: '' }] })).id, 'client');
-  for (const value of [[], { v: 1, type: 'hello', id: 'client', rooms: [null] }, { v: 1, type: 'presence', room: 'geral', members: {} }, { v: 1, type: 'message', message: { author: [] } }]) {
+  assert.equal(parseServerEvent(JSON.stringify({ v: 2, type: 'hello', id: 'client', rooms: [{ id: 'geral', name: 'geral', description: '' }] })).id, 'client');
+  for (const value of [[], { v: 2, type: 'hello', id: 'client', rooms: [null] }, { v: 2, type: 'presence', room: 'geral', members: {} }, { v: 2, type: 'message', message: { author: [] } }]) {
     rejects(() => parseServerEvent(JSON.stringify(value)), 'INVALID_EVENT');
   }
 });
@@ -48,4 +48,28 @@ test('STAB-49/50: ICE config and ports use the same explicit validation', () => 
   assert.equal(LIMITS.callMembers, 6);
   assert.equal(LIMITS.connections, 24);
   assert.equal(LIMITS.outboundBytes, 1048576);
+});
+
+test('MEDIA-05/24/25/28: v2 requires bounded positive generations in every call event and rejects v1',()=>{
+  assert.equal(PROTOCOL_VERSION,2);
+  for(const type of ['call-join','call-leave','media','signal']) {
+    const value=event(type,{callId:'call',generation:1,muted:true,sharing:false,to:'peer',toCallId:'peer-call',signal:{candidate:{candidate:''}}});
+    assert.equal(decode(value).generation,1);
+    assert.equal(decode({...value,generation:Number.MAX_SAFE_INTEGER}).generation,Number.MAX_SAFE_INTEGER);
+    for(const generation of [undefined,null,0,-1,1.5,'1',Number.MAX_SAFE_INTEGER+1])rejects(()=>decode({...value,generation}),'INVALID_EVENT');
+    rejects(()=>decode({...value,v:1}),'INCOMPATIBLE_PROTOCOL');
+  }
+});
+
+test('MEDIA-26/28: v2 requires positive ack generations and presence revisions',()=>{
+  const decodeServer=value=>parseServerEvent(JSON.stringify(value));
+  const ack=event('ack',{action:'call-leave',callId:'call',generation:1,inCall:false,muted:true,sharing:false});
+  const presence=event('presence',{room:'geral',context:'room-context',revision:1,members:[]});
+  assert.equal(decodeServer(ack).generation,1);assert.equal(decodeServer(presence).revision,1);
+  for(const invalid of [undefined,null,0,-1,1.5,'1',Number.MAX_SAFE_INTEGER+1]) {
+    rejects(()=>decodeServer({...ack,generation:invalid}),'INVALID_EVENT');
+    rejects(()=>decodeServer({...presence,revision:invalid}),'INVALID_EVENT');
+  }
+  assert.equal(decodeServer({...presence,revision:Number.MAX_SAFE_INTEGER}).revision,Number.MAX_SAFE_INTEGER);
+  rejects(()=>decodeServer({...ack,v:1}),'INCOMPATIBLE_PROTOCOL');
 });

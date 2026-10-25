@@ -25,7 +25,7 @@ test('STAB-49/50: separate server serves validated ICE config and closes idempot
   const host = await startServer({ production: true, env: env({ ICE_SERVERS: '[{"urls":"stun:localhost:3478"}]' }) });
   t.after(() => host.close());
   const config = await (await fetch(`http://127.0.0.1:${host.server.address().port}/api/config`)).json();
-  assert.deepEqual(config.iceServers, [{ urls: 'stun:localhost:3478' }]); assert.equal(config.protocolVersion, 1);
+  assert.deepEqual(config.iceServers, [{ urls: 'stun:localhost:3478' }]); assert.equal(config.protocolVersion, 2);
   await Promise.all([host.close(), host.close()]); assert.equal(host.server.listening, false);
 });
 

@@ -181,3 +181,39 @@ Gate Full final: **70/70 Node = 50 + 20**, zero falhas/skips/cancelled; build, s
 | `scripts/desktop-capture-check.mjs:128`, `:129`, `:140`, `:144`, `:145` erro/consentimento/callback/gesto | MEDIA-09/10/12/13/31 | Sim, novo |
 
 Guidelines: README/matriz/skill. Nenhuma asserção histórica removida, ignorada ou enfraquecida. **Veredito do autor T5: gate e adequação aprovados no componente, sem Verified global.**
+
+## T6 — contrato v2 obrigatório
+
+T5: `325c340`. Ativados geração positiva segura em todos os eventos de chamada/acks e revisão positiva segura na presença. Serviço, Session e Call retiraram a tolerância transitória. STAB/A14 e o vocabulário agora indicam v2, com v1 identificado como primeira revisão histórica. Os **113 textos de AC BUILD/STAB/MEDIA foram comparados byte a byte como texto e permanecem iguais à base `38062db`**, assim como o prefixo Decisions.
+
+Arquivos: protocolo e limites em serviço/Session/Call; fixtures em protocol/session/rtc/bootstrap/helper e serialização do smoke. As alterações nos testes anteriores só acompanham versão/campos obrigatórios; todas as asserções de resultado, mensagens, limites, persistência e terminal permanecem. A expectativa numérica de bootstrap passa expressamente de 1 para 2, conforme a mudança de contrato. Quatro testes Node novos: **74/74 = 50 + 24**, zero falhas/skips/cancelled.
+
+A integração adicional `test-results/protocol-v1-client-check.mjs` carrega cópias isoladas da Session/Call/protocolo v1 reais de `325c340`, sem alterar a árvore. Contra o serviço v2, observa INCOMPATIBLE_PROTOCOL, zero sockets WS e zero aquisições. Limpeza temporária validada dentro de TEMP. Não copia suporte v1 para a produção.
+
+Gate Build: logs e resultados em `test-results/media-t6/gates.json`, matriz source, serviço externo, pacote e wrapper. Portátil 0.1.1, SHA-256 `c9026b05387d87d1b7f9b76c2a78ef0db4398ee3460a225071297cdcc5e4ba72`; win-unpacked em `.packaging/builds/1792960517829-3551fc38-9500-4050-9d11-eb14cc3a252f/win-unpacked/Conversa.exe`. Manifesto copiado para `test-results/media-t6/build.json`. Esta é a candidata de T6; T7 exige nova candidata em T8.
+
+### Adequação A/B
+
+| Critério | Evidência e expressão | Resultado esperado | Coberto |
+| --- | --- | --- | --- |
+| MEDIA-05/24/25/28, todos os produtores | `tests/protocol.test.js:54` PROTOCOL_VERSION 2; `:57` geração 1; `:58` MAX_SAFE_INTEGER; `:59` inválidos geram INVALID_EVENT; `:60` v1 INCOMPATIBLE_PROTOCOL | Campos obrigatórios e limites exatos | Sim |
+| MEDIA-26/28, ack e presença | `tests/protocol.test.js:68` ack.generation/presence.revision 1; `:70`, `:71` ausente/zero/tipo/faixa inválidos recusados; `:73` revisão máxima | Sem campo opcional ou tolerância v1 | Sim |
+| Cliente v2/serviço v1 antes de mídia | `tests/session.test.js:182` INCOMPATIBLE_PROTOCOL; `:183` zero sockets/desconectado; `:187` CANCELLED/zero capturas | Não captura nem conecta protocolo misturado | Sim |
+| Cliente/pedido v1/serviço v2 | `tests/service.test.js:209` INCOMPATIBLE_PROTOCOL; `:211` participante fora da chamada; integração do código v1 real em `test-results/protocol-v1-client-check.mjs` | Cliente antigo termina na configuração, sem ocupar vaga/capturar | Sim |
+| Mesmo número com outro callId | `ca2ba07:tests/service.test.js:157` INVALID_EVENT; `:160` nova chamada inCall/sharing/geração intactos, reexecutados em T6 | Contrato novo não altera política terminal | Sim |
+| Demais MEDIA de contrato | Testes T1–T5 reexecutados no Quick/Build com formatos v2 e resultados preservados | Admissão/saída/parada permanecem corretas | Sim para o recorte automatizado |
+
+### Adequação C/D
+
+| Teste / asserção | Âncora | Manter |
+| --- | --- | --- |
+| `tests/protocol.test.js:54`, `:57`, `:58`, `:59`, `:60` versão/geração | MEDIA-05/24/25/28 e done-when T6 | Sim |
+| `tests/protocol.test.js:68`, `:70`, `:71`, `:73`, `:74` ack/revisão | MEDIA-26/28 | Sim |
+| `tests/session.test.js:182`, `:183`, `:187` incompatibilidade/sem aquisição | MEDIA-05/06/28 | Sim |
+| `tests/service.test.js:209`, `:211`, `:212` recusa/estado e próxima admissão válida | MEDIA-05/24/28 | Sim |
+
+Guidelines: matriz/README/skill. Nenhuma coerção, skip, exclusão de teste ou compatibilidade escondida. O bump é uma mudança técnica local de T6 sob a autorização atual; não aprova publicação ou os 68 STAB.
+
+**Veredito do autor T6: 14/14 gates Build PASS**, mais integração do cliente v1 real PASS. Adequação aprovada; sem Verified global. Assinatura/instalador, hardware e ruído continuam fora desta evidência.
+
+Mensagem do commit T6: a primeira chamada do check_commit recebeu apenas o título e recusou a ausência do footer; o comando composto continuou indevidamente até o commit. Corrigido antes de T7: mensagem completa, título menor que 72 caracteres e footer BREAKING CHANGE validados com PASS, e commit T6 local amendado. Nenhuma mudança de código ou teste nesse ajuste.

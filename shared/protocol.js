@@ -1,4 +1,4 @@
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 export const LIMITS = Object.freeze({
   requestMs: 8000, negotiationMs: 15000, candidateMs: 15000, candidates: 128,
   callMembers: 6, connections: 24, rooms: 100, text: 2000,
@@ -38,6 +38,7 @@ export function validSignal(signal) {
 export function parseClientEvent(raw) {
   const e = envelope(raw);
   if (!string(e.requestId)) fail();
+  if (['call-join','call-leave','media','signal'].includes(e.type) && (!string(e.callId) || !integer(e.generation) || e.generation < 1)) fail();
   switch (e.type) {
     case 'join':
       if (!string(e.room) || !string(e.name, 32) || !e.name.trim()) fail('INVALID_INPUT');
@@ -84,11 +85,11 @@ export function parseServerEvent(raw) {
     case 'joined': valid = string(e.requestId) && room(e.room) && Array.isArray(e.messages) && e.messages.length <= 200 && e.messages.every(message); break;
     case 'rooms': valid = rooms(e.rooms); break;
     case 'room-created': valid = string(e.requestId) && room(e.room); break;
-    case 'presence': valid = string(e.room) && Array.isArray(e.members) && e.members.length <= LIMITS.connections && e.members.every(member); break;
+    case 'presence': valid = string(e.room) && integer(e.revision) && e.revision > 0 && Array.isArray(e.members) && e.members.length <= LIMITS.connections && e.members.every(member); break;
     case 'message': valid = message(e.message); break;
     case 'message-accepted': valid = string(e.requestId) && message(e.message); break;
     case 'ack': valid = string(e.requestId) && ['call-join', 'call-leave', 'media'].includes(e.action) &&
-      string(e.callId) && typeof e.inCall === 'boolean' && typeof e.muted === 'boolean' && typeof e.sharing === 'boolean'; break;
+      string(e.callId) && integer(e.generation) && e.generation > 0 && typeof e.inCall === 'boolean' && typeof e.muted === 'boolean' && typeof e.sharing === 'boolean'; break;
     case 'signal': valid = string(e.from) && string(e.fromCallId) && string(e.callId) && validSignal(e.signal); break;
     case 'error': valid = string(e.code, 64) && string(e.message, 512) && string(e.phase, 64) && (e.requestId == null || string(e.requestId)); break;
   }

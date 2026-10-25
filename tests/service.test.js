@@ -202,3 +202,12 @@ test('MEDIA-27: heartbeat deadline follows an off-tick pong and clears timers on
   const gone=once([...s.wss.clients][0],'close');b.ws.close();await gone;assert.equal(jobs.size,0);
   await s.close();assert.equal(jobs.size,0);
 });
+
+test('MEDIA-05/24/28: v1 requests cannot enter a v2 service or occupy its call',async t=>{
+  const s=await start(t),a=await client(s.url),observer=await client(s.url,'Bia');
+  a.ws.send(JSON.stringify({v:1,type:'call-join',requestId:'old-version',callId:'old-call',generation:1,muted:false}));
+  const error=await a.next('error',e=>e.requestId==='old-version');assert.equal(error.code,'INCOMPATIBLE_PROTOCOL');
+  const present=await observer.request({type:'join',name:'Bia',room:'geral'});assert.equal(present.room.id,'geral');
+  const snapshot=await observer.next('presence',e=>e.members.some(m=>m.id===a.id));assert.equal(snapshot.members.find(m=>m.id===a.id).inCall,false);
+  const next=await a.request({type:'call-join'});assert.equal(next.inCall,true);assert.equal(next.generation,1);
+});

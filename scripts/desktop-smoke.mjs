@@ -3,12 +3,13 @@ import { expect } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createService } from '../server/service.js';
+import { PROTOCOL_VERSION } from '../shared/protocol.js';
 import { readFlag, createTestProfile, removeTestProfile, closeDesktop, closeResources } from './test-runtime.mjs';
 
 const output = resolve('test-results/desktop');
 mkdirSync(output, { recursive: true });
 async function instrument(page) {
-  await page.evaluate(() => {
+  await page.evaluate(protocolVersion => {
     window.__testConnections = [];
     window.__testCaptures = [];
     window.__testCallEvents = [];
@@ -21,12 +22,12 @@ async function instrument(page) {
       if (event.type === 'join') window.__testSocket = this;
       if (event.type === 'call-join' && window.__rejectNextCall) {
         window.__rejectNextCall = false;
-        queueMicrotask(() => this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ v: 1, type: 'error', code: 'RATE_LIMITED', phase: 'call-join', requestId: event.requestId, message: 'Admissão recusada no teste.' }) })));
+        queueMicrotask(() => this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ v: protocolVersion, type: 'error', code: 'RATE_LIMITED', phase: 'call-join', requestId: event.requestId, message: 'Admissão recusada no teste.' }) })));
         return;
       }
       if (event.type === 'message' && window.__rejectNextMessage) {
         window.__rejectNextMessage = false; window.__rejectedOperation = event.operationId;
-        queueMicrotask(() => this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ v: 1, type: 'error', code: 'RATE_LIMITED', phase: 'message', requestId: event.requestId, message: 'Falha de envio simulada.' }) })));
+        queueMicrotask(() => this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ v: protocolVersion, type: 'error', code: 'RATE_LIMITED', phase: 'message', requestId: event.requestId, message: 'Falha de envio simulada.' }) })));
         return;
       }
       if (event.type === 'message') window.__lastMessageOperation = event.operationId;
@@ -39,7 +40,7 @@ async function instrument(page) {
       if (window.__holdMicrophone) { window.__lateStream = stream; await new Promise(resolve => { window.__releaseMicrophone = resolve; }); }
       return stream;
     };
-  });
+  }, PROTOCOL_VERSION);
 }
 const errors = [];
 const desktopEnv = { ...process.env };
@@ -165,9 +166,9 @@ desktop = await electron.launch({
   await first.getByRole('button', { name: 'Enviar mensagem', exact: true }).click();
   await expect(second.getByText('Olá, grupo! Vamos compartilhar as ideias?', { exact: true })).toBeVisible();
 
-  await first.evaluate(() => {
-    for (let i = 0; i < 45; i++) window.__testSocket.send(JSON.stringify({ v: 1, type: 'message', requestId: crypto.randomUUID(), operationId: crypto.randomUUID(), room: 'geral', text: `Histórico ${i}: ` + 'conteúdo de leitura '.repeat(12) }));
-  });
+  await first.evaluate(protocolVersion => {
+    for (let i = 0; i < 45; i++) window.__testSocket.send(JSON.stringify({ v: protocolVersion, type: 'message', requestId: crypto.randomUUID(), operationId: crypto.randomUUID(), room: 'geral', text: `Histórico ${i}: ` + 'conteúdo de leitura '.repeat(12) }));
+  }, PROTOCOL_VERSION);
   await expect(second.locator('.message p').last()).toContainText('Histórico 44:');
   expect(await second.locator('.messages').evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(100);
   await second.locator('.messages').evaluate(element => { element.scrollTop = 0; });

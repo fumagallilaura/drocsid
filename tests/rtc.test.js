@@ -33,7 +33,7 @@ function fixture(overrides = {}) {
     nextCallGeneration: overrides.nextCallGeneration,
     captureDisplay: overrides.captureDisplay, cancelDisplay: overrides.cancelDisplay,
     Stream: class { tracks=[]; addTrack(t) { this.tracks.push(t); } getTracks() { return this.tracks; } }, clock,
-    send: overrides.send || (async e => { events.push(e); return { type:'ack', action:e.type, callId:e.callId, inCall:e.type!=='call-leave' }; }),
+    send: overrides.send || (async e => { events.push(e); return { type:'ack', action:e.type, callId:e.callId, generation:e.generation, inCall:e.type!=='call-leave' }; }),
     onStreams() {}, onMedia: s=>states.push(s), onError: e=>errors.push(e) });
   return { call, captures, events, states, errors, clock };
 }
@@ -223,7 +223,7 @@ test('MEDIA-14/15/19/20: provisional screen, late peer and stalled sender all ro
 
 test('MEDIA-14/17/18: publication and acknowledgement share an absolute 8s budget',async()=>{
   const ack=deferred(),events=[];
-  const f=fixture({send:e=>{events.push(e);if(e.type==='media'&&e.sharing)return ack.promise;return Promise.resolve({callId:e.callId,inCall:true});}});
+  const f=fixture({send:e=>{events.push(e);if(e.type==='media'&&e.sharing)return ack.promise;return Promise.resolve({callId:e.callId,generation:e.generation,inCall:true});}});
   await f.call.join();const sharing=f.call.shareScreen(false,'720'),rejected=assert.rejects(sharing,e=>e.code==='TIMEOUT'&&e.phase==='screen-publication');await drain();
   f.clock.tick(7999);await drain();assert.equal(f.call.display,null);assert.equal(f.states.at(-1).sharingState,'publishing');
   f.clock.tick(1);await rejected;ended(f.captures[1]);assert.equal(f.states.at(-1).sharingState,'idle');
@@ -256,7 +256,7 @@ test('MEDIA-02/09/10/28: one selection per operation, audio requires consent and
 test('MEDIA-17/19/31: failed terminal notification preserves local cleanup and identifies the screen operation',async()=>{
   let key;const display=stream(['video','audio']);
   const f=fixture({captureDisplay:async value=>{key=value;return display;},send:async e=>{
-    if(e.type==='media'&&e.sharing===false)throw Error('notification');return {callId:e.callId,inCall:true};
+    if(e.type==='media'&&e.sharing===false)throw Error('notification');return {callId:e.callId,generation:e.generation,inCall:true};
   }});
   await f.call.join();await f.call.shareScreen(true,'1080');await f.call.stopScreen();
   ended(display);assert.equal(f.call.display,null);assert.equal(f.states.at(-1).sharingState,'idle');assert.equal(f.call.admitted,true);
