@@ -1,106 +1,66 @@
-# Evidência automatizada da candidata Windows
+# Evidência atual MEDIA, após correções da rodada 1
 
-**Resultado do autor: 75/75 testes Node e 14/14 gates Build aprovados.** T1–T8 executadas; a revisão independente ainda precisa confirmar a adequação e executar o sensor. **MEDIA não está aprovada integralmente.** T9/MEDIA-33/34 permanecem sem execução física, com disponibilidade de dois PCs e operadores não confirmada. STAB de mensagens e encerramento não recebe certificação por este relatório.
+**80/80 testes Node e todos os gates source passaram. Build integral não aprovado:** o lançamento win-unpacked foi bloqueado pelo Device Guard, embora o checker do wrapper portátil real tenha passado. Na matriz atual de 16 gates: **11 PASS, 1 FAIL, 4 não executados**. Verifier independente ainda deve confirmar cobertura/sensor. T8 permanece incompleta e T9 não foi executada; nenhum MEDIA recebe Verified pelo autor.
 
-Data: 2026-10-25. Código avaliado: **`018019c`**, após T7. O commit de T8 altera somente documentos/status. Versão 0.1.1, protocolo 2, Node 24.21.0 e Electron 45.0.0. A versão 0.1.1 sozinha não identifica esta candidata.
+Código de produto corrigido em `01f3e1c`; testes/harness consolidados em `e4c9efe`. Data: 2026-10-25, versão 0.1.1, protocolo 2, Node 24.21.0, Electron 45.0.0. A [evidência inicial](evidence-initial.md) é histórica, vinculada a `018019c`/`f44d268`: sua alegação de cobertura integral foi corrigida pelo [Verifier da rodada 1](validation-round1.md). Ela não identifica a candidata atual.
 
-## Candidata e gates
+## Candidata e resultado dos gates
 
-- Portátil: `C:/Code/conversa/release-windows/Conversa-0.1.1-Windows.exe`.
-- SHA-256: **`fe9ee1feab3765c210a8033a8b3b70789d22fcf7525af792b37d2b97a9f2202a`**.
-- Win-unpacked: `C:/Code/conversa/.packaging/builds/1792961293078-18f72252-d81e-464f-a632-0ac06f8d906d/win-unpacked/Conversa.exe`.
-- Manifesto identificado: `test-results/media-t8/build.json`; logs/exit codes: `test-results/media-t8/gates.json`. Resultados locais ignorados pelo Git; este relatório guarda a identidade e o resultado. O checker compara SHA-256, módulos do ASAR e cada arquivo de dist com os bytes do disco.
+- Portátil atual: `C:/Code/conversa/release-windows/Conversa-0.1.1-Windows.exe`.
+- SHA-256: `fc7c344e52717757f02700a5a3050164bc087433ff977ae66256fb64f330f993`.
+- Win-unpacked: `C:/Code/conversa/.packaging/builds/1792963319936-0975ac0d-0bab-4f59-a638-603e36273fef/win-unpacked/Conversa.exe`.
+- Manifesto/logs/ledger: `test-results/media-t8-revised/build.json`, `gates.json` e logs por gate. Resultados locais ignorados pelo Git. Hash, módulos do ASAR e dist comparados aos bytes atuais pelo checker de pacote.
 
-| Gate | Resultado |
+| Gate | Resultado atual |
 | --- | --- |
-| `npm.cmd test` | 75 PASS, 0 fail/skipped/cancelled/todo |
-| `npm.cmd run build` | PASS |
-| Smoke source/interno | PASS, RTP bidirecional, vídeo recebido, parada, controles e mensagens |
-| Perfil source | PASS, outra porta, instância única, câmera/subframe negados |
-| Captura source/fixture do entrypoint real | PASS, dez solicitações nativas com gesto, callback único, cancelamento, timeout e documento antigo |
-| Diagnóstico source com manifesto inexistente | PASS, 8 amostras, zero elementos de áudio/vídeo e reprodução audível observada |
-| Smoke source/servidor externo | PASS, inclusive terceiro participante entrando em tela ativa |
-| `npm.cmd run dist:win` | PASS, portátil local atual |
-| `node scripts/check-package.mjs` | PASS, hash acima e módulos/bundle atuais |
-| Perfil win-unpacked | PASS |
-| Smoke win-unpacked/interno | PASS |
-| Smoke win-unpacked/externo | PASS |
-| Diagnóstico win-unpacked | PASS, entrada bloqueada |
-| `node scripts/portable-startup-check.mjs` | PASS, wrapper real, entrada/envio persistido e encerramento |
+| Quick / build | PASS, 80/80 Node, zero fail/skip/cancelled/todo; Vite aprovado |
+| Source smoke interno / externo | PASS, incluindo teclado nas duas pendências, tela nova antes de ack antigo e reprodução silenciada sob replay |
+| Source perfil / captura | PASS, consentimento visível, CANCELLED correlacionado e guardas anteriores preservadas |
+| Source ciclo da janela | PASS, inventário adquirido de mic+vídeo+áudio encerrado em <=1 s em reload/disconnect/Root.unmount/fechamento nativo |
+| Source startup sem manifesto | PASS, oito amostras na abertura e oito após reload, contadores pré-App zero; não equivale a A7 |
+| Dist Windows / checker do pacote | PASS, bytes e hash acima |
+| Win-unpacked perfil | FAIL ao iniciar, antes das asserções do aplicativo; diagnóstico com `DEBUG=pw:browser` registrou Device Guard bloqueando o executável acima |
+| Win-unpacked ciclo / smoke interno / smoke externo / startup | NÃO EXECUTADOS nesta rodada, por bloqueio de lançamento do mesmo executável |
+| Wrapper portátil real | PASS, renderer/preload/serviço abertos, uma mensagem persistida e zero mídia inicial; execução separada do gate após a falha unpacked |
 
-Os comandos/variáveis estão no plano, seção Gate Check Commands. Checkers com captura executaram sequencialmente, com perfis/bancos temporários e teardown próprio. O diagnóstico de entrada observa cerca de seis segundos; não é o ensaio físico de três ciclos de 30 s. Smokes de mídia usam microfone sintético e saída física silenciada.
+O diagnóstico não demonstra a regra exata da política. Não houve mudança de launcher, cópia alternativa do binário, desativação de política ou tentativa de contorno. O PASS do wrapper não aprova os quatro gates unpacked não executados. Logs da falha: `packaged-profile.log` e `packaged-profile-diagnostic.log`. Para fechar esse gate, é necessária execução permitida pela política vigente, a ser avaliada por quem a administra, ou nova evidência independente do lançamento normal; não se presume autorização de publicação/assinatura.
 
-Além da matriz, a Session/Call/protocolo **v1 reais de `325c340`** foram carregados em cópias isoladas sob TEMP contra o servidor v2 atual: INCOMPATIBLE_PROTOCOL, zero WS e zero aquisição. `test-results/protocol-v1-client-check.mjs` preserva a checagem local. Não foi incorporado suporte v1 ao produto.
+## Rastreabilidade e adequação do autor
 
-## Integridade
+As linhas da matriz inicial continuam ancoradas ao código `018019c` e ao seu commit de teste. Os 23 resultados aceitos pela rodada 1 foram preservados; as nove linhas abaixo substituem as conclusões parciais/falha daquela rodada. A avaliação independente atual deve rederivar os 32 resultados automatizáveis em HEAD. As matrizes A/B e reversas C/D de cada correção estão em [execution.md](execution.md).
 
-Comparação AST dos testes com `38062db`: **50 testes históricos preservados, 25 novos**. Das **216 expressões de asserção históricas**, 212 permanecem iguais. Quatro acompanham exclusivamente a mudança explícita v1→v2: expectativa de bootstrap, comparação da versão atual no parser, versão rejeitada e hello válido. As categorias/valores de resultado continuam explícitos; os testes novos exigem v2 e recusam v1. Nenhuma asserção foi tornada menos específica; nenhum teste foi removido, ignorado ou desabilitado. Instrumentação de clock/serialização foi adaptada mantendo resultados. Checagem local: `test-results/check-test-integrity.mjs`.
+| MEDIA / conjunção corrigida | Evidência exata no commit indicado, valor esperado e limite |
+| --- | --- |
+| 01 | `e4c9efe`, `scripts/startup-audio-check.mjs:34`: readyState=loading e calls exatamente microphone=0/display=0/legacy=0 na abertura e reload; oito amostras por fase. Física de 30 s segue T9. |
+| 07 | `e4c9efe`, `scripts/desktop-smoke.mjs:189`, `:201`: foco/Enter nas pendências de aquisição e admissão; helper `:65` exige timestamps numéricos e <=1000; `:192` ended em <=1000 da resolução antiga; `:202` captura ended antes de liberar ack. |
+| 08 | `08675ff`, `tests/rtc.test.js:199`: requests=1, mic=null, admitted=true e mesmo callId depois de compartilhar; `:200` mic sender null e vídeo publicado; `:201` vídeo live. Não solicita mic novamente. |
+| 10 | `319b584`, `scripts/desktop-capture-check.mjs:140`, `:145`: aviso de todos os aplicativos/própria chamada visível em configurações e seletor; grants false/true permanecem exatos. Conteúdo físico não medido. |
+| 17 | `01f3e1c`, `tests/rtc.test.js:273`: parada local resolvida em 1000 sem ack; `e4c9efe`, smoke `:375` botão habilitado, `:377` timestamps numéricos, `:378` <=1000; `:384` tela nova live após liberar ack antigo. |
+| 23 | `e4c9efe`, `scripts/desktop-lifecycle-check.mjs:63`–`:66`: inventário mic/áudio/vídeo todo live; `:80`: cada ID ended e duração 0..1000; `:83`: playback nativo bloqueado; `:85`: root vazio em unmount. Track de áudio sintética acrescentada só quando o loopback não retorna áudio; nenhum resultado físico inferido. |
+| 28 | `08675ff`, `tests/rtc.test.js:290`/`:291`: peer/queue novos, mic live e errors=[] preservados após sinal remoto antigo; `tests/session.test.js:216`: sinal local antigo não encaminhado, `:217`: novo chega uma vez. `01f3e1c`, session `:198`: stop antigo não desconecta tela nova na mesma chamada; `:208`: stop atual ainda encerra transporte em 8 s. |
+| 29 | `e4c9efe`, smoke `:273` injeta ack/signal antigos, `:275` exige native muted=true e Ativar áudio; `:204` native muted e zero admissão depois do ack antigo fora da chamada. |
+| 31 | `319b584`, `scripts/desktop-capture-check.mjs:62`: resultado inteiro cancelled/CANCELLED/capture-selection/requestId atual; `:63`: chave exata do finish. TIMEOUT/MEDIA_FAILED/INVALID_EVENT continuam distintos no mesmo checker. |
 
-Os **113 textos de ACs BUILD/STAB/MEDIA** foram comparados com `38062db` e estão inalterados. O prefixo de STATE anterior a Handoff, incluindo Decisions, mantém SHA-256 `f4f06a1a44eecf50dec6e134e20447952ea673ca9c78c366421a027ac44c9a57`. A reconciliação de STAB/A14 altera a premissa/vocabulário de versão e preserva sua origem histórica, sem modificar AC para acomodar teste.
+MEDIA-02–06/09/11–16/18–22/24–27/30/32: valores e limites aceitos pelo [Verifier da rodada 1](validation-round1.md#spec-anchored-acceptance-criteria), com asserções preservadas e reexecutadas no source atual. MEDIA-24/25 receberam adicionalmente tipos de resposta explícitos em `ce848a7`, `tests/service.test.js:149`/`:182`/`:184`; ack/error correlacionados chegam à asserção antes de esperar presença. O autor não conta timeout do helper como morte de mutante; o novo sensor é responsabilidade do Verifier.
 
-## Resultados por critério
+## Commits e integridade
 
-Esta tabela é a avaliação automatizada **do autor**, no código `018019c`, antes do Verifier. Cada resultado fica limitado ao mecanismo observado. Liberação física, fala percebida e qualidade não são inferidas de tracks sintéticas ou RTP.
+| Entrega | Commit |
+| --- | --- |
+| T1 / T2 / T3 | `be83426` / `ca2ba07` / `2006457` |
+| T4 / T5 / T6 / T7 | `fdf6066` / `325c340` / `5a8f657` / `018019c` |
+| T8 inicial / Verifier rodada 1 | `f44d268` / relatório preservado em `335fe89` |
+| R1, parada local e prazo antigo | `01f3e1c` |
+| R2, valor das respostas terminais | `ce848a7` |
+| R3, tela sem mic e sinal antigo | `08675ff` |
+| R4, cancelamento/consentimento | `319b584` |
+| R5, fronteiras UI/ciclo | `e4c9efe` |
+| Roteiro T9, sem execução física | `d5843c4` |
 
-| MEDIA | Evidência exata e expressão | Resultado observado / limite |
-| --- | --- | --- |
-| 01 | `tests/rtc.test.js:46` `assert.equal(requests,0)`; `scripts/desktop-smoke.mjs:348` zero elementos e isAudioMuted true após reload | Sem captura inicial no controlador; entrada/reload bloqueados no desktop. A7 é separado. |
-| 02 | `tests/rtc.test.js:57` requests 1; `:76` requests 2 em ativação simultânea; `:246` mesma promessa de tela e requests 1 | Aquisição exclusiva de cada tipo na tentativa. |
-| 03 | `tests/rtc.test.js:161` `ended(old)` e microfone novo preservado; helper `:41` exige every readyState ended; `:85` tela tardia ended | Ambas as ordens de permissão e tela antiga liberadas, sem incorporar ao contexto novo. |
-| 04 | `tests/rtc.test.js:51` rejeição após close/requests 2; `:184` captures.length 0 com ações em controlador fechado | APIs não chamadas depois do fechamento. |
-| 05 | `tests/rtc.test.js:138` admitted false/peers.size 0 enquanto ack está retido; `tests/session.test.js:133` INVALID_EVENT para ack divergente | Provisório não publicado; admissão confere contexto. |
-| 06 | `tests/rtc.test.js:67` rejeição por CALL_FULL/RATE_LIMITED/TIMEOUT/INVALID_EVENT; `:68` ended/inativo; `:170` TIMEOUT real/fase/contexto e `:174` ended | Qualquer recusa ou 8 s de admissão libera provisório. |
-| 07 | `scripts/desktop-smoke.mjs:175` foco/Enter em Cancelar entrada; `:177` tracks tardias ended; `tests/rtc.test.js:140` estado pending false sem esperar ack | Ação acessível e término local; estados de aquisição/admissão usam o mesmo pending. |
-| 08 | `tests/rtc.test.js:59` admitted true/microphone null; `:195` requests 1/sender mic null; `:199` sender recebe mic só após ação | Escuta sem nova aquisição automática; tela mantém a mesma admissão. |
-| 09 | `tests/desktop-policy.test.js:46` outra chave false; `scripts/desktop-capture-check.mjs:102` callback 0 após chave alheia; `:105` fonte inválida INVALID_EVENT | Seleção pertence à operação/pedido inventariado. |
-| 10 | `scripts/desktop-capture-check.mjs:140` deepEqual `{audioRequested:audio,audio:audio?'loopback':null,video:true}` nas duas opções; `tests/rtc.test.js:249` áudio sem consentimento ended/sender null | Política de concessão e envio. Aviso de áudio global no App; conteúdo real em T9. |
-| 11 | `tests/desktop-policy.test.js:13` câmera false; `:25` IPC subframe false; `:34` origem alheia false; perfil real exige NotAllowedError | Câmera/frame/origem alheios negados. Não equivale a autenticação. |
-| 12 | `scripts/desktop-capture-check.mjs:39`, `:49`, `:60` callbacks/resultados/finished/deliveries exatos; `:144` todos calls===1 | Escolha/cancelamento/reload/close/timeout resolvem uma vez; handler extra não substitui o original. |
-| 13 | `scripts/desktop-capture-check.mjs:89` calls 0 em 59999; `:93` failed/TIMEOUT; `:105` failed/INVALID_EVENT; `:129` failed/MEDIA_FAILED | Operação termina sem fonte concedida nos caminhos negativos. |
-| 14 | `tests/rtc.test.js:217` todas tracks ended após falha parcial; `:227` TIMEOUT de publicação; `:228` publishing em 7999; `:229` ended/idle em 8000 | Prazo absoluto de 8 s incluindo confirmação, compensação local imediata. |
-| 15 | `tests/rtc.test.js:219` cada peer fechado ou sender sem captura após resolução tardia | Inventário inclui saudável, falho, suspenso e tardio. |
-| 16 | `tests/rtc.test.js:103` `ended(display)` após onended; `scripts/desktop-smoke.mjs:323` every track ended após parada | Tela e áudio do sistema terminam localmente; ensaio físico separado. |
-| 17 | `tests/rtc.test.js:237` ended/display null; `:239` peer fechado e admissão preservada com stop repetido; `:262` ended/idle mesmo com notificação falha | Controles e estado local convergem; deadline de limpeza não é renovado. |
-| 18 | `tests/service.test.js:179` stopped.sharing false/inCall true; `scripts/desktop-smoke.mjs:326` Tela de Ana count 0 | Serviço confirma e participante deixa de apresentar a tela; smoke saudável dentro do timeout do harness. |
-| 19 | `tests/rtc.test.js:220` sender mic saudável conserva track; `:221` admitido/mic live; `:239` muted true preservado | Falha de tela fecha só peer incapaz de cessar envio; voz saudável preservada no modelo. Física em T9. |
-| 20 | `scripts/desktop-smoke.mjs:288` Escolhendo visível; `:292` Publicando visível/AO VIVO count 0; `:295`, `:296` observador fora da chamada sem vídeo/AO VIVO | Pendência/publicação/mídia pronta separadas. |
-| 21 | `tests/rtc.test.js:140` oldMic ended/pending false com saída sem ack; `:203` ended(mic)/peers.size 0; `scripts/desktop-smoke.mjs:338` inventário completo ended/PCs closed | Término local não espera rede. |
-| 22 | `scripts/desktop-smoke.mjs:336` sala geral ainda visível; `:337` playback bloqueado; `:338` tracks ended/PCs closed antes de liberar joined | Texto encerra a chamada antes da confirmação da sala nova. |
-| 23 | `scripts/desktop-smoke.mjs:347`, `:354` IDs de tracks reportados ended na recarga/desconexão; `scripts/desktop-capture-check.mjs:39`, `:49` callback único em reload/close | Limpeza no controlador/documento; os checkers não certificam indicador físico do Windows. |
-| 24 | `tests/service.test.js:144` terminal com contexto original; `:154` saída antiga inCall false/geração 1; `:160` nova chamada intacta | Idempotência e tentativa posterior preservadas. |
-| 25 | `tests/service.test.js:179` stop false/inCall true e `:181` leave false/sharing false/geração 1 após cotas de mensagem/mídia/sinal | Terminais fora da cota. |
-| 26 | `tests/service.test.js:183` sharing false e `performance.now()-started<1000`; `:186` seis admitidos após substituição | Vaga liberada e confirmação correlacionada dentro de 1 s no teste local. |
-| 27 | `tests/service.test.js:120` socket fechado em 60000 alinhado; `:198` aberto em 59999 após pong deslocado; `:200` fechado/zero timers em 60000 | Deadline desde o pong real, sem tolerância de outro tick. |
-| 28 | `tests/rtc.test.js:147`, `:148`, `:149` contexto/mic/admissão novos preservados; `tests/session.test.js:143` sharing não regride; `scripts/desktop-capture-check.mjs:118`, `:119` IPC antigo recusado/callback novo não alterado | Resultados antigos descartados em Call/Session/host; serviço rejeita geração terminal. |
-| 29 | `scripts/desktop-smoke.mjs:238` isAudioMuted true ao silenciar; `:337`, `:348`, `:355` bloqueado em troca/reload/desconexão | Reprodução depende da chamada atual e da opção de saída. |
-| 30 | `tests/rtc.test.js:201` muted true/enabled false/readyState live; `scripts/desktop-smoke.mjs:239` mic continua enabled/live ao silenciar apenas saída | Mute não é stop nem deafen. Fala real não transmitida será verificada em T9. |
-| 31 | `scripts/desktop-smoke.mjs:188` código/fase/versão; `:189` três IDs técnicos; `:190` geração positiva; `scripts/desktop-capture-check.mjs:93`, `:105`, `:129` categorias distintas | Cancelamento e falha técnica não dependem de texto traduzido. |
-| 32 | `scripts/desktop-smoke.mjs:191` chaves exatas; `:192` ausência de MEDIA_PRIVATE_ no diagnóstico inteiro; `tests/service.test.js:219`, `:220` log inteiro sanitizado/exato | Sem títulos, nomes arbitrários de causa, mídia, SDP, ICE, credenciais ou texto de mensagem. |
+Comparação AST com `38062db`: **50 testes históricos preservados, 30 novos**, 216 asserções históricas, 212 idênticas e quatro exclusivamente v1→v2, como já justificado no registro T6. Comparação com `f44d268`: **75 testes preservados e cinco novos, todas as 388 asserções anteriores intactas**. Nenhuma remoção, skip ou enfraquecimento. Script local: `test-results/check-test-integrity.mjs [baseline]`. Os **113 textos de ACs** permanecem idênticos a `38062db`; prefixo de STATE/Decisions SHA-256 `f4f06a1a44eecf50dec6e134e20447952ea673ca9c78c366421a027ac44c9a57`.
 
-## Commits e fronteiras
+## Limites e próximo gate
 
-| Tarefa | Commit | Resultado |
-| --- | --- | --- |
-| T1 | `be83426` | Tentativa/contexto/microfone |
-| T2 | `ca2ba07` | Terminal por geração e deadline de participante |
-| T3 | `2006457` | Session e ligação da alocadora ao App |
-| T4 | `fdf6066` | Operação de tela, filas e compensação |
-| T5 | `325c340` | Seleção nativa por chave/documento |
-| T6 | `5a8f657` | Protocolo 2 obrigatório e reconciliação STAB/A14 |
-| T7 | `018019c` | Controles, playback e diagnóstico |
-| T8 | Commit documental que contém este relatório | Consolidação, sem novo código/teste |
-| T9 | Não executada | Faltam ensaio e resultado de A7; disponibilidade ainda não confirmada |
+Revisão independente final pendente em [validation.md](validation.md), com seis mutações semânticas em scratch, mortes por asserção, comparação porcelain e validate_state. O Build integral e [T9 física](uat.md) continuam pendentes; não há PASS global ou Verified integral. Dois PCs Windows, dois operadores, fones/mics reais, LAN confiável e servidor v2 alcançável ainda não foram confirmados. A causa do ruído permanece desconhecida.
 
-As matrizes de adequação e mapeamento reverso de cada tarefa estão em [execution.md](execution.md). A consolidação não adia testes para depois das correções.
-
-## Referência Discord e limites
-
-D1/D2 continuam estáticos/parciais; D3–D5 são documentação. D6–D11 são extratos estáticos com a cobertura e proveniência do [relatório](discord-investigation.md). U1 é observação de UI/processo: voz entrou/saiu, mas câmera/tela estavam indisponíveis. Isso não prova captura, liberação ou sua causa. O cache não foi vinculado ao renderer ativo; Browser não é presumido como engine Windows. As quatro dúvidas permanecem open. Nenhuma investigação, chamada, convite ou mudança de conta Discord foi repetida nesta implementação; registros grandes continuam fora do Git.
-
-Conversa preserva as diferenças deliberadas: trocar texto encerra a chamada; Silenciar áudio só bloqueia reprodução; câmera permanece negada. Não foram adicionados SFU/LiveKit, contas, TURN autenticado ou TypeScript. Contas/grupos privados/TURN autenticado continuam bloqueadores de publicação futura.
-
-**MEDIA-33/34: pendentes, sem Verified.** Recursos exatos: dois PCs Windows na mesma LAN confiável, fones, microfones reais e operadores; portátil/hash acima; três ciclos de 30 s e sessão de 10 minutos com todas as etapas A7. Ruído não foi diagnosticado ou declarado curado. A aprovação BUILD histórica, esta matriz sintética e o portátil local não substituem esse resultado.
-
-## Próxima avaliação
-
-Verifier fresco deve rederivar a cobertura, executar Build e pelo menos seis mutações semânticas isoladas nas categorias do plano. Nenhum sensor foi alegado pelo autor. O resultado independente ficará em validation.md; sem T9 não há PASS integral da feature nem fechamento de validate_state.
+STAB de mensagens/encerramento continua separado e sem certificação integral. D6–D11 são estáticos/cache histórico; U1 somente UI/processo; cache sem vínculo ao renderer ativo e quatro dúvidas de runtime abertas. Nenhuma investigação Discord, chamada ou convite foi repetido. Texto encerra chamada; Silenciar áudio só reprodução; câmera negada, SFU não aprovado, sem TypeScript. Contas/grupos privados/TURN autenticado permanecem bloqueadores de publicação futura.

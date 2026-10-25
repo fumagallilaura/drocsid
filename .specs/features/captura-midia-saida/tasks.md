@@ -6,7 +6,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 
 **If the skill cannot be activated, STOP and tell the user - do not proceed without it.**
 
-**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T8 concluídas pelo autor; Verifier pendente e T9 física não executada. Ver [execução](execution.md) e [evidência](evidence.md).
+**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T7 executadas; T8 reaberta após o Verifier, com correções R1–R5 e Build atual incompleto por bloqueio Device Guard no win-unpacked. T9 física não executada. Ver [execução](execution.md) e [evidência](evidence.md).
 
 O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem A recomendada; a geração do documento não marca essa arquitetura ou Execute como aprovados. Os padrões A1–A8 permanecem explícitos na spec.
 
@@ -280,7 +280,7 @@ T8 -> T9
 
 **Done when**:
 
-- [x] Build completo passa para a candidata final; versão, git SHA, SHA-256, executável e portátil real são identificados e correspondem ao disco.
+- [ ] Build completo passa para a candidata final; versão, git SHA, SHA-256, executável e portátil real são identificados e correspondem ao disco.
 - [x] Cada MEDIA-01–32 tem arquivo:linha, asserção de valor, resultado e limite de evidência. Nenhum caso é aprovado só pelo nome do teste ou pela sondagem histórica.
 - [x] D1/D2 continuam estáticos/parciais, D3–D5 documentais e D6–D11 com a autoridade/cobertura do relatório. U1 vale somente para UI/processo; controles indisponíveis não certificam captura ou sua causa. Renderer do cache não é atribuído à versão ativa e Browser não é presumido como engine Windows. As quatro dúvidas de runtime permanecem abertas sem prova correspondente; registrar diferenças deliberadas C2/A5.
 - [x] O relatório mantém MEDIA-33/34 pendentes de T9. Total Node `50 + Δ`, zero falhas/skips/cancelled e integridade do histórico de asserções são registrados.
@@ -300,6 +300,8 @@ T8 -> T9
 **R4 (T5)**: cancelamento voluntário tem resultado inteiro CANCELLED/fase/requestId e chave atual assertados; avisos de áudio global visíveis nos dois pontos de consentimento. Full 80/80 + captura/perfil source PASS, sem mudança de produto. [Adequação](execution.md#r4--cancelamento-estruturado-e-consentimento-visível).
 
 **R5 (T7)**: contadores pré-App na abertura/reload, teclado nas duas pendências e prazos A1, eventos antigos com reprodução silenciada, tela nova antes de ack antigo e inventário completo nos quatro terminais. Full 80/80 + ciclo/startup/externo/captura/perfil source PASS; Build final deve incluir ciclo source e win-unpacked (16 gates). [Adequação](execution.md#r5--fronteiras-de-integração-e-ciclo-da-janela).
+
+**Reexecução T8 após `e4c9efe`**: Node 80/80; matriz 16 com 11 PASS, 1 FAIL ao lançar win-unpacked bloqueado por Device Guard e quatro gates unpacked não executados. Wrapper portátil real PASS separadamente. SHA-256 atual `fc7c344e52717757f02700a5a3050164bc087433ff977ae66256fb64f330f993`. [Evidência atual](evidence.md); T8 reaberta, sem Build integral e sem Verified. Verifier final deve repetir a avaliação/sensor e registrar o bloqueio caso persista, sem contorno da política.
 
 #### T9: Registrar a aceitação física com dois PCs
 
