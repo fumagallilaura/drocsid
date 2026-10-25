@@ -1,5 +1,11 @@
 # Evidência do build confiável
 
+## Fechamento independente
+
+O [relatório independente](validation.md) aprovou `58be3ed`: 11/11 critérios, 12/12 gates e 50/50 testes Node, zero falhas/skips. As dez mutações foram detectadas por asserções; G1/G2 fechados, sem sobreviventes ou watchdog. Os registros abaixo são históricos por passo; referências a verificações pendentes descrevem o estado daquele passo. O relatório final rederiva as linhas e substitui essas pendências.
+
+O pacote conferido mantém SHA-256 `cedb8048fedec3463e529401a4b71364e0d571eb65b376dd75042d4226b4f9c4`. Foram verificados separadamente source, win-unpacked e abertura/envio pelo wrapper portátil real. A aprovação não cobre qualidade física de áudio, redes distintas, assinatura, distribuição pública ou todos os requisitos STAB.
+
 ## Correção dos gaps G1/G2 da primeira verificação
 
 O primeiro relatório independente foi FAIL apesar dos gates verdes: a remoção de pending.delete sobreviveu aos testes e o prazo alterado para 6000 ms deixou o teste suspenso. Foram fortalecidos somente testes/fixtures, sem alterar produção ou o portátil. As duas lições candidatas foram registradas pelo Verifier via lessons.py.

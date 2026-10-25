@@ -1,10 +1,10 @@
 # Estabilização do Conversa Specification
 
-**Data:** 2026-10-24. **Escopo:** Large/Complex. **Estado:** implementação local autorizada pela instrução posterior de continuidade autônoma. Os critérios descrevem o resultado exigido, não uma aprovação da versão 0.1.1. O estado efetivo por requisito aparece na rastreabilidade.
+**Data:** 2026-10-24. **Escopo:** Large/Complex. **Estado:** spec elaborada e validada na etapa Specify. Os 68 critérios descrevem o resultado exigido e permanecem sem certificação integral. O pedido posterior de concluir o build originou a entrega separada [build-confiavel](../build-confiavel/spec.md), aprovada em seu escopo local; não equivale a executar ou aprovar toda esta spec.
 
 ## Problem Statement
 
-O Conversa oferece texto, voz e tela em um protótipo desktop Windows, mas falhas de concorrência e encerramento permitem capturas sem controle, mensagens enviadas à sala errada, perda de texto e recursos que impedem o servidor de terminar. A revisão registrou 26 achados, ainda sem correções. Esta especificação estabiliza o protótipo para testes com pessoas de confiança e estabelece critérios que reprovem os defeitos atuais.
+O Conversa oferece texto, voz e tela em um protótipo desktop Windows. A revisão dessa referência registrou 26 achados, incluindo capturas sem controle, mensagens enviadas à sala errada, perda de texto e recursos que impedem o servidor de terminar. Esta especificação define a estabilização para testes com pessoas de confiança. Alterações locais posteriores à revisão ainda precisam de verificação contra estes requisitos.
 
 ## Goals
 
@@ -16,26 +16,45 @@ O Conversa oferece texto, voz e tela em um protótipo desktop Windows, mas falha
 
 ## Evidence Baseline
 
-O handoff foi lido integralmente e reconciliado com o disco antes da redação. Não existe repositório Git em `C:\Code\conversa` nem nos ascendentes consultados. Os 18 arquivos de implementação/configuração de [baseline.json](../../../review/baseline.json) tiveram seus SHA-256 conferidos: **18/18 iguais**. Não havia `spec.md`, `context.md`, `design.md` ou `tasks.md` em `.specs/features/` nem loja de lições confirmadas.
+Na retomada documental de 2026-10-24, o Handoff foi lido integralmente e reconciliado com o disco: branch local `main`, sem remoto, então em `dc8d7a1`. A referência revisada foi preservada no commit `63810f4f8bb8882b4381669822e7a0218045add1`: seus **18/18 arquivos** conferem com os SHA-256 de [baseline.json](../../../review/baseline.json).
 
-Fontes lidas: [revisão completa](../../../review/REVISAO_COMPLETA.md), [resumo](../../../review/summary.json), [plano de produto](../../../PLANO_PRODUTO.md), [README](../../../README.md) e código citado na rastreabilidade. O resumo registra 17 reproduções de defeitos, três testes existentes aprovados, build isolado aprovado e auditoria sem vulnerabilidades reportadas. Esses resultados pertencem à revisão anterior; não foram reexecutados nesta sessão e não aprovam o aplicativo.
+Naquele snapshot, o código diferia da referência em **7/18 arquivos**: `scripts/desktop-smoke.mjs`, `server/index.js`, `server/service.js`, `src/main.jsx`, `src/rtc.js`, `src/style.css` e `tests/server.test.js`. Também havia novos módulos e testes. `design.md`, `tasks.md` e `evidence.md` já existiam, com T1–T6 marcadas como concluídas; decorreram de avanço além do limite documental e foram preservados sem aprovação por esta spec. O teste então não rastreado `tests/desktop-policy.test.js` importava `electron/policy.js`, ainda ausente naquele commit.
+
+Depois do pedido explícito sobre o build (C5), os commits `5190489`, `3fb3ac7`, `e8e89d3` e `58be3ed` concluíram integrações desktop, empacotamento e verificadores locais. `electron/policy.js` existe e seu teste está rastreado. O [relatório de build](../build-confiavel/validation.md) aprova 11 critérios BUILD, com 50/50 testes Node, 12/12 gates e 10/10 mutações detectadas. Duas lições candidatas foram registradas; nenhuma é orientação confirmada. Esses resultados não encerram os 26 achados nem certificam os 68 critérios STAB.
+
+Fontes lidas: [revisão completa](../../../review/REVISAO_COMPLETA.md), [resumo](../../../review/summary.json), [plano de produto](../../../PLANO_PRODUTO.md), [README](../../../README.md) e código relevante. O resumo registra 17 reproduções de defeitos, três testes existentes aprovados, build isolado aprovado e auditoria sem vulnerabilidades reportadas. Esses resultados pertencem à referência revisada. As sondagens históricas não foram reexecutadas como parte da entrega documental e não aprovam o aplicativo atual.
 
 | Categoria | O que a evidência permite afirmar |
 | --- | --- |
 | Comportamento atual | Electron/React, Node/Express/WS, SQLite e WebRTC em malha; acesso por convidados; uma sala por socket; limite de seis pessoas por chamada. O limite não é garantia de qualidade. |
-| Defeitos reproduzidos | R01–R07, R10–R12 e parte de R13/R19 têm reproduções descritas na revisão. As sondagens aprovam a reprodução do defeito, não o resultado desejado. |
+| Defeitos reproduzidos na referência | R01–R07, R10–R12 e parte de R13/R19 têm reproduções descritas na revisão. As sondagens aprovam a reprodução do defeito, não o resultado desejado. Não se presume que reproduzam o mesmo comportamento no HEAD atual. |
 | Inspeção e risco | Os demais itens conservam a natureza declarada no relatório. Não se transforma risco estrutural em incidente ou exploração comprovada. |
-| Evidência ausente | Causa do ruído físico na entrada; áudio real do sistema; redes distintas; seis usuários em sessão prolongada; nova aprovação do portátil sob Device Guard; restauração de backup e leitor de tela. |
+| Evidência ausente | Causa do ruído físico na entrada; áudio real do sistema; redes distintas; seis usuários em sessão prolongada; execução sob outras políticas Device Guard; restauração de backup e leitor de tela. A abertura local do portátil foi aprovada somente no escopo BUILD. |
 | Propostas do plano | Contas, papéis, grupos privados, LiveKit/SFU, hospedagem, assinatura, atualização e metas de 60 minutos continuam propostas. Não são decisões arquiteturais desta spec. |
+
+A inspeção histórica de `dc8d7a1` fundamentou as fronteiras dos requisitos, sem substituir a validação dos resultados. A tabela descreve aquele snapshot; as integrações desktop e os diagnósticos foram alterados posteriormente na entrega BUILD:
+
+| Área | Observação no HEAD `dc8d7a1` | Requisitos relacionados |
+| --- | --- | --- |
+| Captura | `src/rtc.js:30`, `:176` e `:210` contêm controle de tentativa, admissão e encerramento. A presença desse código não comprova todos os caminhos de concorrência e falha parcial. | STAB-01–16/68 |
+| Mensagens | `src/session.js:161` e `:180` representam troca pendente e envios recuperáveis; `server/service.js:117` trata destino, deduplicação e recibo. | STAB-17–27 |
+| Saída | `server/service.js:106` isenta operações terminais da cota e `:137` trata saída correlacionada. | STAB-28–32 |
+| Encerramento | `server/service.js:82` e `:156` tratam Upgrade e fechamento; `server/index.js:9` contém bootstrap, HMR e sinais. | STAB-33–38/49 |
+| Interface | `src/main.jsx:26` contém comportamento modal; `:122` encerra a chamada ao trocar de sala; `:182` representa mensagens pendentes e leitura. | C2; STAB-17/57–62 |
+| Desktop | `electron/main.js:11` e `:23` ainda autorizam pela janela principal sem distinguir cada frame ou câmera. `electron/preload.cjs:2` não expõe persistência de preferências, embora a interface já consulte essa capacidade opcional. | STAB-45/48/50/56 |
+| Diagnóstico e testes | `scripts/startup-audio-check.mjs:7` ainda lê o manifesto antes de escolher source; `scripts/desktop-smoke.mjs:45` e `:48` mantêm flag por presença e launch anterior ao try/finally. | STAB-64–66 |
+
+Os 26 achados permanecem com destinação aberta nesta spec. Os registros incrementais de testes e commits não constituem certificação independente de atendimento.
 
 ## Confirmed Decisions
 
 | ID | Decisão confirmada | Origem |
 | --- | --- | --- |
-| C1 | Estabilizar o protótipo atual para testes com pessoas de confiança. Contas, grupos privados e TURN autenticado ficam para outra entrega e bloqueiam futura publicação com essas garantias. | Resposta do usuário nesta sessão, 2026-10-24. |
+| C1 | Estabilizar o protótipo atual para testes com pessoas de confiança. Contas, grupos privados e TURN autenticado ficam fora desta entrega e são bloqueadores de uma futura publicação. | Resposta do usuário nesta sessão, 2026-10-24. |
 | C2 | Trocar de sala de texto encerra a chamada. Manter voz independente da sala de texto está fora deste escopo. | Resposta do usuário nesta sessão, 2026-10-24. |
-| C3 | Na sessão de Specify, produzir somente a spec e atualizar somente o Handoff. Limite histórico cumprido, posteriormente substituído por C4. | Instrução original do usuário. |
-| C4 | Continuar o trabalho de forma autônoma usando skills do MCP Agent Skills, evitando código desnecessário. Execução local no escopo C1/C2; sem conexão remota Git, conforme correção posterior do usuário. | Instruções posteriores do usuário. |
+| C3 | A entrega original foi somente a spec, sem correções, refatorações, novas funcionalidades, design, tarefas ou execução. Atualizar somente Handoff em STATE.md e preservar Decisions. | Instrução original do usuário; limite da entrega documental. C5 autoriza a entrega posterior de build. |
+| C4 | Trabalhar autonomamente, usando skills do MCP Agent Skills e evitando Code SLOP. Ignorar o pedido de conexão a repositório Git remoto. | Instruções posteriores do usuário; autonomia sozinha não revogou C3. |
+| C5 | Concluir o build e suas integrações locais; manter a certificação dos 68 STAB separada. | Pedido posterior “O build deve estar redondo e sem pontas soltas”, seguido de “Continue where you left off”. Escopo técnico registrado em build-confiavel. |
 
 Estas confirmações não preenchem nem alteram a seção Decisions de STATE.md. A stack observada é contexto atual, não aprovação de arquitetura futura.
 
@@ -49,23 +68,23 @@ Estas confirmações não preenchem nem alteram a seção Decisions de STATE.md.
 | Reconexão automática, retomada automática de mídia e fila offline após fechar o aplicativo | Recuperação manual é o limite desta entrega. Reenvio explícito idempotente e preservação de texto na sessão estão incluídos. |
 | Paginação completa, busca, anexos, reações, mensagens privadas e edição | Expansões de produto. Preservam-se os últimos 200 registros por sala na visualização atual. |
 | Retenção com exclusão automática, quotas de armazenamento por conta e administração de salas | Exigem política de dados e identidade. Não haverá expiração implícita de mensagens nesta estabilização. |
-| Instalador, assinatura, atualizações, promoção de release e limpeza/retenção do staging | R23/R24 serão tratados em entrega de distribuição. O portátil atual continua sem aprovação demonstrada. |
+| Instalador, assinatura, atualizações, promoção de release e retenção do staging | R23/R24 exigem entrega de distribuição. A entrega BUILD conferiu staging e abertura do portátil local; não aprova distribuição pública. |
 | Reorganização geral de componentes, adoção de ferramentas e pipeline completo de CI | R22 requer design futuro. Aqui se exigem invariantes testáveis, sem determinar módulos, frameworks ou quantidade de arquivos. |
 | Operação pública, disponibilidade/escala de produção e garantia de qualidade com seis usuários em redes distintas | Não demonstradas. O teto de seis e os limites abaixo apenas delimitam o protótipo. |
 | Tornar chamada independente da sala de texto | C2. |
 
 ## Assumptions & Open Questions
 
-Os padrões abaixo tornam os resultados verificáveis. Foram propostos na sessão de Specify e agora adotados como escolhas técnicas do agente sob C4. Não são respostas explícitas do usuário. Alterá-los exige revisar critérios e testes; não autorizam publicação ou expansão do escopo.
+Os padrões abaixo são propostas do agente para tornar os resultados verificáveis. Não são respostas explícitas do usuário nem decisões arquiteturais aprovadas. Valem como premissas desta spec; alterá-los exige revisar os critérios correspondentes. A autonomia C4 não aprovou sua implementação integral; C5 autorizou apenas a entrega posterior de build. Publicação continua excluída.
 
 | Assumption / decision | Chosen default | Rationale | Confirmed? |
 | --- | --- | --- | --- |
 | A1 — Prazos do protocolo | 8 s por fase: configuração HTTP, abertura WS, espera de hello, confirmação de sala, admissão de chamada e confirmação de mensagem. O relógio da fase começa no pedido correspondente; o de hello começa na abertura WS. | Reaproveita a referência de 8 s atual e fecha a espera não coberta de R10. Não soma um prazo durante a interação humana com permissões. | Não; padrão proposto. |
 | A2 — Liberação local | Até 1 s após o evento terminal ou após a resolução de uma aquisição obsoleta, o que ocorrer por último para aquela captura. | A permissão do sistema operacional pode não ser cancelável; todo resultado tardio continua precisando de liberação. | Não; padrão proposto. |
 | A3 — Publicação parcial de tela | Abortar o novo compartilhamento por inteiro se qualquer publicação falhar; preservar a chamada e o microfone nos peers saudáveis. | Evita captura invisível e evita apresentar sucesso parcial como sucesso total. Não determina como compensar senders. | Não; padrão conservador proposto. |
-| A4 — Encerramento | 5 s para terminar o serviço, contados do primeiro pedido. Upgrade desconhecido recebe rejeição em até 1 s. | O encerramento atual não possui limite; os números são limites de aceitação, não medições. | Não; padrão proposto. |
+| A4 — Encerramento | 5 s para terminar o serviço, contados do primeiro pedido. Upgrade desconhecido recebe rejeição em até 1 s. | A referência revisada não possuía limite; os números são limites de aceitação, não medições ou aprovação do código posterior. | Não; padrão proposto. |
 | A5 — Recuperação | Reentrada/reenvio manuais. Rascunhos e envios sem confirmação sobrevivem à troca de sala, desconexão e reconexão na mesma execução do aplicativo. Não há garantia após fechar ou cair o processo cliente. | Corrige perda silenciosa sem aprovar a reconexão automática proposta no plano. | Não; limite proposto. |
-| A6 — Identidade de envio | Identificador opaco de operação globalmente único por envio, preservado no reenvio; recibo durável no mesmo serviço/banco, sem expiração automática. O nome não autentica o remetente. | Permite deduplicação após reconexão e reinício sem inventar contas. Não promete segurança contra outro convidado malicioso. | Não; contrato proposto. |
+| A6 — Identidade de envio | Identificador opaco de operação globalmente único por envio, preservado no reenvio; recibo durável no mesmo serviço/banco, sem expiração automática. Conteúdo persistido é o texto após trim; a recuperação de um envio recusado preserva o texto digitado integral. O nome não autentica o remetente. | Permite deduplicação após reconexão e reinício sem inventar contas. Não promete segurança contra outro convidado malicioso. | Não; contrato proposto. |
 | A7 — Mídia sem conexão | 15 s desde o início de cada tentativa de negociação por peer até mídia pronta; até 128 candidatos ICE pendentes por peer, cada um com validade de 15 s desde o recebimento. Após falha, recuperação manual explícita. | Limita espera e memória sem decidir SDK, ICE restart ou SFU. | Não; limites propostos. |
 | A8 — Recursos do protótipo | Até 24 conexões WS simultâneas por serviço; fila de saída de até 1 MiB por socket; até 100 salas; mensagem de 1 a 2000 unidades UTF-16 após trim; payload de entrada de até 65536 bytes; seis admitidos por chamada. | Os três últimos tetos de conteúdo/capacidade e o teto de salas preservam o comportamento atual. Conexões/fila são novos padrões para limitar R15. Não são promessa de desempenho. | Não; preservar os limites observados e propor os demais. |
 | A9 — Preferências e captura | Persistir nome, endereço e qualidade em cada perfil desktop. Áudio do sistema começa desligado em cada execução; seleção de tela expira após 60 s. Sem microfone, permitir ouvir/compartilhar mediante admissão válida. | Mantém escuta sem microfone, escolha explícita e áudio opcional; não transforma preferência antiga em consentimento para nova execução. | Não; padrão proposto a partir do fluxo atual. |
@@ -88,6 +107,10 @@ Tentativa vigente é a operação ainda não cancelada/substituída na conexão,
 Para STAB-40/41 e os erros correlatos, as categorias observáveis propostas são: `INCOMPATIBLE_PROTOCOL` para versão diferente de 1/ausente; `INVALID_EVENT` para JSON/estrutura/tipo inválido; `INVALID_INPUT` para conteúdo ou configuração inválidos; `ROOM_MISMATCH` para destino divergente; `OPERATION_CONFLICT` para reutilização conflitante de ID; `RATE_LIMITED` para cota; `CALL_FULL` para capacidade; `TIMEOUT` para prazo; `PERSISTENCE_FAILED` para falha antes do commit; `MEDIA_FAILED` para aquisição/publicação/negociação que falhou; `BOOTSTRAP_FAILED` para banco/listener que não abre; `SHUTDOWN_FAILED` para limpeza incompleta; `ALREADY_RUNNING` para segundo host. Esses códigos expressam resultados, sem determinar biblioteca, mensagens de fio ou divisão de componentes. Falha de broadcast depois do commit conserva o recibo de sucesso da persistência e registra separadamente a fase de entrega.
 
 Uma configuração ICE válida para os ensaios é um array, inclusive vazio, de objetos com urls como string não vazia ou lista não vazia de strings não vazias, usando stun/stuns/turn/turns. username e credential, quando presentes, são strings. PORT é inteiro entre 0 e 65535. Essas definições concretizam STAB-49/50 e não aprovam credenciais estáticas em serviço público. Somente o frame principal da interface local confiável pode exercer os privilégios de STAB-48; subframes, mesmo sob uma janela confiável, não recebem essa autorização.
+
+Para STAB-40, o mínimo verificável é JSON objeto, nunca null ou array, versão inteira 1, tipo reconhecido e identificadores de operação/tentativa não vazios com até 128 unidades UTF-16. Nomes de exibição e de sala têm de 1 a 32 unidades após trim. Descrição de sinalização tem tipo offer/answer e SDP textual. Candidato ICE é objeto com candidate textual; sdpMid e usernameFragment, se presentes, são string ou null; sdpMLineIndex, se presente, é inteiro de 0 a 65535 ou null. Os limites globais de entrada são os de A8. O contrato completo por evento pertence a uma etapa futura de design; esta spec não escolhe biblioteca, envelope ou módulos.
+
+Erro correlacionado identifica a operação disponível; falha de inicialização ou transporte sem operação associada registra correlação nula explicitamente. Cancelamento voluntário é distinguível de falha técnica de captura ou inventário de fontes, sem registrar thumbnails.
 
 ## User Stories
 
@@ -139,15 +162,15 @@ Prioridades das histórias orientam esta estabilização: P1 protege captura, te
 **Acceptance Criteria**:
 1. WHILE uma troca de sala aguardar confirmação o Conversa SHALL impedir submissão de mensagens, mantendo a sala confirmada como contexto visível da composição. (**STAB-17**)
 2. WHEN um envio for submetido THEN o Conversa SHALL fixar sua sala explícita e seu identificador de operação, que não mudam em resposta a navegação ou reenvio. (**STAB-18**)
-3. IF a sala explícita não corresponder à sala confirmada no servidor para aquela operação THEN o serviço SHALL rejeitar o envio sem persistir mensagem em qualquer sala. (**STAB-19**)
+3. IF um envio ainda não persistido indicar sala diferente da sala confirmada no servidor THEN o serviço SHALL rejeitá-lo sem persistir mensagem em qualquer sala. (**STAB-19**)
 4. WHEN uma troca de sala, desconexão ou reconexão ocorrer na mesma execução THEN o Conversa SHALL preservar separadamente o texto recuperável de cada sala, incluindo envios ainda sem confirmação. (**STAB-20**)
 5. WHEN o servidor aceitar um envio THEN o serviço SHALL confirmar somente após persistência, com recibo que identifique operação, mensagem, sala e ordem de inserção. (**STAB-21**)
 6. IF o transporte não aceitar o envio, o servidor recusá-lo ou a confirmação exceder A1 THEN o Conversa SHALL manter o texto integral recuperável na sala original como rascunho ou envio pendente/falho, sem apresentá-lo como confirmado. (**STAB-22**)
-7. WHEN a mesma operação com a mesma sala e conteúdo for reenviada THEN o Conversa SHALL apresentar o mesmo resultado persistido, com uma única mensagem no banco e na lista do cliente. (**STAB-23**)
+7. WHEN uma operação já persistida for reenviada com a mesma sala e conteúdo normalizado de A6 THEN o Conversa SHALL apresentar o mesmo resultado persistido, com uma única mensagem no banco e na lista da sala original, mesmo após reconexão. (**STAB-23**)
 8. IF um identificador de operação já usado for apresentado com outra sala ou conteúdo THEN o serviço SHALL rejeitar o conflito sem alterar o registro original. (**STAB-24**)
 9. IF a entrega ou o broadcast falhar depois do commit THEN o serviço SHALL conservar o resultado persistido consultável pelo reenvio da mesma operação, sem declarar que o commit foi desfeito. (**STAB-25**)
 10. WHEN o serviço reiniciar com o mesmo banco THEN o serviço SHALL conservar mensagens confirmadas e os resultados de deduplicação de A6. (**STAB-26**)
-11. IF o texto após trim estiver vazio ou exceder 2000 unidades UTF-16 THEN o serviço SHALL rejeitar o envio sem gravar mensagem ou descartar o texto recuperável do cliente. (**STAB-27**)
+11. IF o texto após trim estiver vazio ou exceder 2000 unidades UTF-16 THEN o serviço SHALL rejeitar o envio sem gravar mensagem. (**STAB-27**)
 
 **Independent Test**: Atrasar joined em 800 ms na troca geral→projetos e tentar submeter pelo formulário e por evento direto. Conferir banco e clientes das duas salas, incluindo ausência de entrega à sala errada. Exercitar socket fechado, rejeição, erro de escrita, commit com confirmação perdida, reenvio simultâneo e reinício. Testar 0/1/2000/2001 unidades após trim e conteúdo com espaços preservado no rascunho em caso de recusa. Deduplicar usando o recibo, sem tratar nome como credencial. A5 delimita a durabilidade no cliente.
 
@@ -295,9 +318,11 @@ Prioridades das histórias orientam esta estabilização: P1 protege captura, te
 
 ## Requirement Traceability
 
-Os requisitos foram relacionados ao plano em tasks.md. O status abaixo conserva a referência de Specify até a verificação integrada; tarefas concluídas e evidências parciais aparecem em tasks.md/evidence.md. Os apontamentos desta tabela identificam a origem do requisito, não a evidência de atendimento.
+Todos os requisitos ficam em Specify/Pending nesta entrega documental. Os apontamentos identificam a origem do requisito na referência revisada, não evidência de atendimento no código atual. Para arquivos de implementação, as linhas são as do commit imutável `63810f4` e podem ser consultadas com `git show 63810f4:caminho`; as referências `review/` pertencem ao relatório preservado. A tabela de inspeção acima usa linhas do snapshot `dc8d7a1`.
 
-| Requirement ID | Story | Achados | Evidência atual (file:line) | Phase | Status |
+O plano e a evidência incremental já existentes foram preservados como registro do avanço anterior. Esta spec não os aprova nem inicia novo planejamento ou execução.
+
+| Requirement ID | Story | Achados | Origem na referência revisada (file:line) | Phase | Status |
 | --- | --- | --- | --- | --- | --- |
 | STAB-01 | US1 | R01, R20 | src/rtc.js:8; electron/main.js:50 | Specify | Pending |
 | STAB-02 | US1 | R01 | src/rtc.js:8; src/rtc.js:92 | Specify | Pending |
@@ -368,7 +393,7 @@ Os requisitos foram relacionados ao plano em tasks.md. O status abaixo conserva 
 | STAB-66 | US10 | R21 | scripts/desktop-smoke.mjs:12; scripts/startup-audio-check.mjs:30 | Specify | Pending |
 | STAB-67 | US10 | R25 | server/service.js:54; server/service.js:107; src/main.jsx:13; electron/main.js:34 | Specify | Pending |
 
-**Coverage:** 68 requisitos associados a histórias, evidências de origem e ao plano em tasks.md. Pending significa ainda não verificado integralmente. Nenhum mapeamento equivale a aprovação do produto.
+**Coverage:** 68 requisitos associados a histórias e evidências de origem; 68 linhas de rastreabilidade e nenhum requisito órfão. Nenhuma tarefa é criada ou aprovada por esta entrega. Pending significa atendimento ainda não certificado. Nenhum mapeamento equivale a aprovação do produto.
 
 ## Review Findings Disposition
 
@@ -398,12 +423,12 @@ Os requisitos foram relacionados ao plano em tasks.md. O status abaixo conserva 
 | R20 | P2 | Parcial | STAB-63 e critérios de sucesso; resultados esperados substituem falsa aprovação por probes. CI completo e qualidade física/rede prolongada permanecem pendentes. |
 | R21 | P2 | Incluído | STAB-64–66; diagnóstico independente do manifesto e limpeza mesmo com falha anterior à abertura. |
 | R22 | P2 | Parcial, arquitetura adiada | Invariantes US1–US8 e STAB-63 fundamentam futuras fronteiras. Não se especificam extrações, tipos, lint, formatação, CI ou Git nesta sessão. |
-| R23 | P2 | Adiado, bloqueia distribuição aprovada | Out of Scope. Sem assinatura, instalador ou nova validação do portátil. Device Guard continua pendência operacional. |
-| R24 | P3 | Adiado para distribuição | Out of Scope. Staging, retenção de builds e promoção atômica não são alterados por esta spec. |
+| R23 | P2 | Adiado, bloqueia distribuição aprovada | Out of Scope. Sem assinatura ou instalador. BUILD validou abertura local do portátil, sem certificar distribuição ou outras políticas Device Guard. |
+| R24 | P3 | Adiado para distribuição | Out of Scope desta spec. BUILD corrigiu staging e identificou o portátil atual; retenção e política de promoção de releases continuam adiadas. |
 | R25 | P3 | Incluído com prioridade de suporte P2 | STAB-25/37/41/49/67; falhas distinguíveis e registros sem conteúdo sensível. Causa física do ruído segue desconhecida. |
 | R26 | P3 | Parcial | C2; STAB-05/31/44/60–62. Indicadores, leitura e autoria incluídos; versão visual e botão sem ação ficam pendentes. |
 
-**Cobertura dos achados:** 26/26 com destinação; 13 incluídos, 9 parciais e 4 adiados. Incluído/parcial/adiado não altera a contagem de **zero correções nesta sessão**.
+**Cobertura dos achados:** 26/26 com destinação; 13 incluídos, 9 parciais e 4 adiados. Nenhum achado é encerrado pela elaboração ou validação desta spec. As alterações de implementação já presentes no disco exigem verificação própria.
 
 ## Success Criteria
 
@@ -418,11 +443,11 @@ Os requisitos foram relacionados ao plano em tasks.md. O status abaixo conserva 
 
 ## Specification Validation
 
-A validação desta sessão é da **spec**, não do produto. Não se executam tarefas de correção nem se produz validation.md de implementação.
+A validação da entrega Specify foi da **spec**, não do produto; naquele fechamento, foram alterados apenas este documento e o corpo de Handoff em STATE.md. O pedido posterior C5 originou a entrega separada BUILD, com seu próprio [validation.md](../build-confiavel/validation.md). Os 68 critérios STAB continuam Pending, sem certificação integral nem encerramento de achados por este documento.
 
 - Skill carregada via MCP Agent Skills 0.1.8, usando cliente MCP local por stdio: search_skills → read_skill → fetch_skill_files → prepare_skill_files. Catálogo fixado pelo MCP: @tech-leads-club/skills-catalog@0.17.12; revisão de staging: 9f4c79355600.
-- [Skill de origem](<https://github.com/tech-leads-club/agent-skills/blob/bc4f025632b0443ed3450aaec6fe96aec5b9a0c5/packages/skills-catalog/skills/(development)/tlc-spec-driven/SKILL.md>): referências specify, discuss, memory, coding-principles, lessons e code-analysis lidas integralmente. As referências retornadas pelo MCP foram conferidas contra os textos já lidos integralmente; conteúdo idêntico.
+- [Skill de origem](<https://github.com/tech-leads-club/agent-skills/blob/bc4f025632b0443ed3450aaec6fe96aec5b9a0c5/packages/skills-catalog/skills/(development)/tlc-spec-driven/SKILL.md>): instruções e referências specify, discuss, memory, coding-principles, lessons e code-analysis lidas integralmente pelo MCP. Consulta de lições confirmadas: nenhuma.
 - Gate estrutural: **PASS**, validate_spec.py da revisão preparada pelo MCP, com --strict: **exit 0, zero erros, zero avisos**. Executado em 2026-10-24 com Python 3.14.0 portátil em diretório temporário, pois python/python3 do PATH apontam ao atalho da Microsoft Store. O SHA-256 do validador é 2a0b7e334d026f9556c665fbd0386cfa5b17c62a5e921fed52a9422bc27bc006.
 - Invocação: `python "C:/Users/welli/.cache/agent-skills-mcp/tlc-spec-driven/9f4c79355600/scripts/validate_spec.py" ".specs/features/estabilizacao/spec.md" --strict`, substituindo python pelo interpretador disponível. O gate examina o Markdown; não valida o aplicativo.
 - Conferências adicionais: 68 ACs com 68 IDs únicos, correspondência integral com as 68 linhas de rastreabilidade, 26 achados únicos com destinação e referências locais existentes. A seção Decisions de STATE.md permanece preservada.
-- Fechamento semântico: critérios EARS com IDs únicos; distinção entre evidência e proposta; nove dimensões cobertas; perguntas essenciais C1/C2 respondidas; demais padrões registrados como premissas; 26 achados com destinação. Design, Tasks e Execute permanecem não iniciados.
+- Fechamento semântico: critérios EARS com IDs únicos; distinção entre referência revisada, snapshot histórico e proposta; nove dimensões cobertas; perguntas essenciais C1/C2 respondidas; demais padrões registrados como premissas; 26 achados com destinação. Os artefatos anteriores de Design/Tasks/Execute são registrados; a aprovação BUILD é separada. Nenhum PASS integral de implementação STAB é declarado.

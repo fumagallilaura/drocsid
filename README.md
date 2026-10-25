@@ -99,7 +99,7 @@ Para o objetivo de conversar e compartilhar tela com amigos, as próximas etapas
 1. **Uso pela internet sem configuração manual:** hospedar servidor HTTPS/WSS e TURN, abrir convites diretamente no aplicativo e validar chamadas entre computadores em redes diferentes.
 2. **Identidade e privacidade:** contas, login, salas privadas, convites com expiração, papéis e permissões; hoje o acesso é de convidado.
 3. **Áudio no uso diário:** escolher microfone e fone/alto-falante, controlar volumes, push-to-talk e testar eco, Bluetooth e áudio real do sistema. Hoje são usados os dispositivos padrão.
-4. **Resiliência:** reconexão automática do servidor, recuperação da mídia após mudanças de rede e confirmação/reenvio de mensagens. Hoje, após desconexão, é preciso reconectar manualmente.
+4. **Resiliência:** reconexão automática do servidor e recuperação da mídia após mudanças de rede. Hoje, a reconexão é manual; mensagens sem confirmação permanecem disponíveis para reenvio manual idempotente durante a mesma execução.
 5. **Distribuição e operação:** instalador, assinatura do executável, atualização automática, recuperação de falhas e backups do servidor.
 6. **Qualidade e capacidade:** testes prolongados com hardware real, redes lentas e seis participantes. Para grupos maiores, acrescentar um SFU em lugar da malha atual.
 

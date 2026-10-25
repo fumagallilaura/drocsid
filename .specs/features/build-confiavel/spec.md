@@ -2,12 +2,12 @@
 
 ## Problem Statement
 
-O cliente compila, mas a suíte falha por módulo ausente e o pacote Windows omite um módulo importado pelo servidor. A solicitação de 2026-10-24 autoriza fechar essas integrações e verificar o build local. Esta entrega não certifica toda a estabilização nem publica uma release.
+Na referência `dc8d7a1`, o cliente compilava, mas a suíte falhava por módulo ausente e o pacote Windows omitia um módulo importado pelo servidor. A solicitação de 2026-10-24 autorizou fechar essas integrações e verificar o build local. O resultado em `58be3ed` foi aprovado pelo [Verifier independente](validation.md): 11/11 critérios, 12/12 gates e 10/10 falhas injetadas detectadas por asserções. Esta entrega não certifica toda a estabilização nem publica uma release.
 
 ## Goals
 
-- [ ] Aprovar testes, compilação, integração Electron e conteúdo do pacote.
-- [ ] Produzir evidência reproduzível, sem depender de artefatos antigos ou de dados pessoais.
+- [x] Aprovar testes, compilação, integração Electron e conteúdo do pacote.
+- [x] Produzir evidência reproduzível, sem depender de artefatos antigos ou de dados pessoais.
 
 ## Out of Scope
 
@@ -60,31 +60,37 @@ O cliente compila, mas a suíte falha por módulo ausente e o pacote Windows omi
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| BUILD-01 | P1 | Execute | Implementing |
-| BUILD-02 | P1 | Execute | Implementing |
-| BUILD-03 | P1 | Execute | Implementing |
-| BUILD-04 | P1 | Execute | Implementing |
-| BUILD-05 | P1 | Execute | Pending |
-| BUILD-06 | P1 | Execute | Pending |
-| BUILD-07 | P1 | Execute | Pending |
-| BUILD-08 | P1 | Execute | Pending |
-| BUILD-09 | P1 | Execute | Pending |
-| BUILD-10 | P1 | Execute | Pending |
-| BUILD-11 | P1 | Execute | Pending |
+| BUILD-01 | P1 | Execute | Verified |
+| BUILD-02 | P1 | Execute | Verified |
+| BUILD-03 | P1 | Execute | Verified |
+| BUILD-04 | P1 | Execute | Verified |
+| BUILD-05 | P1 | Execute | Verified |
+| BUILD-06 | P1 | Execute | Verified |
+| BUILD-07 | P1 | Execute | Verified |
+| BUILD-08 | P1 | Execute | Verified |
+| BUILD-09 | P1 | Execute | Verified |
+| BUILD-10 | P1 | Execute | Verified |
+| BUILD-11 | P1 | Execute | Verified |
 
 ## Success Criteria
 
-- [ ] Gates aprovados e relatório independente com evidência por critério.
-- [ ] Nenhum teste removido, enfraquecido ou ignorado para obter aprovação.
-- [ ] Limites do executável empacotado registrados separadamente da execução source.
+- [x] Gates aprovados e relatório independente com evidência por critério.
+- [x] Nenhum teste removido, enfraquecido ou ignorado para obter aprovação.
+- [x] Limites do executável empacotado registrados separadamente da execução source.
 
 ## Execution Plan
 
 1. [x] Concluir integração desktop: electron/main.js, preload.cjs, policy.js, integração mínima de erro em src/main.jsx e testes de política/perfil; gate Node 43/43, build, perfil e smoke aprovados. Adequação em evidence.md. Commit fix(desktop).
 2. [x] Corrigir entrada do empacotamento: package.json, prepare-electron.mjs, build-windows.mjs e testes de pacote; gate Node 44/44, build, portátil e inventário ASAR aprovados. Perfil aprovado também no executável win-unpacked. Commit fix(build).
 3. [x] Fechar diagnóstico e teardown: scripts desktop/startup e helper/testes necessários; Node 50/50, build, perfil, smoke source/empacotado, diagnóstico sem manifesto e abertura do wrapper portátil aprovados. Commit fix(harness).
-4. [x] Fechar G1/G2 encontrados pelo primeiro Verifier: fixture source observa callbacks exatos para reload/close/Escape; teste de prazo exige estado terminal e kill até 5 s. Node 50/50, build, captura, perfil, smoke e pacote aprovados pelo autor; re-verificação pendente. Commit test(capture).
+4. [x] Fechar G1/G2 encontrados pelo primeiro Verifier: fixture source observa callbacks exatos para reload/close/Escape; teste de prazo exige estado terminal e kill até 5 s. Node 50/50, build, captura, perfil, smoke e pacote aprovados; re-verificação independente PASS em `58be3ed`. Commit test(capture).
 
 Nenhuma extração ou dependência nova é necessária. Os passos são atômicos; cada um registra adequação em evidence.md antes do commit.
 
 O Verifier independente é o fechamento após o último commit; os passos concluídos acima não substituem seu relatório. Gates: npm test, npm run build, node scripts/check-package.mjs, node scripts/desktop-profile-check.mjs, node scripts/desktop-capture-check.mjs, node scripts/desktop-smoke.mjs (também com CONVERSA_TEST_EXTERNAL=1), node scripts/startup-audio-check.mjs (source sem manifesto) e node scripts/portable-startup-check.mjs. Scripts com captura de tela devem rodar sequencialmente.
+
+## Validation
+
+Fechamento em 2026-10-24: [validation.md](validation.md) registra PASS independente no intervalo `dc8d7a1..58be3ed`. Node: 50/50, zero falhas/skips; smoke source e win-unpacked, servidor interno/externo, diagnóstico sem manifesto e wrapper portátil real aprovados. As dez mutações foram detectadas por asserções, sem sobreviventes ou timeouts externos; G1/G2 fechados. O gate `validate_state.py build-confiavel` passou com exit 0.
+
+Artefato: `release-windows/Conversa-0.1.1-Windows.exe`, SHA-256 `cedb8048fedec3463e529401a4b71364e0d571eb65b376dd75042d4226b4f9c4`; manifesto atual em `test-results/build.json`. A aprovação é local e usa mídia sintética nos smokes. Assinatura, publicação, áudio físico, redes distintas e os 68 critérios STAB completos permanecem fora desta certificação.
