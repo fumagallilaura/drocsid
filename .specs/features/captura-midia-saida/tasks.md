@@ -6,7 +6,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 
 **If the skill cannot be activated, STOP and tell the user - do not proceed without it.**
 
-**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T4 concluídas; T5–T9 pendentes. Ver [execução](execution.md).
+**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T5 concluídas; T6–T9 pendentes. Ver [execução](execution.md).
 
 O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem A recomendada; a geração do documento não marca essa arquitetura ou Execute como aprovados. Os padrões A1–A8 permanecem explícitos na spec.
 
@@ -205,17 +205,19 @@ T8 -> T9
 
 **Done when**:
 
-- [ ] Uma aquisição por documento permanece associada à mesma chave até a promessa real assentar. Reentrada não reassocia request antigo; documento/frame antigo não usa o registro novo.
-- [ ] Token de documento fica privado no preload; IPC e inventário antigos após reload não preparam, cancelam ou finalizam operação nova. Um handler nativo extra não substitui o callback já associado à chave.
-- [ ] prepare/finish síncronos só validam e alteram memória; inventário suspenso não bloqueia seu retorno. Gesto de usuário é preservado na chamada real ao Electron 45.
-- [ ] Cancelamento antes do handler, durante inventário e no seletor resolve cada callback uma única vez com null; timer de 60 s, erro e fonte inválida também têm resultado terminal sem fonte tardia.
-- [ ] Resultado estruturado diferencia cancelamento, TIMEOUT, MEDIA_FAILED e INVALID_EVENT, mesmo com AbortError nativo. Inverter a ordem de evento IPC/rejeição não perde nem duplica o relato técnico.
-- [ ] Chaves, fontes, frame/origem e IPC alheios não obtêm capacidade. Áudio é concedido só quando solicitado naquela operação; câmera continua negada.
-- [ ] Políticas unitárias e fixture Electron entram no mesmo commit. Full + captura/perfil aprovados, `50 + Δ` registrado e zero falhas/skips; guardas não dependem de hooks de teste na produção.
+- [x] Uma aquisição por documento permanece associada à mesma chave até a promessa real assentar. Reentrada não reassocia request antigo; documento/frame antigo não usa o registro novo.
+- [x] Token de documento fica privado no preload; IPC e inventário antigos após reload não preparam, cancelam ou finalizam operação nova. Um handler nativo extra não substitui o callback já associado à chave.
+- [x] prepare/finish síncronos só validam e alteram memória; inventário suspenso não bloqueia seu retorno. Gesto de usuário é preservado na chamada real ao Electron 45.
+- [x] Cancelamento antes do handler, durante inventário e no seletor resolve cada callback uma única vez com null; timer de 60 s, erro e fonte inválida também têm resultado terminal sem fonte tardia.
+- [x] Resultado estruturado diferencia cancelamento, TIMEOUT, MEDIA_FAILED e INVALID_EVENT, mesmo com AbortError nativo. Inverter a ordem de evento IPC/rejeição não perde nem duplica o relato técnico.
+- [x] Chaves, fontes, frame/origem e IPC alheios não obtêm capacidade. Áudio é concedido só quando solicitado naquela operação; câmera continua negada.
+- [x] Políticas unitárias e fixture Electron entram no mesmo commit. Full + captura/perfil aprovados, `50 + Δ` registrado e zero falhas/skips; guardas não dependem de hooks de teste na produção.
 
 **Tests**: unit em `tests/desktop-policy.test.js`; e2e em `scripts/desktop-capture-check.mjs` e `scripts/desktop-profile-check.mjs`, com ajustes na fixture pública existente. Acrescentar cancelamento antes do request nativo, reentrada durante inventário, tentativa de chave nova antes do assentamento, IPC/documento antigos, segundo handler e timeout controlado. Preservar os testes BUILD de callback único.
 **Gate**: full + `node scripts/desktop-capture-check.mjs` + `node scripts/desktop-profile-check.mjs`, todos source e sequenciais.
 **Commit**: `fix(desktop): bind native capture selection to its call operation`
+
+**Execução T5 em 2026-10-25**: Full + captura/perfil PASS, 70/70 Node (50 + 20), zero falhas/skips/cancelled. [Adequação](execution.md#t5--seleção-nativa-por-operaçãodocumento). T4 em `fdf6066`; T5 neste commit. MEDIA sem Verified.
 
 #### T6: Ativar o contrato final v2 nos limites compartilhados
 

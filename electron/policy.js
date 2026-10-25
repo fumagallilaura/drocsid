@@ -21,6 +21,12 @@ export function allowDisplayCapture(contents, request, origin) {
   return trustedContents(contents, origin) && request.frame === contents.mainFrame &&
     sameOrigin(request.securityOrigin, origin) && sameOrigin(request.frame?.url, origin);
 }
+export function validCaptureKey(key) {
+  return !!key && !Array.isArray(key) && ['callId','operationId'].every(field => typeof key[field] === 'string' && key[field].length > 0 && key[field].length <= 128) && Number.isSafeInteger(key.generation) && key.generation > 0;
+}
+export function sameCaptureKey(a, b) {
+  return validCaptureKey(a) && validCaptureKey(b) && a.callId === b.callId && a.generation === b.generation && a.operationId === b.operationId;
+}
 export function validatePreferences(value) {
   if (!value || Array.isArray(value) || typeof value.name !== 'string' || value.name.length > 32 ||
       typeof value.server !== 'string' || value.server.length > 2048 || !['720', '1080'].includes(value.quality)) throw new ProtocolError('INVALID_INPUT');

@@ -6,11 +6,12 @@ import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { createService, logFailure } from '../server/service.js';
 import { readIceServers } from '../shared/protocol.js';
-import { allowPermissionCheck, allowPermissionRequest, allowDisplayCapture, trustedIpc, validatePreferences } from './policy.js';
+import { allowPermissionCheck, allowPermissionRequest, allowDisplayCapture, trustedIpc, validatePreferences, validCaptureKey, sameCaptureKey } from './policy.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 let service, origin;
 const pending = new Map();
+const documents = new Map();
 const trusted = contents => { try { return new URL(contents.getURL()).origin === origin; } catch { return false; } };
 const profile = app.commandLine.getSwitchValue('user-data-dir');
 if (profile) { mkdirSync(resolve(profile), { recursive: true }); app.setPath('userData', resolve(profile)); }
@@ -48,38 +49,82 @@ origin = `http://127.0.0.1:${service.server.address().port}`;
 
 session.defaultSession.setPermissionCheckHandler((contents, permission, requestingOrigin, details) => allowPermissionCheck(contents, permission, requestingOrigin, details, origin));
 session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => callback(allowPermissionRequest(contents, permission, details, origin)));
-function settleCapture(requestId, result = null) {
-  const entry = pending.get(requestId); if (!entry) return;
-  pending.delete(requestId); clearTimeout(entry.timer);
-  try { entry.callback(result); } catch (error) { logFailure('capture', 'MEDIA_FAILED', requestId, error); }
+function settleCapture(entry, result = null, outcome = { outcome: 'cancelled', code: 'CANCELLED', phase: 'capture-selection' }) {
+  entry.outcome ||= { ...outcome, requestId: entry.requestId || null };
+  clearTimeout(entry.timer);
+  if (!entry.callback) return;
+  pending.delete(entry.requestId);
+  const callback = entry.callback; entry.callback = null;
+  try { callback(result); } catch (error) { logFailure('capture', 'MEDIA_FAILED', entry.requestId, error); }
 }
-function cancelCaptures(contentsId) { for (const [id, entry] of pending) if (contentsId === undefined || entry.contentsId === contentsId) settleCapture(id); }
+function cancelCaptures(contentsId) { for (const [id, document] of documents) if ((contentsId === undefined || id === contentsId) && document.entry) settleCapture(document.entry); }
+ipcMain.on('capture-document', event => {
+  if (!trustedIpc(event, origin)) { event.returnValue = null; return; }
+  let document = documents.get(event.sender.id);
+  if (!document) { document = { token: randomUUID() }; documents.set(event.sender.id, document); }
+  event.returnValue = document.token;
+});
+function captureDocument(event, value) {
+  const document = documents.get(event.sender.id);
+  return trustedIpc(event, origin) && document?.token === value?.documentToken ? document : null;
+}
+ipcMain.on('capture-prepare', (event, value) => {
+  const document = captureDocument(event, value), key = value?.key;
+  if (!document || !validCaptureKey(key) || (document.entry && !sameCaptureKey(document.entry.key, key))) {
+    event.returnValue = { ok: false, code: 'INVALID_EVENT', phase: 'capture-prepare' }; return;
+  }
+  if (!document.entry) {
+    const entry = { key: { callId:key.callId, generation:key.generation, operationId:key.operationId }, contentsId:event.sender.id, document, frame:event.senderFrame, sources:[] };
+    document.entry = entry;
+    entry.timer = setTimeout(() => {
+      settleCapture(entry, null, { outcome:'failed', code:'TIMEOUT', phase:'capture-selection' });
+      if (!event.sender.isDestroyed() && documents.get(entry.contentsId) === document) event.sender.send('capture-error', { documentToken:document.token, key:entry.key, ...entry.outcome });
+    }, 60000);
+  }
+  event.returnValue = { ok: true };
+});
+ipcMain.on('capture-cancel', (event, value) => {
+  const document = captureDocument(event, value), entry = document?.entry;
+  if (entry && sameCaptureKey(entry.key, value.key)) settleCapture(entry);
+  event.returnValue = { ok: !!entry && sameCaptureKey(entry.key, value?.key) };
+});
+ipcMain.on('capture-finish', (event, value) => {
+  const document = captureDocument(event, value), entry = document?.entry;
+  if (!entry || !sameCaptureKey(entry.key, value.key)) { event.returnValue = { outcome:'failed',code:'INVALID_EVENT',phase:'capture-finish',requestId:null }; return; }
+  if (!entry.outcome) settleCapture(entry, null, { outcome:'failed',code:'MEDIA_FAILED',phase:'capture' });
+  event.returnValue = entry.outcome; document.entry = null;
+});
 session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
   const window = BrowserWindow.getAllWindows().find(w => w.webContents.mainFrame === request.frame);
   if (!window || !allowDisplayCapture(window.webContents, request, origin)) return callback(null);
-  const requestId = randomUUID();
-  const entry = { contentsId: window.webContents.id, sources: [], callback, audio: request.audioRequested,
-    timer: setTimeout(() => settleCapture(requestId), 60000) };
+  const document = documents.get(window.webContents.id), entry = document?.entry;
+  if (!entry || entry.frame !== request.frame || entry.requestId) return callback(null);
+  const requestId = entry.requestId = randomUUID();
+  entry.callback = callback; entry.audio = request.audioRequested;
   pending.set(requestId, entry);
+  if (entry.outcome) return settleCapture(entry);
   try {
     const sources = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 360, height: 210 }, fetchWindowIcons: true });
-    if (!pending.has(requestId) || window.isDestroyed() || !trusted(window.webContents)) return settleCapture(requestId);
+    if (!pending.has(requestId) || documents.get(entry.contentsId) !== document || window.isDestroyed() || !trusted(window.webContents)) return settleCapture(entry);
     entry.sources = sources;
-    window.webContents.send('capture-sources', { requestId, sources: sources.map(s => ({ id: s.id, name: s.name, thumbnail: s.thumbnail.toDataURL() })) });
+    window.webContents.send('capture-sources', { documentToken:document.token, key:entry.key, requestId, sources: sources.map(s => ({ id: s.id, name: s.name, thumbnail: s.thumbnail.toDataURL() })) });
   } catch (error) {
     if (!pending.has(requestId)) return;
     logFailure('capture-inventory', 'MEDIA_FAILED', requestId, error);
-    if (!window.isDestroyed()) window.webContents.send('capture-error', { requestId, code: 'MEDIA_FAILED' });
-    settleCapture(requestId);
+    settleCapture(entry, null, { outcome:'failed',code:'MEDIA_FAILED',phase:'capture-inventory' });
+    if (!window.isDestroyed() && documents.get(entry.contentsId) === document) window.webContents.send('capture-error', { documentToken:document.token, key:entry.key, ...entry.outcome });
   }
 });
 ipcMain.on('capture-select', (event, value) => {
-  if (!value || typeof value.requestId !== 'string' || !trustedIpc(event, origin)) return;
+  const document = captureDocument(event, value);
+  if (!document || !value || typeof value.requestId !== 'string') return;
   const { requestId, sourceId } = value;
   const entry = pending.get(requestId);
-  if (!entry || entry.contentsId !== event.sender.id) return;
+  if (!entry || document.entry !== entry || !sameCaptureKey(entry.key, value.key) || entry.contentsId !== event.sender.id) return;
   const source = entry.sources.find(s => s.id === sourceId);
-  settleCapture(requestId, source ? { video: source, ...(entry.audio ? { audio: 'loopback' } : {}) } : null);
+  if (sourceId === null) settleCapture(entry);
+  else if (!source) settleCapture(entry, null, { outcome:'failed',code:'INVALID_EVENT',phase:'capture-selection' });
+  else settleCapture(entry, { video: source, ...(entry.audio ? { audio: 'loopback' } : {}) }, { outcome:'selected',code:null,phase:'capture-selection' });
 });
 ipcMain.on('playback-state', (event, enabled) => {
   if (trustedIpc(event, origin)) event.sender.setAudioMuted(enabled !== true);
@@ -92,11 +137,15 @@ function openWindow() {
   // No playback on startup, logout or reload. The renderer enables it only
   // after the user has joined a call, and disables it when leaving/deafening.
   window.webContents.setAudioMuted(true);
-  window.webContents.on('did-start-loading', () => { window.webContents.setAudioMuted(true); cancelCaptures(window.webContents.id); });
+  window.webContents.on('did-start-navigation', (_event, _url, _inPlace, isMainFrame) => {
+    if (!isMainFrame) return;
+    window.webContents.setAudioMuted(true); cancelCaptures(window.webContents.id);
+    documents.set(window.webContents.id, { token:randomUUID() });
+  });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   const contentsId = window.webContents.id;
   window.webContents.on('will-navigate', (event, url) => { if (new URL(url).origin !== origin) event.preventDefault(); });
-  window.on('closed', () => cancelCaptures(contentsId));
+  window.on('closed', () => { cancelCaptures(contentsId); documents.delete(contentsId); });
   window.loadURL(origin);
   return window;
 }

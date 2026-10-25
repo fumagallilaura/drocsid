@@ -142,3 +142,42 @@ Gate final: **69/69 Node = 50 + 19**, zero falhas/skips/cancelled; build PASS e 
 | `tests/rtc.test.js:262`, `:263`, `:264` liberação/correlação | MEDIA-17/19/31 | Sim |
 
 Guidelines: README/matriz/skill. Resultados observam tracks, senders e estado; não apenas chamadas de mocks. **Veredito do autor T4: gate e adequação aprovados; sem Verified global, sem alteração de AC, testes históricos preservados.**
+
+## T5 — seleção nativa por operação/documento
+
+T4: `fdf6066`. A seleção existente conserva o callback no host e a aquisição real no renderer. Há uma chave preparada por documento até o assentamento da promessa do navegador. Preload mantém token privado e filtra eventos; host recusa chaves/IPC antigos. Prepare/cancel/finish síncronos fazem somente validação e memória; enumeração continua assíncrona. Resultado estruturado sobrevive ao AbortError. O adaptador relata a operação uma vez, independentemente da ordem entre IPC de erro e rejeição da captura.
+
+A precisão do design usa `did-start-navigation` do frame principal, em vez do genérico did-start-loading: carregamento de subframe não invalida o preload principal. Não muda o resultado de nenhum AC. Fontes oficiais conferidas: [display handler](https://www.electronjs.org/docs/latest/api/session#sessetdisplaymediarequesthandlerhandler-opts), [sendSync](https://www.electronjs.org/docs/latest/api/ipc-renderer#ipcrenderersendsyncchannel-args), [ativação transitória](https://w3c.github.io/mediacapture-screen-share/#dom-mediadevices-getdisplaymedia). Context7 não está disponível nesta sessão; código e docs locais foram consultados antes dessas fontes.
+
+Arquivos: `electron/main.js`, `electron/preload.cjs`, `electron/policy.js`, adaptador mínimo em `src/main.jsx`; teste unitário em `tests/desktop-policy.test.js`, fixture pública e `scripts/desktop-capture-check.mjs`. Um teste Node novo; dez pedidos nativos no checker, todos com gesto preservado. A fixture instrumenta APIs públicas antes do entrypoint real; nenhum hook de teste entrou na produção. Sua leitura inicial de returnValue foi corrigida com um setter observador, pois a propriedade nativa não tem getter de resultado. Asserções mantidas.
+
+Gate Full final: **70/70 Node = 50 + 20**, zero falhas/skips/cancelled; build, smoke source/interno, captura e perfil **PASS**, sequenciais. Concessão de loopback no callback prova a política; não prova conteúdo/qualidade de áudio real. T9 continua necessário.
+
+### Adequação A/B
+
+| Critério | Evidência e expressão | Resultado da spec | Coberto |
+| --- | --- | --- | --- |
+| MEDIA-09/11/28, chave exata e limites | `tests/desktop-policy.test.js:44` valid/same true; `:45` invalid false; `:46` outra operação false; `:47` limites máximos true | Chave limitada e inseparável da operação | Sim |
+| MEDIA-11, privilégios preservados | `tests/desktop-policy.test.js:13` câmera false; `:25` IPC de subframe false; `:34` origem estrangeira false; perfil real câmera/subframe NotAllowedError | Só frame principal local confiável | Sim |
+| MEDIA-12/23/28, reload/close/Escape | `scripts/desktop-capture-check.mjs:39`, `:49`, `:60` objetos exatos com calls 1/results cancelled/finished true e deliveries 0/1 | Callback único e nenhuma entrega tardia | Sim, asserções BUILD preservadas |
+| Guarda antes do handler/reentrada | `scripts/desktop-capture-check.mjs:70` prepare de outra chave INVALID_EVENT; `:74` requests.length 4; `:77` controle reutilizável depois do assentamento | Callback antigo não é associado à nova tentativa | Sim |
+| Handler duplicado | `scripts/desktop-capture-check.mjs:82` resultado null; `:87` callback original ainda com calls 0 | Não substitui nem finaliza o original | Sim |
+| MEDIA-13/31, deadline com inventário suspenso | `scripts/desktop-capture-check.mjs:89` calls 0 em 59999; `:93` outcome failed/TIMEOUT/capture-selection após 60000 | Prazo desde a preparação, incluindo inventário | Sim, timer controlado pela fixture |
+| Fonte inválida e chave alheia | `scripts/desktop-capture-check.mjs:102` calls 0 após chave alheia; `:105` failed/INVALID_EVENT/capture-selection | Não concede fonte fora do pedido | Sim |
+| Documento antigo/token privado | `scripts/desktop-capture-check.mjs:118` prepare/cancel/finish recusados com resultados exatos; `:119` callback novo calls 0; `:124` token indefinido no bridge público | IPC antigo não altera seleção nova; token não exposto ao App | Sim |
+| Inventário falho | `scripts/desktop-capture-check.mjs:128` mensagem específica; `:129` failed/MEDIA_FAILED/capture-inventory | Distingue erro técnico de cancelamento | Sim |
+| MEDIA-10, consentimento de áudio | `scripts/desktop-capture-check.mjs:140` `{audioRequested:audio,audio:audio?'loopback':null,video:true}` para false/true | Loopback só quando pedido na operação | Sim, concessão nativa; som físico em T9 |
+| Gesto e callback de todos os caminhos | `scripts/desktop-capture-check.mjs:144` todo request.calls===1; `:145` dez userGesture true | Preparação síncrona não perde gesto nem duplica callback | Sim |
+| MEDIA-32 | Host envia ao logger só fase/código/requestId/erro técnico; eventos de UI carregam thumbnails necessários ao seletor, não ao diagnóstico. Sanitização inteira é exigida em T7 | Diagnóstico sem captura/título/SDP | Fronteira preservada; gate completo em T7 |
+
+### Adequação C/D
+
+| Testes / expressões | Âncora | Manter |
+| --- | --- | --- |
+| `tests/desktop-policy.test.js:44`, `:45`, `:46`, `:47` chaves/limites | MEDIA-09/11/28 | Sim, novo |
+| `scripts/desktop-capture-check.mjs:70`, `:74`, `:77`, `:82`, `:87` guarda/callback/estado | MEDIA-12/28 e done-when de T5 | Sim, novo |
+| `scripts/desktop-capture-check.mjs:89`, `:93`, `:102`, `:105` tempo/chave/categoria | MEDIA-09/12/13/31 | Sim, novo |
+| `scripts/desktop-capture-check.mjs:118`, `:119`, `:124` documento/token | MEDIA-11/23/28 | Sim, novo |
+| `scripts/desktop-capture-check.mjs:128`, `:129`, `:140`, `:144`, `:145` erro/consentimento/callback/gesto | MEDIA-09/10/12/13/31 | Sim, novo |
+
+Guidelines: README/matriz/skill. Nenhuma asserção histórica removida, ignorada ou enfraquecida. **Veredito do autor T5: gate e adequação aprovados no componente, sem Verified global.**

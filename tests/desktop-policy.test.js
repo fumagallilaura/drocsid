@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { allowPermissionCheck, allowPermissionRequest, allowDisplayCapture, trustedIpc, validatePreferences } from '../electron/policy.js';
+import { allowPermissionCheck, allowPermissionRequest, allowDisplayCapture, trustedIpc, validatePreferences, validCaptureKey, sameCaptureKey } from '../electron/policy.js';
 
 const origin='http://127.0.0.1:4310';
 const frame={url:origin+'/'};
@@ -37,4 +37,12 @@ test('BUILD-02: display capture accepts serialized local origin only from its ma
 test('STAB-45: preference contract persists only bounded supported profile fields',()=>{
   assert.deepEqual(validatePreferences({name:'Ana',server:'http://localhost:4310/?room=cafe',quality:'720',ignored:'not stored'}),{name:'Ana',server:'http://localhost:4310/?room=cafe',quality:'720'});
   for(const bad of [null,[],{name:'x'.repeat(33),server:'',quality:'1080'},{name:'Ana',server:'file:///secret',quality:'1080'},{name:'Ana',server:'http://user:password@localhost',quality:'1080'},{name:'Ana',server:'',quality:'4000'}])assert.throws(()=>validatePreferences(bad),e=>e.code==='INVALID_INPUT');
+});
+
+test('MEDIA-09/11/28: capture keys are bounded and identify exactly one call operation',()=>{
+  const key={callId:'call',generation:1,operationId:'screen'};
+  assert.equal(validCaptureKey(key),true);assert.equal(sameCaptureKey(key,{...key}),true);
+  for(const bad of [null,[],{}, {...key,callId:''},{...key,operationId:'x'.repeat(129)},...[-1,0,1.5,Infinity,Number.MAX_SAFE_INTEGER+1].map(generation=>({...key,generation}))])assert.equal(validCaptureKey(bad),false);
+  for(const other of [{...key,callId:'new'},{...key,generation:2},{...key,operationId:'new'}])assert.equal(sameCaptureKey(key,other),false);
+  assert.equal(validCaptureKey({callId:'x'.repeat(128),operationId:'x'.repeat(128),generation:Number.MAX_SAFE_INTEGER}),true);
 });

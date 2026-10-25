@@ -234,9 +234,9 @@ Os IDs MEDIA detalham o recorte sem substituir os IDs STAB. As linhas de código
 | MEDIA-08 | US1 | STAB-09 | R02 | T1, T7, T8 | Execute | Implementing |
 | MEDIA-09 | US2 | STAB-10 | R03 | T4, T5, T7, T8 | Execute | Implementing |
 | MEDIA-10 | US2 | STAB-10/45 | R03/R11 | T4, T5, T7, T8, T9 | Execute | Implementing |
-| MEDIA-11 | US2 | STAB-48 | R17 | T5, T8 | Tasks | In Tasks |
-| MEDIA-12 | US2 | STAB-11/39/48 | R01/R03/R17 | T5, T8 | Tasks | In Tasks |
-| MEDIA-13 | US2 | STAB-11 | R03 | T5, T8 | Tasks | In Tasks |
+| MEDIA-11 | US2 | STAB-48 | R17 | T5, T8 | Execute | Implementing |
+| MEDIA-12 | US2 | STAB-11/39/48 | R01/R03/R17 | T5, T8 | Execute | Implementing |
+| MEDIA-13 | US2 | STAB-11 | R03 | T5, T8 | Execute | Implementing |
 | MEDIA-14 | US2 | STAB-12 | R03 | T4, T8 | Execute | Implementing |
 | MEDIA-15 | US2 | STAB-13/39 | R03/R14 | T4, T8 | Execute | Implementing |
 | MEDIA-16 | US2 | STAB-14 | R03 | T4, T8, T9 | Execute | Implementing |

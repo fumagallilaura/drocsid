@@ -67,7 +67,7 @@ function App() {
   const [systemAudio, setSystemAudio] = useState(false);
   const [capture, setCapture] = useState(null);
   const [sharingPending, setSharingPending] = useState(false);
-  const sessionRef = useRef(null), callRef = useRef(null), scrollRef = useRef(null), toastTimer = useRef(null), captureRef = useRef(null), autoScroll = useRef(true), callAttempt = useRef(0);
+  const sessionRef = useRef(null), callRef = useRef(null), scrollRef = useRef(null), toastTimer = useRef(null), captureRef = useRef(null), displayRequest = useRef(null), autoScroll = useRef(true), callAttempt = useRef(0);
   captureRef.current = capture;
   function notify(text) { setToast(text); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(''), 6500); }
   function report(error, phase = 'client') {
@@ -76,8 +76,34 @@ function App() {
     notify(error.message && error.message !== error.code ? error.message : 'Não foi possível concluir. Confira a conexão e tente novamente.');
   }
   function cancelPicker() {
-    if (captureRef.current) window.desktop?.selectCapture(captureRef.current.requestId, null);
+    if (displayRequest.current) cancelDisplay(displayRequest.current.key);
     captureRef.current = null; setCapture(null);
+  }
+  function captureMatches(key) {
+    const current = displayRequest.current?.key;
+    return current && key && current.callId === key.callId && current.generation === key.generation && current.operationId === key.operationId;
+  }
+  function cancelDisplay(key) { if (captureMatches(key)) window.desktop?.cancelCapture(key); }
+  function captureDisplay(key, constraints) {
+    if (!window.desktop?.prepareCapture) return navigator.mediaDevices.getDisplayMedia(constraints);
+    const failure = result => Object.assign(new Error(result.phase === 'capture-inventory' ? 'Não foi possível listar as fontes de tela.' : 'Não foi possível concluir a captura de tela.'), { code:result.code || 'MEDIA_FAILED', phase:result.phase || 'capture', requestId:result.requestId || null, ...key });
+    if (displayRequest.current) return Promise.reject(failure({ code:'INVALID_EVENT',phase:'capture-prepare' }));
+    const prepared = window.desktop.prepareCapture(key);
+    if (!prepared.ok) return Promise.reject(failure(prepared));
+    const operation = { key }; displayRequest.current = operation;
+    let acquisition;
+    try { acquisition = navigator.mediaDevices.getDisplayMedia(constraints); }
+    catch (error) { acquisition = Promise.reject(error); }
+    return Promise.resolve(acquisition).then(stream => {
+      const result = window.desktop.finishCapture(key);
+      if (result.outcome !== 'selected') { stream.getTracks().forEach(track => track.stop()); throw failure(result); }
+      return stream;
+    }, () => {
+      const result = window.desktop.finishCapture(key);
+      throw failure(result.outcome === 'selected' ? { ...result,code:'MEDIA_FAILED',phase:'capture' } : result);
+    }).finally(() => {
+      if (displayRequest.current === operation) { displayRequest.current = null; captureRef.current = null; setCapture(null); }
+    });
   }
   if (!sessionRef.current) sessionRef.current = new Session({
     onState: setTransport, onError: report,
@@ -95,10 +121,10 @@ function App() {
   const setDraft = value => sessionRef.current.setDraft(value);
   useEffect(() => {
     const unsubscribe = window.desktop?.onCaptureSources(value => {
-      if (!callRef.current?.admitted) { window.desktop?.selectCapture(value.requestId, null); return; }
+      if (!captureMatches(value.key) || !callRef.current?.admitted) { window.desktop?.selectCapture(value.key, value.requestId, null); return; }
       setModal(null); captureRef.current = value; setCapture(value);
     });
-    const unsubscribeError = window.desktop?.onCaptureError(value => report(Object.assign(new Error('Não foi possível listar as fontes de tela.'), value), 'capture-inventory'));
+    const unsubscribeError = window.desktop?.onCaptureError(value => { if (captureMatches(value.key)) { captureRef.current = null; setCapture(null); } });
     const cleanup = () => { sessionRef.current.disconnect(); clearTimeout(toastTimer.current); };
     window.addEventListener('beforeunload', cleanup);
     return () => { unsubscribe?.(); unsubscribeError?.(); window.removeEventListener('beforeunload', cleanup); cleanup(); };
@@ -133,6 +159,7 @@ function App() {
       const epoch = sessionRef.current.epoch;
       call = new Call({ id: session.id, iceServers: sessionRef.current.state.config.iceServers, send: event => sessionRef.current.request(event),
         nextCallGeneration: () => sessionRef.current.nextCallGeneration(epoch),
+        captureDisplay, cancelDisplay,
         onStreams: value => { if (callRef.current === call) setStreams(value); },
         onMedia: value => { if (callRef.current === call) setMedia(value); },
         onError: error => { if (callRef.current === call) report(error, 'media'); } });
@@ -189,7 +216,7 @@ function App() {
     </div>}
     {modal === 'create' && <Modal title="Um novo lugar para conversar" onClose={() => setModal(null)}><p className="modal-description">Crie uma sala para um assunto, um projeto ou só para reunir o grupo.</p><form onSubmit={createRoom}><label htmlFor="room-name">Nome da sala</label><input id="room-name" maxLength={32} required placeholder="Ex.: noite de jogos" value={roomName} onChange={e => setRoomName(e.target.value)}/><button className="primary modal-submit" disabled={!roomName.trim() || !connected || creatingRoom}>Criar sala <Plus size={17}/></button></form></Modal>}
     {modal === 'settings' && <Modal title="Do seu jeito" onClose={() => setModal(null)}><div className="settings-profile"><Avatar name={session.name} large/><div><h3>{session.name}</h3><p>Perfil de convidado</p></div></div><label htmlFor="quality">Qualidade do compartilhamento</label><select id="quality" value={quality} onChange={e => { setQuality(e.target.value); savePreferences(e.target.value); }}><option value="720">720p · mais leve</option><option value="1080">1080p · mais detalhes</option></select>{media.display && <p className="quality-note">A qualidade selecionada vale para a próxima captura.</p>}<label className="checkbox-label"><input type="checkbox" checked={systemAudio} onChange={e => setSystemAudio(e.target.checked)}/><span>Incluir áudio do sistema<small>No Windows, pode incluir o som de todos os aplicativos.</small></span></label><div className="server-info"><span>Servidor conectado</span><code>{session.server}</code><small>Prévia para grupos de até 6 pessoas. Sem autenticação de contas.</small></div><button className="secondary modal-submit" onClick={disconnect}><LogOut size={17}/> Sair e trocar de servidor</button></Modal>}
-    {capture && <Modal title="O que vamos compartilhar?" wide onClose={cancelPicker}><p className="modal-description">Escolha uma janela ou tela. Só o conteúdo selecionado será transmitido.{systemAudio && ' O áudio do sistema também será incluído.'}</p><div className="capture-grid">{capture.sources.map(source => <button key={source.id} onClick={() => { window.desktop.selectCapture(capture.requestId, source.id); setCapture(null); }}><img src={source.thumbnail} alt=""/><span><Monitor size={15}/>{source.name}</span></button>)}</div></Modal>}
+    {capture && <Modal title="O que vamos compartilhar?" wide onClose={cancelPicker}><p className="modal-description">Escolha uma janela ou tela. Só o conteúdo selecionado será transmitido.{systemAudio && ' O áudio do sistema também será incluído.'}</p><div className="capture-grid">{capture.sources.map(source => <button key={source.id} onClick={() => { window.desktop.selectCapture(capture.key, capture.requestId, source.id); setCapture(null); }}><img src={source.thumbnail} alt=""/><span><Monitor size={15}/>{source.name}</span></button>)}</div></Modal>}
     {toast && <div className="toast" role="status"><MessageCircle size={18}/><span>{toast}</span><button className="icon-button" onClick={() => setToast('')} aria-label="Fechar aviso"><X size={16}/></button></div>}
   </>;
 }

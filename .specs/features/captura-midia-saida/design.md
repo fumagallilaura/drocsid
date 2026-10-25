@@ -92,7 +92,7 @@ Paradas repetidas compartilham a limpeza em andamento e seu prazo original. Cada
 
 O request nativo do Electron informa frame, origem e modalidades; não oferece nossa chave de operação. Por isso haverá no máximo uma aquisição nativa de tela ainda não assentada por documento. A guarda fica na janela, sobrevivendo à substituição de `Call` durante saída/reentrada.
 
-O host renova um token opaco por documento em `did-start-loading`. O preload o obtém uma vez por IPC síncrono restrito ao frame local e o mantém em closure, acrescentando-o a cada mensagem de captura e filtrando eventos recebidos. O token não fica como argumento fornecido pelo App. Um IPC atrasado do preload anterior não pode preparar, cancelar ou finalizar a seleção do documento novo, mesmo se o webContents mantiver o mesmo ID.
+O host renova um token opaco por documento em `did-start-navigation`, somente para o frame principal. Esta precisão de T5 evita invalidar o preload principal quando um subframe carrega; o perfil e a captura foram exercitados no Electron 45. O preload obtém o token uma vez por IPC síncrono restrito ao frame local e o mantém em closure, acrescentando-o a cada mensagem de captura e filtrando eventos recebidos. O token não fica como argumento fornecido pelo App. Um IPC atrasado do preload anterior não pode preparar, cancelar ou finalizar a seleção do documento novo, mesmo se o webContents mantiver o mesmo ID.
 
 API estreita proposta no preload:
 
