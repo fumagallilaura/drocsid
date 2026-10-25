@@ -6,7 +6,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 
 **If the skill cannot be activated, STOP and tell the user - do not proceed without it.**
 
-**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1/T2 concluídas; T3–T9 pendentes. Ver [execução](execution.md).
+**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T3 concluídas; T4–T9 pendentes. Ver [execução](execution.md).
 
 O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem A recomendada; a geração do documento não marca essa arquitetura ou Execute como aprovados. Os padrões A1–A8 permanecem explícitos na spec.
 
@@ -156,15 +156,17 @@ T8 -> T9
 
 **Done when**:
 
-- [ ] Cancelamento rejeita pedidos da tentativa antiga; ack/error antigo não muda nem reporta falha da chamada nova.
-- [ ] Presença de revisão menor/igual e contexto antigo é descartada; nova conexão/sala reinicia somente o domínio correspondente.
-- [ ] A Session aloca geração por conexão e o App fornece essa função a Call neste commit: duas instâncias sucessivas recebem números crescentes; epoch antigo não aloca nem inicia captura. Nenhum produtor usa o padrão local de testes na integração desktop após T3.
-- [ ] Campos aditivos presentes já são conferidos; a exigência definitiva é ativada em T6. Timeout terminal preserva a limpeza local e termina o transporte conforme contrato.
-- [ ] Testes unitários e com serviço real entram no mesmo commit; Full aprovado, `50 + Δ` registrado e regressões de mensagens/rascunhos preservadas.
+- [x] Cancelamento rejeita pedidos da tentativa antiga; ack/error antigo não muda nem reporta falha da chamada nova.
+- [x] Presença de revisão menor/igual e contexto antigo é descartada; nova conexão/sala reinicia somente o domínio correspondente.
+- [x] A Session aloca geração por conexão e o App fornece essa função a Call neste commit: duas instâncias sucessivas recebem números crescentes; epoch antigo não aloca nem inicia captura. Nenhum produtor usa o padrão local de testes na integração desktop após T3.
+- [x] Campos aditivos presentes já são conferidos; a exigência definitiva é ativada em T6. Timeout terminal preserva a limpeza local e termina o transporte conforme contrato.
+- [x] Testes unitários e com serviço real entram no mesmo commit; Full aprovado, `50 + Δ` registrado e regressões de mensagens/rascunhos preservadas.
 
 **Tests**: unit/integration em `tests/session.test.js`; respostas com ação/callId/geração divergentes, ack e presença após cancelamento/reentrada, contexto de sala antigo, reconexão e geração preservada ao substituir Call na mesma conexão. O smoke source observa também a ligação real App/Session/Call nessa substituição, no mesmo commit.
 **Gate**: full; Quick + build + smoke source/interno.
 **Commit**: `fix(session): reject stale call replies and presence snapshots`
+
+**Execução T3 em 2026-10-25**: Full PASS, 64/64 Node (50 + 14), zero falhas/skips/cancelled. [Adequação](execution.md#t3--correlação-na-session-e-ligação-ao-app). T2 em `ca2ba07`; T3 neste commit. MEDIA sem Verified.
 
 ### Phase 2: Tela, captura nativa e ativação do contrato
 

@@ -11,11 +11,13 @@ async function instrument(page) {
   await page.evaluate(() => {
     window.__testConnections = [];
     window.__testCaptures = [];
+    window.__testCallEvents = [];
     const Original = window.RTCPeerConnection;
     window.RTCPeerConnection = class extends Original { constructor(...args) { super(...args); window.__testConnections.push(this); } };
     const send = WebSocket.prototype.send;
     WebSocket.prototype.send = function (raw) {
       const event = JSON.parse(raw);
+      if (['call-join','call-leave'].includes(event.type)) window.__testCallEvents.push(event);
       if (event.type === 'join') window.__testSocket = this;
       if (event.type === 'call-join' && window.__rejectNextCall) {
         window.__rejectNextCall = false;
@@ -201,6 +203,13 @@ desktop = await electron.launch({
   await expect(first.getByText('Mídia indisponível', { exact: true })).toBeVisible();
   await first.getByRole('button', { name: 'Encerrar chamada', exact: true }).click();
   await first.getByRole('button', { name: 'Participar', exact: true }).click();
+  await expect.poll(() => first.evaluate(() => window.__testCallEvents.filter(event => event.type === 'call-join').length)).toBeGreaterThanOrEqual(3);
+  const attempts = await first.evaluate(() => window.__testCallEvents.filter(event => event.type === 'call-join'));
+  expect(attempts.length).toBeGreaterThanOrEqual(3);
+  for (let i = 1; i < attempts.length; i++) {
+    expect(attempts[i].generation).toBeGreaterThan(attempts[i - 1].generation);
+    expect(attempts[i].callId).not.toBe(attempts[i - 1].callId);
+  }
   await expect.poll(() => first.evaluate(() => window.__testConnections.some(pc => pc.connectionState === 'connected')), { timeout: 20000 }).toBe(true);
   for (const page of [first, second]) await expect.poll(() => page.evaluate(async () => {
     const stats = await Promise.all(window.__testConnections.filter(pc => pc.connectionState === 'connected').map(pc => pc.getStats()));

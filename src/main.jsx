@@ -119,6 +119,7 @@ function App() {
     ++callAttempt.current;
     cancelPicker(); setSharingPending(false); window.desktop?.setPlaybackEnabled(false);
     void callRef.current?.leave();
+    callRef.current?.close(); callRef.current = null;
   }
   async function changeRoom(next) {
     if (next.id === room?.id || roomPending) return;
@@ -129,7 +130,9 @@ function App() {
     if (callPending || inCall || !connected || !room || roomPending) return;
     let call = callRef.current;
     if (!call || call.closed) {
+      const epoch = sessionRef.current.epoch;
       call = new Call({ id: session.id, iceServers: sessionRef.current.state.config.iceServers, send: event => sessionRef.current.request(event),
+        nextCallGeneration: () => sessionRef.current.nextCallGeneration(epoch),
         onStreams: value => { if (callRef.current === call) setStreams(value); },
         onMedia: value => { if (callRef.current === call) setMedia(value); },
         onError: error => { if (callRef.current === call) report(error, 'media'); } });

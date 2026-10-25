@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Session, parseInvite } from '../src/session.js';
 import { createService } from '../server/service.js';
+import { Call } from '../src/rtc.js';
 
 const drain=async()=>{for(let i=0;i<20;i++)await Promise.resolve();};
 const room=id=>({id,name:id,description:''});
@@ -109,4 +110,69 @@ test('STAB-22/23: lost confirmation retains text until committed history reconci
   const sent=ws.sent.at(-1);f.clock.tick(8000);await rejected;assert.equal(f.session.state.outbox[0].text,'confirmação perdida');
   f.setBackend((socket,e)=>{if(e.type==='join')socket.receive({type:'joined',requestId:e.requestId,room:room(e.room),messages:[persisted(sent)]});});
   await f.connect();assert.equal(f.session.state.messages.length,1);assert.equal(f.session.state.outbox.length,0);f.session.disconnect();
+});
+
+const callAck=(event,extra={})=>({type:'ack',requestId:event.requestId,action:event.type,callId:event.callId,generation:event.generation,inCall:event.type!=='call-leave',muted:true,sharing:false,...extra});
+test('MEDIA-24/28/31: cancelling a pending call rejects it immediately and consumes late ack/error without touching the new one',async()=>{
+  const f=fixture(),ws=await f.connect(); f.setBackend(()=>{});
+  const first={type:'call-join',callId:'old',generation:1,muted:true};
+  const old=f.session.request(first), cancelled=assert.rejects(old,e=>e.code==='CANCELLED'&&e.callId==='old'&&e.generation===1);
+  const oldEvent=ws.sent.at(-1), leaving=f.session.request({type:'call-leave',callId:'old',generation:1}), leftEvent=ws.sent.at(-1);
+  await cancelled;
+  const joining=f.session.request({type:'call-join',callId:'new',generation:2,muted:true}), current=ws.sent.at(-1);
+  ws.receive(callAck(oldEvent));ws.receive({type:'error',requestId:oldEvent.requestId,phase:'call-join',code:'CALL_FULL',message:'erro antigo'});
+  ws.receive(callAck(leftEvent));await leaving;
+  ws.receive(callAck(current));assert.equal((await joining).callId,'new');
+  assert.equal(f.session.activeCallId,'new');assert.deepEqual(f.errors,[]);f.session.disconnect();
+});
+
+test('MEDIA-05/28: ack action, callId and generation must match the pending operation',async()=>{
+  for(const mismatch of [{action:'media'},{callId:'other'},{generation:2}]) {
+    const f=fixture(),ws=await f.connect();f.setBackend(()=>{});
+    const joined=f.session.request({type:'call-join',callId:'current',generation:1,muted:true});
+    const rejected=assert.rejects(joined,e=>e.code==='INVALID_EVENT');
+    ws.receive(callAck(ws.sent.at(-1),mismatch));await rejected;
+    assert.equal(f.session.state.connected,false);assert.equal(f.errors.at(-1).code,'INVALID_EVENT');f.session.disconnect();
+  }
+});
+
+test('MEDIA-28: presence applies only increasing revisions in the current room context',async()=>{
+  const f=fixture(),ws=await f.connect();
+  const presence=(revision,sharing,context=f.session.roomContext)=>({type:'presence',room:'geral',context,revision,members:[{id:'peer',name:'Bia',inCall:true,muted:false,sharing,callId:'peer-call',generation:1}]});
+  ws.receive(presence(2,false));ws.receive(presence(1,true));ws.receive(presence(2,true));
+  assert.equal(f.session.state.members[0].sharing,false);
+  const obsolete=f.session.roomContext;await f.session.changeRoom('cafe');await f.session.changeRoom('geral');
+  ws.receive(presence(1,true));assert.equal(f.session.state.members[0].sharing,true);
+  ws.receive(presence(999,false,obsolete));assert.equal(f.session.state.members[0].sharing,true);
+  await f.connect();const next=ws===f.sockets.at(-1)?ws:f.sockets.at(-1);
+  next.receive(presence(1,false));assert.equal(f.session.state.members[0].sharing,false);f.session.disconnect();
+});
+
+test('MEDIA-05/24/28: successive Call owners share a Session generation and stale epochs fail before acquisition',async t=>{
+  const service=createService({dbPath:':memory:',iceServers:[]});await new Promise(resolve=>service.server.listen(0,'127.0.0.1',resolve));
+  const session=new Session(), server=`http://127.0.0.1:${service.server.address().port}`;
+  t.after(async()=>{session.disconnect();await service.close();});await session.connect({name:'Ana',server});
+  const epoch=session.epoch,allocate=()=>session.nextCallGeneration(epoch);let acquisitions=0;
+  const make=()=>new Call({id:session.state.session.id,iceServers:[],send:event=>session.request(event),nextCallGeneration:allocate,
+    mediaDevices:{getUserMedia:async()=>{acquisitions++;throw Error('no microphone');}},onMedia(){},onStreams(){},onError(){}});
+  const first=make();await first.join();const generation=first.generation,callId=first.callId;await first.leave();first.close();
+  const second=make();await second.join();assert.equal(second.generation,generation+1);assert.notEqual(second.callId,callId);assert.equal(second.admitted,true);
+  const oldExit=await session.request({type:'call-leave',callId,generation});assert.equal(oldExit.inCall,false);assert.equal(session.activeCallId,second.callId);
+  await second.leave();second.close();session.disconnect();await session.connect({name:'Ana',server});
+  const stale=make();await assert.rejects(()=>stale.join(),e=>e.code==='CANCELLED');assert.equal(acquisitions,2);assert.equal(session.nextCallGeneration(session.epoch),1);
+});
+
+test('MEDIA-21/26/31: terminal timeout closes transport after local resources have already ended',async()=>{
+  const f=fixture();await f.connect();f.setBackend(()=>{});
+  const leaving=f.session.request({type:'call-leave',callId:'ended',generation:1}), rejected=assert.rejects(leaving,e=>e.code==='TIMEOUT'&&e.phase==='call-leave');
+  f.clock.tick(7999);assert.equal(f.session.state.connected,true);
+  f.clock.tick(1);await rejected;assert.equal(f.session.state.connected,false);assert.equal(f.sockets[0].readyState,3);
+});
+
+test('MEDIA-28: an old terminal deadline cannot disconnect a newer admitted attempt',async()=>{
+  const f=fixture(),ws=await f.connect();f.setBackend(()=>{});
+  const leaving=f.session.request({type:'call-leave',callId:'old',generation:1}), expired=assert.rejects(leaving,e=>e.code==='TIMEOUT');
+  const joined=f.session.request({type:'call-join',callId:'new',generation:2,muted:true});
+  ws.receive(callAck(ws.sent.at(-1)));await joined;f.clock.tick(8000);await expired;
+  assert.equal(f.session.state.connected,true);assert.equal(f.session.activeCallId,'new');assert.deepEqual(f.errors,[]);f.session.disconnect();
 });

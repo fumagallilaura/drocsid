@@ -75,3 +75,38 @@ Gate Full: **58/58 Node = 50 + 8**, zero falhas/skips/cancelled; build PASS; smo
 | `tests/service.test.js:120` socket fechado e zero clientes | MEDIA-27 alinhado | Sim, histórico, apenas clock de instrumentação adaptado |
 
 Guidelines: matriz do plano/README e skill. Payloads comparados por valores; estado remoto observado por outro WS. **Veredito do autor T2: gate e adequação aprovados, sem Verified global nem alteração de AC.**
+
+## T3 — correlação na Session e ligação ao App
+
+T2: `ca2ba07`. Session aloca gerações por epoch, cancela pedidos não terminais da chamada encerrada e confere ação/callId/geração nos acks. Respostas correlacionadas sem pedido pendente são consumidas; não viram erro da tentativa atual. Presença só avança com revisão crescente no contexto corrente. Timeout terminal vigente fecha o transporte em 8 s; deadline de geração substituída não derruba a chamada nova. Esse limite aplica o terminal por tentativa de MEDIA-28, sem alterar seu AC.
+
+O App fornece a alocadora vinculada ao epoch. Ao sair, encerra e descarta o controlador; a próxima entrada na mesma conexão usa outra instância e geração maior. O smoke observa esse caminho real. Arquivos: `src/session.js`, ligação mínima em `src/main.jsx`, `tests/session.test.js`, `scripts/desktop-smoke.mjs` e registros. Controles/diagnóstico completos continuam em T7.
+
+Seis testes Node novos. A tentativa inicial sem a correção ficou aguardando o cancelamento que o código ainda não fazia; foi interrompida, sem usar esse término como aprovação. O smoke novo inicialmente leu antes de getUserMedia assentar; acrescentada espera pela terceira tentativa, mantendo a mesma exigência e todas as asserções. Gate final: **64/64 Node = 50 + 14**, zero falhas/skips/cancelled, build PASS e smoke source/interno PASS.
+
+### Adequação A/B
+
+| Critério | Evidência e expressão | Resultado esperado | Coberto |
+| --- | --- | --- | --- |
+| MEDIA-24/28/31, cancelamento e respostas antigas | `tests/session.test.js:119` CANCELLED/callId old/geração 1; `:125` nova callId; `:126` activeCallId new/erros vazios | Rejeita pedido antigo já no cancelamento; ack/erro antigo não altera nova | Sim |
+| MEDIA-05/06, ack divergente | `tests/session.test.js:133` INVALID_EVENT; `:135` conexão terminada/código exato, para ação, callId e geração | Admissão não aceita resposta de outra operação | Sim |
+| MEDIA-28, revisão/contexto | `tests/session.test.js:143` sharing false após revisão 1/2 antigas; `:145` sharing true no novo domínio; `:146` contexto antigo ignorado; `:148` reinício da conexão | Só snapshot crescente do contexto atual | Sim |
+| Geração por conexão e ligação real | `tests/session.test.js:159` geração anterior +1, callId distinto/admitido; `:160` saída antiga mantém activeCallId novo; `:162` epoch antigo CANCELLED/duas aquisições; `scripts/desktop-smoke.mjs:210` geração crescente e `:211` IDs distintos | Substituir Call não reinicia geração; epoch antigo não captura | Sim, serviço real e Electron |
+| MEDIA-21/26/31, timeout vigente | `tests/session.test.js:167` TIMEOUT/fase call-leave; `:168` conectado em 7999; `:169` desconectado/socket fechado em 8000 | Terminal sem ack fecha transporte após limpeza local (T1) | Sim |
+| MEDIA-28, deadline antigo | `tests/session.test.js:177` conectado, activeCallId new, erros vazios | Evento de geração substituída não derruba chamada nova | Sim |
+| Regressão de rascunhos/mensagens | `tests/session.test.js:60` draft original; `:69` texto integral/estado failed; `:71` uma mensagem/outbox vazia; `:103` destino real | T3 não perde texto nem altera destino | Sim, preservado |
+| MEDIA-18/31/32, fronteira de pedidos | `tests/session.test.js:119` contexto do cancelamento, `:133` categoria exata; `:167` fase exata; sem serialização de payload em Session | Correlação disponível e erro antigo consumido | Sim no proprietário; prova de log global em T7 |
+
+### Adequação C/D
+
+| Teste / asserção | Âncora | Manter |
+| --- | --- | --- |
+| `tests/session.test.js:119`, `:125`, `:126` cancelamento/contexto/erros | MEDIA-24/28/31 | Sim |
+| `tests/session.test.js:133`, `:135` INVALID_EVENT/estado | MEDIA-05/06/28 | Sim |
+| `tests/session.test.js:143`, `:145`, `:146`, `:148` sharing observado | MEDIA-28 e revisão do plano T3 | Sim |
+| `tests/session.test.js:159`, `:160`, `:162` geração/epoch/aquisições | MEDIA-05/24/28; integração de T3 | Sim |
+| `tests/session.test.js:167`, `:168`, `:169` timeout/conexão | MEDIA-21/26/31 | Sim |
+| `tests/session.test.js:177` conectado/current/sem erro | MEDIA-28, callback de deadline antigo | Sim |
+| `scripts/desktop-smoke.mjs:210`, `:211` geração maior/callId diferente | Integração real obrigatória de T3 | Sim |
+
+Guidelines: matriz/README/skill. Nenhum teste histórico excluído, ignorado ou enfraquecido. **Veredito do autor T3: gate e adequação aprovados no recorte; MEDIA continua sem Verified.**

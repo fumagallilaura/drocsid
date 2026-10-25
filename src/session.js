@@ -18,7 +18,18 @@ export class Session {
     fetch: fetcher = globalThis.fetch?.bind(globalThis), WebSocket: Socket = globalThis.WebSocket, clock = realClock,
     localOrigin = globalThis.location?.origin || 'http://127.0.0.1' } = {}) {
     Object.assign(this, { onState, onError, onSignal, onPresence, onDisconnect, fetcher, Socket, clock, localOrigin });
-    this.state = emptyState(); this.epoch = 0; this.pending = new Map(); this.phases = new Set(); this.drafts = new Map(); this.outbox = new Map();
+    this.state = emptyState(); this.epoch = 0; this.callGeneration = 0; this.presenceRevision = 0;
+    this.pending = new Map(); this.phases = new Set(); this.drafts = new Map(); this.outbox = new Map();
+  }
+  nextCallGeneration(epoch) {
+    if (epoch !== this.epoch || !this.state.connected || !this.ws || this.ws.readyState !== 1) throw new ProtocolError('CANCELLED');
+    return ++this.callGeneration;
+  }
+  cancelCall(callId, generation) {
+    for (const [requestId, item] of this.pending) if (item.event.callId === callId && item.event.generation === generation && item.event.type !== 'call-leave') {
+      this.pending.delete(requestId); this.clock.clearTimeout(item.timer);
+      item.reject(Object.assign(new ProtocolError('CANCELLED'), { requestId, callId, generation, phase: item.event.type }));
+    }
   }
   key(room = this.state.room?.id) { return JSON.stringify([this.origin, room]); }
   publish(patch = {}) {
@@ -42,7 +53,7 @@ export class Session {
     this.pending.clear();
     const ws = this.ws; this.ws = null;
     if (ws) { ws.onopen = null; ws.onclose = null; ws.onerror = null; ws.onmessage = null; ws.close(); }
-    this.activeCallId = null; this.roomContext = null;
+    this.activeCallId = null; this.activeCallGeneration = null; this.roomContext = null; this.presenceRevision = 0;
   }
   lose(error, welcome = false) {
     ++this.epoch; this.cancelTransport(error); this.onDisconnect();
@@ -58,6 +69,7 @@ export class Session {
       destination = parseInvite(server, this.localOrigin, room);
     } catch (error) { this.onError(error); throw error; }
     const epoch = ++this.epoch;
+    this.callGeneration = 0;
     this.cancelTransport(new ProtocolError('CANCELLED')); this.onDisconnect();
     this.origin = destination.server; this.name = name.trim();
     this.publish({ ...emptyState(), connecting: true });
@@ -112,20 +124,27 @@ export class Session {
   }
   request(event) {
     if (!this.ws || this.ws.readyState !== 1) return Promise.reject(new ProtocolError('CONNECTION_FAILED'));
-    if (event.type === 'call-join') this.activeCallId = event.callId;
-    if (event.type === 'call-leave' && event.callId === this.activeCallId) this.activeCallId = null;
-    const requestId = crypto.randomUUID(), envelope = { ...event, v: PROTOCOL_VERSION, requestId };
+    if (Number.isSafeInteger(event.generation)) this.callGeneration = Math.max(this.callGeneration, event.generation);
+    if (event.type === 'call-join') {
+      if (this.activeCallId && (this.activeCallId !== event.callId || this.activeCallGeneration !== event.generation)) this.cancelCall(this.activeCallId, this.activeCallGeneration);
+      this.activeCallId = event.callId; this.activeCallGeneration = event.generation;
+    }
+    if (event.type === 'call-leave') {
+      this.cancelCall(event.callId, event.generation);
+      if (event.callId === this.activeCallId && event.generation === this.activeCallGeneration) { this.activeCallId = null; this.activeCallGeneration = null; }
+    }
+    const requestId = crypto.randomUUID(), epoch = this.epoch, context = this.roomContext, envelope = { ...event, v: PROTOCOL_VERSION, requestId };
     if (event.type === 'signal') {
       try { this.ws.send(JSON.stringify(envelope)); return Promise.resolve(); }
       catch { return Promise.reject(new ProtocolError('CONNECTION_FAILED')); }
     }
     return new Promise((resolve, reject) => {
       const timer = this.clock.setTimeout(() => {
-        this.pending.delete(requestId); const error = Object.assign(new ProtocolError('TIMEOUT', 'O servidor não confirmou a operação.'), { phase: event.type });
+        this.pending.delete(requestId); const error = Object.assign(new ProtocolError('TIMEOUT', 'O servidor não confirmou a operação.'), { phase: event.type, requestId, callId: event.callId, generation: event.generation });
         reject(error);
-        if (event.type === 'call-leave' || (event.type === 'media' && event.sharing === false)) this.lose(error);
+        if ((event.type === 'call-leave' || (event.type === 'media' && event.sharing === false)) && epoch === this.epoch && context === this.roomContext && event.generation === this.callGeneration) this.lose(error);
       }, LIMITS.requestMs);
-      this.pending.set(requestId, { event, resolve, reject, timer });
+      this.pending.set(requestId, { event, resolve, reject, timer, epoch, context });
       try { this.ws.send(JSON.stringify(envelope)); }
       catch { this.pending.delete(requestId); this.clock.clearTimeout(timer); reject(new ProtocolError('CONNECTION_FAILED')); }
     });
@@ -134,27 +153,34 @@ export class Session {
     const item = this.pending.get(event.requestId);
     if (item) {
       const { event: sent } = item;
+      if (item.epoch !== this.epoch) return;
       if (event.type !== 'error' && event.type !== responseTypes[sent.type]) return;
       if (event.type === 'joined' && event.room.id !== sent.room) throw new ProtocolError('INVALID_EVENT');
       if (event.type === 'message-accepted' && (event.message.operationId !== sent.operationId || event.message.room !== sent.room)) throw new ProtocolError('INVALID_EVENT');
-      if (event.type === 'ack' && (event.action !== sent.type || event.callId !== sent.callId)) throw new ProtocolError('INVALID_EVENT');
+      if (event.type === 'ack' && (event.action !== sent.type || event.callId !== sent.callId || (event.generation !== undefined && event.generation !== sent.generation))) throw new ProtocolError('INVALID_EVENT');
       if (event.type === 'joined') {
         this.roomContext = event.requestId;
+        this.presenceRevision = 0;
         event.messages.forEach(message => this.confirmMessage(message));
         this.publish({ room: event.room, roomPending: false, messages: event.messages, members: [], draft: this.drafts.get(this.key(event.room.id)) || '' });
       }
       this.pending.delete(event.requestId); this.clock.clearTimeout(item.timer);
-      if (event.type === 'error') item.reject(Object.assign(new ProtocolError(event.code, event.message), { phase: event.phase }));
-      else if (sent.type === 'call-join' && this.activeCallId !== sent.callId) item.reject(new ProtocolError('CANCELLED'));
+      if (event.type === 'error') item.reject(Object.assign(new ProtocolError(event.code, event.message), { phase: event.phase, requestId: event.requestId, callId: sent.callId, generation: sent.generation }));
+      else if (sent.type === 'call-join' && (this.activeCallId !== sent.callId || this.activeCallGeneration !== sent.generation || item.context !== this.roomContext)) item.reject(new ProtocolError('CANCELLED'));
       else item.resolve(event);
       return;
     }
     if (event.type === 'rooms') { this.publish({ rooms: event.rooms }); return; }
-    if (event.type === 'error') { this.onError(Object.assign(new ProtocolError(event.code, event.message), { phase: event.phase })); return; }
+    if (event.type === 'error') { if (!event.requestId) this.onError(Object.assign(new ProtocolError(event.code, event.message), { phase: event.phase })); return; }
     if (event.context !== this.roomContext) return;
     if (event.type === 'message' && event.message.room === this.state.room?.id) this.addMessage(event.message);
     else if (event.type === 'presence' && event.room === this.state.room?.id) {
-      const members = event.members.map(member => member.id === this.state.session?.id && member.callId !== this.activeCallId ? { ...member, inCall: false, sharing: false } : member);
+      if (event.revision !== undefined) {
+        if (!Number.isSafeInteger(event.revision) || event.revision <= 0) throw new ProtocolError('INVALID_EVENT');
+        if (event.revision <= this.presenceRevision) return;
+        this.presenceRevision = event.revision;
+      }
+      const members = event.members.map(member => member.id === this.state.session?.id && (member.callId !== this.activeCallId || member.generation !== this.activeCallGeneration) ? { ...member, inCall: false, sharing: false } : member);
       this.publish({ members }); this.onPresence(members);
     } else if (event.type === 'signal' && event.callId === this.activeCallId) this.onSignal(event);
   }
