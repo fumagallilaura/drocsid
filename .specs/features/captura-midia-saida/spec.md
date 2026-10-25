@@ -1,6 +1,6 @@
 # Captura de mídia e saída da chamada Specification
 
-**Data:** 2026-10-25. **Escopo:** Large/Complex. **Fase:** Specify. **Referência do Conversa:** `1d97d46`, branch `main`, árvore limpa no início da redação. Esta entrega produz requisitos; não executa design, tarefas ou correções. Todos os critérios MEDIA permanecem Pending.
+**Data:** 2026-10-25. **Escopo:** Large/Complex. **Fase:** planejamento Design/Tasks, Draft para revisão conjunta. **Referência do código:** `1d97d46`; base do planejamento `cd53044`, branch `main`, árvore limpa no início da retomada. O pedido posterior autorizou [design](design.md) e [tarefas](tasks.md), sem implementação. Os 34 critérios estão In Tasks, nenhum Verified.
 
 ## Problem Statement
 
@@ -27,7 +27,7 @@ Fontes: [revisão completa](../../../review/REVISAO_COMPLETA.md), [resumo da rev
 | `server/service.js:106`, `:134`, `:137`, `:153` | Saída e parada de tela são isentas da cota; há admissão, confirmação e heartbeat. | O prazo do heartbeat precisa ser medido também com último pong fora do alinhamento do temporizador. |
 | `tests/rtc.test.js:41–114`; `tests/service.test.js:54`, `:114`; `scripts/desktop-capture-check.mjs:33`, `:39`, `:49`, `:60` | Existem asserções de captura obsoleta, compensação, saída e callback único. | São candidatos a evidência reutilizável; cada valor esperado deve ser comparado a esta spec antes de marcar Verified. |
 
-O relatório BUILD aprovou 11 critérios BUILD, 50/50 testes Node e 12 gates em `58be3ed`, sem certificar todos os STAB. Seus smokes usam mídia sintética. Nenhum teste do aplicativo foi reexecutado para declarar atendimento MEDIA nesta sessão de Specify.
+O relatório BUILD aprovou 11 critérios BUILD, 50/50 testes Node e 12 gates em `58be3ed`, sem certificar todos os STAB. Seus smokes usam mídia sintética. Nenhum teste do aplicativo foi reexecutado para declarar atendimento MEDIA nas entregas de Specify e planejamento.
 
 ## Discord Reference and Reverse Engineering
 
@@ -52,12 +52,13 @@ D1 e D2 referem-se ao mesmo ASAR, SHA-256 `0025c02c7241045a12464309604ec4d5b8ec7
 | C1 | Estabilizar o protótipo com convidados para pessoas de confiança; contas, grupos privados e TURN autenticado continuam bloqueadores de publicação. | Resposta anterior do usuário, preservada. |
 | C2 | Trocar de sala de texto encerra a chamada, inclusive uma entrada pendente. | Resposta anterior do usuário; a referência Discord não revoga essa decisão. |
 | C3 | Produzir a spec de captura de mídia e saída da chamada considerando a engenharia reversa do Discord. | Pedido de 2026-10-25. Somente Specify nesta entrega. |
+| C4 | Gerar design e tarefas para este recorte, sem iniciar implementação. | Pedido posterior de 2026-10-25: “Gere o design e as tasks”. Documentos técnicos apresentados juntos como Draft. |
 
 ## Out of Scope
 
 | Feature | Reason |
 | --- | --- |
-| Implementação, refatoração, design, decomposição em tarefas e nova release | Esta sessão entrega a spec. |
+| Implementação, refatoração e nova release nesta entrega documental | O pedido C4 autoriza design/tarefas; execução permanece para uma próxima entrega. |
 | Contas, autorização de grupos, TURN autenticado, hospedagem e SFU/LiveKit | C1; propostas de outras entregas. |
 | Mensagens, histórico e encerramento completo do servidor | Requisitos STAB próprios; aqui se verifica saída da chamada e liberação de suas capturas, não todo o shutdown HTTP/WS/banco. |
 | Câmera, troca de fonte durante transmissão, escolha de dispositivos, volumes e push-to-talk | Expansões; usa-se microfone padrão e seleção de tela já existentes. Câmera permanece negada. |
@@ -205,46 +206,46 @@ Indicador de uso de dispositivo do Windows é evidência complementar, identific
 
 ## Requirement Traceability
 
-Os IDs MEDIA detalham o recorte sem substituir os IDs STAB. As linhas de código acima estão fixadas em `1d97d46`; a origem dos achados é a revisão da referência `63810f4`. Pending significa resultado ainda não certificado nesta entrega, não defeito necessariamente presente no código atual.
+Os IDs MEDIA detalham o recorte sem substituir os IDs STAB. As linhas de código acima estão fixadas em `1d97d46`; a origem dos achados é a revisão da referência `63810f4`. In Tasks indica planejamento mapeado, sem certificação de atendimento e sem afirmar defeito necessariamente presente no código atual.
 
-| Requirement ID | Story | Origem STAB | Achados | Phase | Status |
-| --- | --- | --- | --- | --- | --- |
-| MEDIA-01 | US1 | STAB-01 | R01 | Specify | Pending |
-| MEDIA-02 | US1 | STAB-02 | R01 | Specify | Pending |
-| MEDIA-03 | US1 | STAB-03/39 | R01 | Specify | Pending |
-| MEDIA-04 | US1 | STAB-04 | R01 | Specify | Pending |
-| MEDIA-05 | US1 | STAB-06 | R02 | Specify | Pending |
-| MEDIA-06 | US1 | STAB-07/38 | R02/R10 | Specify | Pending |
-| MEDIA-07 | US1 | STAB-08 | R01/R02 | Specify | Pending |
-| MEDIA-08 | US1 | STAB-09 | R02 | Specify | Pending |
-| MEDIA-09 | US2 | STAB-10 | R03 | Specify | Pending |
-| MEDIA-10 | US2 | STAB-10/45 | R03/R11 | Specify | Pending |
-| MEDIA-11 | US2 | STAB-48 | R17 | Specify | Pending |
-| MEDIA-12 | US2 | STAB-11/39/48 | R01/R03/R17 | Specify | Pending |
-| MEDIA-13 | US2 | STAB-11 | R03 | Specify | Pending |
-| MEDIA-14 | US2 | STAB-12 | R03 | Specify | Pending |
-| MEDIA-15 | US2 | STAB-13/39 | R03/R14 | Specify | Pending |
-| MEDIA-16 | US2 | STAB-14 | R03 | Specify | Pending |
-| MEDIA-17 | US2 | STAB-15 | R03 | Specify | Pending |
-| MEDIA-18 | US2 | STAB-68 | R03/R06 | Specify | Pending |
-| MEDIA-19 | US2 | STAB-16 | R03 | Specify | Pending |
-| MEDIA-20 | US2 | STAB-06/44 | R02/R26 | Specify | Pending |
-| MEDIA-21 | US3 | STAB-05 | R01/R02/R06 | Specify | Pending |
-| MEDIA-22 | US3 | STAB-05; C2 | R01/R06 | Specify | Pending |
-| MEDIA-23 | US3 | STAB-05/36 (capturas) | R01/R03/R07 | Specify | Pending |
-| MEDIA-24 | US3 | STAB-30/39 | R06/R13 | Specify | Pending |
-| MEDIA-25 | US3 | STAB-28/68 | R06 | Specify | Pending |
-| MEDIA-26 | US3 | STAB-29 | R06 | Specify | Pending |
-| MEDIA-27 | US3 | STAB-32 | R06/R14 | Specify | Pending |
-| MEDIA-28 | US3 | STAB-03/06/39; terminal explícito | R01/R02/R06/R13 | Specify | Pending |
-| MEDIA-29 | US3 | STAB-31 | R06/R26 | Specify | Pending |
-| MEDIA-30 | US3 | A5; controle existente | R26 (recorte mídia) | Specify | Pending |
-| MEDIA-31 | US4 | STAB-41/67 | R13/R25 | Specify | Pending |
-| MEDIA-32 | US4 | STAB-67 | R25 | Specify | Pending |
-| MEDIA-33 | US4 | STAB-01/31/63; A7 | R20/R25 | Specify | Pending |
-| MEDIA-34 | US4 | STAB-63; A7 | R20 | Specify | Pending |
+| Requirement ID | Story | Origem STAB | Achados | Tasks | Phase | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| MEDIA-01 | US1 | STAB-01 | R01 | T1, T7, T8 | Tasks | In Tasks |
+| MEDIA-02 | US1 | STAB-02 | R01 | T1, T4, T8 | Tasks | In Tasks |
+| MEDIA-03 | US1 | STAB-03/39 | R01 | T1, T4, T8 | Tasks | In Tasks |
+| MEDIA-04 | US1 | STAB-04 | R01 | T1, T8 | Tasks | In Tasks |
+| MEDIA-05 | US1 | STAB-06 | R02 | T1, T3, T6, T8 | Tasks | In Tasks |
+| MEDIA-06 | US1 | STAB-07/38 | R02/R10 | T1, T3, T6, T8 | Tasks | In Tasks |
+| MEDIA-07 | US1 | STAB-08 | R01/R02 | T1, T7, T8 | Tasks | In Tasks |
+| MEDIA-08 | US1 | STAB-09 | R02 | T1, T7, T8 | Tasks | In Tasks |
+| MEDIA-09 | US2 | STAB-10 | R03 | T4, T5, T7, T8 | Tasks | In Tasks |
+| MEDIA-10 | US2 | STAB-10/45 | R03/R11 | T4, T5, T7, T8, T9 | Tasks | In Tasks |
+| MEDIA-11 | US2 | STAB-48 | R17 | T5, T8 | Tasks | In Tasks |
+| MEDIA-12 | US2 | STAB-11/39/48 | R01/R03/R17 | T5, T8 | Tasks | In Tasks |
+| MEDIA-13 | US2 | STAB-11 | R03 | T5, T8 | Tasks | In Tasks |
+| MEDIA-14 | US2 | STAB-12 | R03 | T4, T8 | Tasks | In Tasks |
+| MEDIA-15 | US2 | STAB-13/39 | R03/R14 | T4, T8 | Tasks | In Tasks |
+| MEDIA-16 | US2 | STAB-14 | R03 | T4, T8, T9 | Tasks | In Tasks |
+| MEDIA-17 | US2 | STAB-15 | R03 | T4, T7, T8 | Tasks | In Tasks |
+| MEDIA-18 | US2 | STAB-68 | R03/R06 | T2, T3, T4, T8 | Tasks | In Tasks |
+| MEDIA-19 | US2 | STAB-16 | R03 | T4, T8 | Tasks | In Tasks |
+| MEDIA-20 | US2 | STAB-06/44 | R02/R26 | T4, T7, T8 | Tasks | In Tasks |
+| MEDIA-21 | US3 | STAB-05 | R01/R02/R06 | T1, T4, T7, T8, T9 | Tasks | In Tasks |
+| MEDIA-22 | US3 | STAB-05; C2 | R01/R06 | T7, T8 | Tasks | In Tasks |
+| MEDIA-23 | US3 | STAB-05/36 (capturas) | R01/R03/R07 | T1, T4, T5, T7, T8 | Tasks | In Tasks |
+| MEDIA-24 | US3 | STAB-30/39 | R06/R13 | T2, T3, T6, T8 | Tasks | In Tasks |
+| MEDIA-25 | US3 | STAB-28/68 | R06 | T2, T6, T8 | Tasks | In Tasks |
+| MEDIA-26 | US3 | STAB-29 | R06 | T2, T3, T6, T8 | Tasks | In Tasks |
+| MEDIA-27 | US3 | STAB-32 | R06/R14 | T2, T8 | Tasks | In Tasks |
+| MEDIA-28 | US3 | STAB-03/06/39; terminal explícito | R01/R02/R06/R13 | T1, T2, T3, T4, T5, T6, T7, T8 | Tasks | In Tasks |
+| MEDIA-29 | US3 | STAB-31 | R06/R26 | T7, T8, T9 | Tasks | In Tasks |
+| MEDIA-30 | US3 | A5; controle existente | R26 (recorte mídia) | T1, T7, T8, T9 | Tasks | In Tasks |
+| MEDIA-31 | US4 | STAB-41/67 | R13/R25 | T1, T2, T3, T4, T5, T6, T7, T8 | Tasks | In Tasks |
+| MEDIA-32 | US4 | STAB-67 | R25 | T1, T2, T3, T4, T5, T7, T8 | Tasks | In Tasks |
+| MEDIA-33 | US4 | STAB-01/31/63; A7 | R20/R25 | T9 | Tasks | In Tasks |
+| MEDIA-34 | US4 | STAB-63; A7 | R20 | T9 | Tasks | In Tasks |
 
-**Coverage:** 34 critérios únicos, 34 linhas, quatro histórias. R01–R03/R06 são o núcleo; os demais achados entram apenas pelas fronteiras de suporte listadas. Esta spec não encerra nenhum dos 26 achados nem certifica os 68 STAB. D3/D4 são referências documentais para MEDIA-09/16; os demais contratos não são atribuídos ao Discord.
+**Coverage:** 34 critérios únicos, 34 linhas, quatro histórias e 34/34 mapeados a tarefas. R01–R03/R06 são o núcleo; os demais achados entram apenas pelas fronteiras de suporte listadas. Esta spec não encerra nenhum dos 26 achados nem certifica os 68 STAB. D3/D4 são referências documentais para MEDIA-09/16; os demais contratos não são atribuídos ao Discord.
 
 ## Success Criteria
 
@@ -261,4 +262,6 @@ Validação desta entrega: somente fechamento estrutural e semântico da spec, s
 
 O fechamento verifica EARS, IDs, rastreabilidade, premissas, nove dimensões, links locais e preservação de Decisions. Comando obrigatório antes da entrega: `python <skill-dir>/scripts/validate_spec.py .specs/features/captura-midia-saida/spec.md --strict`. O resultado desse comando não aprova o aplicativo. Nenhuma nova decisão essencial ficou sem padrão explícito; a futura observação do Discord permanece identificada como trabalho de evidência.
 
-**Resultado em 2026-10-25:** `validate_spec.py --strict` PASS, exit 0, zero erros e zero avisos. Conferência adicional: 34 ACs únicos, 34 linhas Specify/Pending, oito links locais existentes e hash do ASAR igual ao de D1/D2. Nenhum achado é declarado corrigido por esta validação.
+**Fechamento Specify em 2026-10-25:** `validate_spec.py --strict` PASS, exit 0, zero erros e zero avisos. Naquele fechamento: 34 ACs únicos, 34 linhas Specify/Pending, oito links locais existentes e hash do ASAR igual ao de D1/D2. Nenhum achado foi declarado corrigido.
+
+**Atualização de planejamento em 2026-10-25:** design e tarefas em Draft, com alternativas, recomendação, contratos, riscos e mitigação. Nove tarefas em três fases, cobertura/matriz/gates e validação de granularidade, dependências e testes. Os textos dos 34 ACs são preservados; somente fase, status e mapeamento documental avançam. Nenhuma escolha do design é promovida a Decisions ou a aprovação de implementação.
