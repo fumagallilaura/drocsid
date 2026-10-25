@@ -263,3 +263,16 @@ test('MEDIA-17/19/31: failed terminal notification preserves local cleanup and i
   assert.equal(f.errors.at(-1).code,'MEDIA_FAILED');assert.equal(f.errors.at(-1).phase,'media');
   assert.equal(f.errors.at(-1).operationId,key.operationId);assert.equal(f.errors.at(-1).callId,key.callId);assert.equal(f.errors.at(-1).generation,key.generation);f.call.close();
 });
+
+test('MEDIA-17/28: local stop settles within 1s without its ack and an old failure cannot affect the next screen',async()=>{
+  const notice=deferred();
+  const f=fixture({send:e=>e.type==='media'&&e.sharing===false?notice.promise:Promise.resolve({callId:e.callId,generation:e.generation,inCall:true})});
+  await f.call.join();f.call.sync(members(f.call));await drain();await f.call.shareScreen(true,'1080');
+  const previous=f.call.display;let stopped=false;
+  const stopping=f.call.stopScreen().then(()=>{stopped=true;});await drain();f.clock.tick(1000);await drain();
+  assert.equal(stopped,true);ended(previous);assert.equal(f.call.display,null);assert.equal(f.states.at(-1).sharingState,'idle');
+  await stopping;await f.call.shareScreen(false,'720');const current=f.call.display;
+  notice.reject(Object.assign(Error('old stop'),{code:'TIMEOUT'}));await drain();
+  assert.equal(f.call.display,current);assert.equal(current.getVideoTracks()[0].readyState,'live');assert.equal(f.call.admitted,true);assert.deepEqual(f.errors,[]);
+  assert.equal(f.call.peers.get('b').mic.sender.track,f.call.microphone.getAudioTracks()[0]);f.call.close();
+});

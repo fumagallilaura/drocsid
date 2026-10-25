@@ -186,3 +186,23 @@ test('MEDIA-05/06/28: v2 client rejects v1 config before opening WS or acquiring
     mediaDevices:{getUserMedia:async()=>{captures++;throw Error();}},onMedia(){},onStreams(){},onError(){}});
   await assert.rejects(()=>call.join(),e=>e.code==='CANCELLED');assert.equal(captures,0);
 });
+
+test('MEDIA-17/28: an old screen-stop deadline cannot disconnect a newer confirmed share in the same call',async()=>{
+  const f=fixture(),ws=await f.connect();f.setBackend(()=>{});
+  const call={callId:'current',generation:1};
+  const joining=f.session.request({type:'call-join',...call,muted:false});ws.receive(callAck(ws.sent.at(-1)));await joining;
+  const stopping=f.session.request({type:'media',...call,sharing:false}),expired=assert.rejects(stopping,e=>e.code==='TIMEOUT');
+  const starting=f.session.request({type:'media',...call,sharing:true});
+  ws.receive(callAck(ws.sent.at(-1),{sharing:true}));await starting;
+  f.clock.tick(8000);await expired;
+  assert.equal(f.session.state.connected,true);assert.equal(ws.readyState,1);assert.equal(f.session.activeCallId,call.callId);assert.deepEqual(f.errors,[]);f.session.disconnect();
+});
+
+test('MEDIA-17/26: the current screen-stop deadline still terminates an unresponsive transport after unrelated mute',async()=>{
+  const f=fixture(),ws=await f.connect();f.setBackend(()=>{});
+  const call={callId:'current',generation:1};
+  const stopping=f.session.request({type:'media',...call,sharing:false}),expired=assert.rejects(stopping,e=>e.code==='TIMEOUT'&&e.phase==='media');
+  const muted=f.session.request({type:'media',...call,muted:true});ws.receive(callAck(ws.sent.at(-1)));await muted;
+  f.clock.tick(7999);assert.equal(f.session.state.connected,true);
+  f.clock.tick(1);await expired;assert.equal(f.session.state.connected,false);assert.equal(ws.readyState,3);
+});

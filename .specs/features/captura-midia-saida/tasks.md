@@ -291,6 +291,8 @@ T8 -> T9
 
 **Execução T8 em 2026-10-25**: 75/75 Node (50 + 25), 14/14 gates Build PASS no código `018019c`; portátil SHA-256 `fe9ee1feab3765c210a8033a8b3b70789d22fcf7525af792b37d2b97a9f2202a`. [Resultados por MEDIA, integridade e limites](evidence.md). Nenhum MEDIA Verified pelo autor. Despachar Verifier do lote automatizado; T9 impede aprovação integral.
 
+**Retorno do Verifier, rodada 1 (`f44d268`)**: MEDIA-17 falhou funcionalmente com ack de parada retido; controles ainda bloqueados em 1.100 ms. Sensor M4/M5 dependeu de timeout do helper, sem morte por asserção válida. Conjunções adicionais de evidência voltam aos proprietários T1/T5/T7 antes de repetir T8. Sem aprovação automatizada integral nesta rodada. Correção R1 (T4/T3/T7): parada local independente do ack e deadline de parada antigo incapaz de desconectar tela posterior na mesma chamada. Testes co-localizados e adequação em [execution.md](execution.md#r1--parada-local-sem-esperar-confirmação-remota).
+
 #### T9: Registrar a aceitação física com dois PCs
 
 **What**: Produzir o relatório do protocolo físico A7 para o mesmo portátil aprovado em T8.

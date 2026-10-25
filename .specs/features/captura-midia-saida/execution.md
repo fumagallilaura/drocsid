@@ -252,3 +252,18 @@ Arquivos: `src/main.jsx`, campo de correlação em `src/rtc.js`, sanitização n
 | `tests/service.test.js:219`, `:220` log inteiro sanitizado/exato | MEDIA-32 | Sim |
 
 Guidelines: matriz/README/skill. Layout preservado; nenhuma funcionalidade extra, deafen, câmera ou TypeScript. **Veredito do autor T7: gate e adequação aprovados; falta a consolidação T8 e o Verifier independente. T9 físico pendente.**
+
+## R1 — parada local sem esperar confirmação remota
+
+Retorno independente de `f44d268`: MEDIA-17 falhou, com tracks encerradas mas botão desabilitado após 1.100 ms. O controlador aguardava o ack de rede dentro da mesma promessa da limpeza local. Agora `stopScreen` retorna somente a limpeza local, com o prazo original de 1 s; a notificação mantém correlação, diagnóstico e prazo remoto de 8 s em paralelo. A Session conserva o último pedido de estado de tela para que um timeout anterior não desconecte um compartilhamento posterior da mesma chamada. Um mute posterior não invalida o prazo da parada atual.
+
+Dois testes novos falharam por asserção de estado antes da correção, sem watchdog. Três testes novos no total: **78/78 = 50 + 28**, zero falhas/skips/cancelled. Full, smoke externo e checks source de perfil/captura PASS; logs em `test-results/media-r1`. A asserção final de tipos/timing do smoke foi reexecutada após acrescentá-la. Sem alegação de resultado físico; a candidata anterior exige reconstrução antes de T8/reverify.
+
+| AC / conjunção | Evidência exata e asserção | Resultado e adequação A/B |
+| --- | --- | --- |
+| MEDIA-17, prazo local sem ack | `tests/rtc.test.js:273` stopped=true em 1000, ended(previous), display=null e sharingState=idle antes de liberar a notificação | PASS no domínio; não espera a rede |
+| MEDIA-17, controle utilizável | `scripts/desktop-smoke.mjs:339` botão Compartilhar habilitado com ack retido; `:341` timestamps numéricos e `:342` duração <=1000; remoção de sender atrasada 350 ms conserva a asserção de Parando | PASS Electron, relógio do renderer desde o click até a mutação que habilita |
+| MEDIA-28, tela posterior protegida | `tests/rtc.test.js:276` display novo/live/admitted e errors=[] após falha antiga; `tests/session.test.js:198` transporte aberto/chamada atual após expirar stop anterior | PASS, inclusive na mesma geração da chamada |
+| MEDIA-26, parada atual ainda tem limite | `tests/session.test.js:207` connected em 7999; `:208` desconectado/WS fechado em 8000, mesmo após mute independente | PASS; preserva recuperação segura quando não há novo estado de tela |
+
+Reverso C/D: cada um dos três testes novos e a instrumentação de timing do smoke corresponde a uma linha acima. Nenhuma expectativa de tracks, voz preservada, erros ou controles foi retirada. O teste de Parando usa remoção realmente pendente; o estado não é prolongado por ack de rede para satisfazer a asserção. Sem API de teste na produção, nova abstração ou mudança de layout. Adequação do autor R1: PASS; Verifier e T9 permanecem pendentes.

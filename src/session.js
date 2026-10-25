@@ -53,7 +53,7 @@ export class Session {
     this.pending.clear();
     const ws = this.ws; this.ws = null;
     if (ws) { ws.onopen = null; ws.onclose = null; ws.onerror = null; ws.onmessage = null; ws.close(); }
-    this.activeCallId = null; this.activeCallGeneration = null; this.roomContext = null; this.presenceRevision = 0;
+    this.activeCallId = null; this.activeCallGeneration = null; this.screenRequest = null; this.roomContext = null; this.presenceRevision = 0;
   }
   lose(error, welcome = false) {
     ++this.epoch; this.cancelTransport(error); this.onDisconnect();
@@ -134,6 +134,7 @@ export class Session {
       if (event.callId === this.activeCallId && event.generation === this.activeCallGeneration) { this.activeCallId = null; this.activeCallGeneration = null; }
     }
     const requestId = crypto.randomUUID(), epoch = this.epoch, context = this.roomContext, envelope = { ...event, v: PROTOCOL_VERSION, requestId };
+    if (event.type === 'media' && typeof event.sharing === 'boolean') this.screenRequest = envelope;
     if (event.type === 'signal') {
       try { this.ws.send(JSON.stringify(envelope)); return Promise.resolve(); }
       catch { return Promise.reject(new ProtocolError('CONNECTION_FAILED')); }
@@ -142,7 +143,7 @@ export class Session {
       const timer = this.clock.setTimeout(() => {
         this.pending.delete(requestId); const error = Object.assign(new ProtocolError('TIMEOUT', 'O servidor não confirmou a operação.'), { phase: event.type, requestId, callId: event.callId, generation: event.generation });
         reject(error);
-        if ((event.type === 'call-leave' || (event.type === 'media' && event.sharing === false)) && epoch === this.epoch && context === this.roomContext && event.generation === this.callGeneration) this.lose(error);
+        if ((event.type === 'call-leave' || (event.type === 'media' && event.sharing === false && this.screenRequest === envelope)) && epoch === this.epoch && context === this.roomContext && event.generation === this.callGeneration) this.lose(error);
       }, LIMITS.requestMs);
       this.pending.set(requestId, { event, resolve, reject, timer, epoch, context });
       try { this.ws.send(JSON.stringify(envelope)); }

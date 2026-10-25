@@ -317,11 +317,29 @@ desktop = await electron.launch({
     await third.getByRole('button', { name: 'Encerrar chamada', exact: true }).click();
     console.log('PASS: separate group server, cross-origin desktop connection and third participant joining an active screen share.');
   }
-  await first.evaluate(() => { window.__holdMedia = 'stop'; });
+  await first.evaluate(() => {
+    window.__holdMedia = 'stop';
+    const button=document.querySelector('[aria-label="Parar compartilhamento"]');
+    window.__stopUI={started:null,readyAt:null};
+    button.addEventListener('click',()=>{window.__stopUI.started=performance.now();},{once:true,capture:true});
+    const observer=new MutationObserver(()=>{
+      if(window.__stopUI.started!==null&&!button.disabled&&button.textContent==='Compartilhar'){
+        window.__stopUI.readyAt=performance.now();observer.disconnect();
+      }
+    });observer.observe(button,{attributes:true,childList:true,subtree:true});
+    for(const pc of window.__testConnections)for(const {sender} of pc.getTransceivers())if(sender.track?.kind==='video'){
+      const replace=sender.replaceTrack.bind(sender);
+      sender.replaceTrack=async track=>{sender.replaceTrack=replace;await new Promise(resolve=>setTimeout(resolve,350));return replace(track);};
+    }
+  });
   await first.getByRole('button', { name: 'Parar compartilhamento', exact: true }).click();
   await expect(first.getByText('Parando…', { exact: true })).toBeVisible();
   expect(await first.evaluate(() => window.__testDisplays.at(-1).getTracks().every(track => track.readyState === 'ended'))).toBe(true);
   expect(await first.evaluate(() => window.__testCaptures.at(-1).getTracks().every(track => track.readyState === 'live'))).toBe(true);
+  await expect(first.getByRole('button',{name:'Compartilhar tela',exact:true})).toBeEnabled({timeout:1500});
+  const stopTiming=await first.evaluate(()=>window.__stopUI);
+  expect(stopTiming.started).toEqual(expect.any(Number));expect(stopTiming.readyAt).toEqual(expect.any(Number));
+  expect(stopTiming.readyAt-stopTiming.started).toBeLessThanOrEqual(1000);
   await first.evaluate(() => window.__releaseMedia());
   await expect(second.getByText('Tela de Ana', { exact: true })).toHaveCount(0);
   await first.evaluate(() => {

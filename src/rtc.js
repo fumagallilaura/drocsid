@@ -264,7 +264,7 @@ export class Call {
     stop(operation.stream); this.cancelDisplay(operation.key);
     if (this.screenOperation === operation) { this.display = null; this.notify(); }
     operation.reject(new ProtocolError('CANCELLED'));
-    const notice = this.current(operation.attempt) && this.admitted ? this.announce({ type: 'media', sharing: false }, operation.attempt, operation) : Promise.resolve();
+    if (this.current(operation.attempt) && this.admitted) void this.announce({ type: 'media', sharing: false }, operation.attempt, operation);
     operation.cleanup = (async () => {
       await Promise.all([...operation.affected].map(async entry => {
         if (this.peers.get(entry.id) !== entry) return;
@@ -274,7 +274,6 @@ export class Call {
         try { await this.deadline(work, Math.max(0, operation.terminalAt + 1000 - this.clock.now())); }
         catch { if (this.peers.get(entry.id) === entry) this.failPeer(entry.id); }
       }));
-      await notice;
     })();
     return operation.cleanup;
   }
