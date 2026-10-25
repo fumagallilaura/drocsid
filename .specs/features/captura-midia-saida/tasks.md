@@ -6,7 +6,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 
 **If the skill cannot be activated, STOP and tell the user - do not proceed without it.**
 
-**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1 concluída; T2–T9 pendentes. Ver [execução](execution.md).
+**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1/T2 concluídas; T3–T9 pendentes. Ver [execução](execution.md).
 
 O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem A recomendada; a geração do documento não marca essa arquitetura ou Execute como aprovados. Os padrões A1–A8 permanecem explícitos na spec.
 
@@ -131,15 +131,17 @@ T8 -> T9
 
 **Done when**:
 
-- [ ] Cancelamento com geração recebido antes da admissão cria terminal; join antigo não ocupa vaga. Duplicatas e saídas antigas deixam a tentativa nova intacta.
-- [ ] Saída/parada válidas passam com cota esgotada, liberam estado em até 1 s e permitem substituir um dos seis participantes sem aceitar o sétimo simultâneo.
-- [ ] Cada presença emitida inclui revisão crescente; cada ack de chamada inclui geração. Durante a sequência local, preservar o caminho v1 existente apenas para chamadas antigas já admitidas; T6 remove essa tolerância, sem apresentá-la como certificada.
-- [ ] Heartbeat usa deadline monotônico por cliente; testes em pong alinhado e deslocado verificam estado em 59.999/60.000 ms e limpeza de timers ao fechar/rearmar.
-- [ ] Integração cobre todos os casos acima no mesmo commit; Full aprovado, total `50 + Δ` registrado e zero falhas/skips.
+- [x] Cancelamento com geração recebido antes da admissão cria terminal; join antigo não ocupa vaga. Duplicatas e saídas antigas deixam a tentativa nova intacta.
+- [x] Saída/parada válidas passam com cota esgotada, liberam estado em até 1 s e permitem substituir um dos seis participantes sem aceitar o sétimo simultâneo.
+- [x] Cada presença emitida inclui revisão crescente; cada ack de chamada inclui geração. Durante a sequência local, preservar o caminho v1 existente apenas para chamadas antigas já admitidas; T6 remove essa tolerância, sem apresentá-la como certificada.
+- [x] Heartbeat usa deadline monotônico por cliente; testes em pong alinhado e deslocado verificam estado em 59.999/60.000 ms e limpeza de timers ao fechar/rearmar.
+- [x] Integração cobre todos os casos acima no mesmo commit; Full aprovado, total `50 + Δ` registrado e zero falhas/skips.
 
 **Tests**: integration em `tests/service.test.js` e `tests/server.test.js`; ajustes de serialização no helper existente são parte dos testes, preservando suas asserções. Injetar entrega atrasada antes do handler, não apenas atrasar o ack depois de admitir.
 **Gate**: full; Quick + build + smoke source/interno.
 **Commit**: `fix(server): fence terminal calls and expire participants by deadline`
+
+**Execução T2 em 2026-10-25**: Full PASS, 58/58 Node (50 + 8), zero falhas/skips/cancelled. [Adequação](execution.md#t2--terminal-do-participante-e-heartbeat). T1 em `be83426`; T2 neste commit, identificado pelo título acima. MEDIA ainda sem Verified.
 
 #### T3: Rejeitar respostas e presenças antigas na Session
 

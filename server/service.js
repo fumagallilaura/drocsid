@@ -8,6 +8,8 @@ import { WebSocketServer, WebSocket } from 'ws';
 import metadata from '../package.json' with { type: 'json' };
 import { LIMITS, PROTOCOL_VERSION, ProtocolError, parseClientEvent, readIceServers } from '../shared/protocol.js';
 
+const realClock={now:()=>performance.now(),setTimeout:(fn,ms)=>setTimeout(fn,ms),clearTimeout:id=>clearTimeout(id),setInterval:(fn,ms)=>setInterval(fn,ms),clearInterval:id=>clearInterval(id)};
+
 export function logFailure(phase, code, requestId, error) {
   const cause = error?.cause || error;
   const causeCode = ['EADDRINUSE','EADDRNOTAVAIL','EACCES','ENOENT','ERR_SQLITE_ERROR','SHUTDOWN_FAILED'].includes(cause?.code) ? cause.code : null;
@@ -23,7 +25,7 @@ const messages = {
   PARTICIPANT_UNAVAILABLE: 'Participante indisponível nesta chamada.',
 };
 
-export function createService({ dbPath = 'data/conversa.sqlite', iceServers } = {}) {
+export function createService({ dbPath = 'data/conversa.sqlite', iceServers, clock = realClock } = {}) {
   iceServers = readIceServers(iceServers);
   if (dbPath !== ':memory:') mkdirSync(dirname(dbPath), { recursive: true });
   const db = new DatabaseSync(dbPath);
@@ -71,10 +73,20 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers } = 
   }
   const broadcast=(room,event)=>{for(const c of clients.values())if(c.room===room)send(c,event);};
   const members=room=>[...clients.values()].filter(c=>c.room===room).map(({id,name,inCall,muted,sharing,callId,generation})=>({id,name,inCall,muted,sharing,callId,generation}));
-  const presence=room=>{if(room)broadcast(room,{type:'presence',room,members:members(room)});};
+  const revisions=new Map();
+  const presence=room=>{if(room){const revision=(revisions.get(room)||0)+1;revisions.set(room,revision);broadcast(room,{type:'presence',room,revision,members:members(room)});}};
   const error=(c,code,requestId,phase='protocol')=>send(c,{type:'error',code,message:messages[code]||'Não foi possível processar esta ação.',requestId:requestId||null,phase});
-  const ack=(c,e,state=c)=>send(c,{type:'ack',requestId:e.requestId,action:e.type,callId:e.callId,inCall:state.inCall,muted:state.muted,sharing:state.sharing});
-  const endCall=c=>Object.assign(c,{inCall:false,muted:true,sharing:false,callId:null});
+  const ack=(c,e,state=c)=>send(c,{type:'ack',requestId:e.requestId,action:e.type,callId:e.callId,generation:e.generation??c.generation,inCall:state.inCall,muted:state.muted,sharing:state.sharing});
+  const endCall=c=>Object.assign(c,{inCall:false,muted:true,sharing:false,callId:null,callState:'terminal'});
+  function expire(c) {
+    clock.clearTimeout(c.expiryTimer);
+    c.expiryTimer=clock.setTimeout(()=>{
+      if(!clients.has(c.id))return;
+      if(clock.now()-c.lastPong<60000)return expire(c);
+      clients.delete(c.id);endCall(c);c.ws.terminate();if(!closing)presence(c.room);
+    },Math.max(0,c.lastPong+60000-clock.now()));
+    c.expiryTimer?.unref?.();
+  }
   function rejectUpgrade(socket,status) {
     socket.end(`HTTP/1.1 ${status} ${status===404?'Not Found':status===403?'Forbidden':'Service Unavailable'}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`,()=>socket.destroy());
     const timer=setTimeout(()=>socket.destroy(),1000);timer.unref();socket.once('close',()=>clearTimeout(timer));
@@ -91,10 +103,10 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers } = 
     wss.handleUpgrade(req,socket,head,ws=>wss.emit('connection',ws));
   });
   wss.on('connection',ws=>{
-    const c={id:randomUUID(),ws,name:'',room:null,inCall:false,muted:true,sharing:false,callId:null,generation:0,lastPong:Date.now(),budgets:new Map()};
-    clients.set(c.id,c);
+    const c={id:randomUUID(),ws,name:'',room:null,inCall:false,muted:true,sharing:false,callId:null,generation:0,lastCallId:null,callState:'terminal',lastPong:clock.now(),budgets:new Map()};
+    clients.set(c.id,c);expire(c);
     ws.on('error',cause=>logFailure('socket','CONNECTION_FAILED',null,cause));
-    ws.on('pong',()=>{c.lastPong=Date.now();});
+    ws.on('pong',()=>{if(clients.has(c.id)&&!closing){c.lastPong=clock.now();expire(c);}});
     send(c,{type:'hello',id:c.id,rooms:roomsQuery.all()});
     ws.on('message',raw=>{
       let e,requestId;
@@ -102,7 +114,14 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers } = 
       catch(cause){error(c,cause.code||'INVALID_EVENT',requestId);return;}
       if(closing)return error(c,'INVALID_EVENT',requestId,e.type);
       try {
-        if(e.type==='call-join'&&e.generation<=c.generation&&!(c.inCall&&e.callId===c.callId&&e.generation===c.generation))return error(c,'INVALID_EVENT',requestId,e.type);
+        if(['call-join','call-leave','media','signal'].includes(e.type)){
+          if(e.generation!==undefined&&(!Number.isSafeInteger(e.generation)||e.generation<1))return error(c,'INVALID_EVENT',requestId,e.type);
+          if(e.generation===c.generation&&e.callId!==c.lastCallId)return error(c,'INVALID_EVENT',requestId,e.type);
+        }
+        if(e.type==='call-join'){
+          if(e.generation<c.generation||(e.generation===c.generation&&c.callState==='terminal')||(c.inCall&&e.generation!==c.generation))return error(c,'INVALID_EVENT',requestId,e.type);
+          if(c.inCall)return ack(c,e);
+        }
         const terminal=e.type==='call-leave'||(e.type==='media'&&e.sharing===false);
         if(!terminal){
           let budget=c.budgets.get(e.type);if(!budget||Date.now()-budget.at>=10000){budget={at:Date.now(),remaining:100};c.budgets.set(e.type,budget);}
@@ -133,34 +152,38 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers } = 
           send(c,{type:'room-created',requestId,room});for(const target of clients.values())send(target,{type:'rooms',rooms:roomsQuery.all()});
         }else if(e.type==='call-join'){
           if([...clients.values()].filter(x=>x.room===c.room&&x.inCall&&x!==c).length>=LIMITS.callMembers)return error(c,'CALL_FULL',requestId,e.type);
-          Object.assign(c,{inCall:true,callId:e.callId,generation:e.generation,muted:e.muted,sharing:false});ack(c,e);presence(c.room);
+          Object.assign(c,{inCall:true,callId:e.callId,lastCallId:e.callId,generation:e.generation,callState:'admitted',muted:e.muted,sharing:false});ack(c,e);presence(c.room);
         }else if(e.type==='call-leave'){
-          if(c.callId===e.callId){endCall(c);presence(c.room);}
+          if(e.generation===undefined&&e.callId!==c.lastCallId)return error(c,'INVALID_EVENT',requestId,e.type);
+          if(e.generation>c.generation||e.generation===c.generation||e.generation===undefined){
+            const changed=c.inCall;
+            if(e.generation!==undefined)Object.assign(c,{generation:e.generation,lastCallId:e.callId});
+            endCall(c);if(changed)presence(c.room);
+          }
           ack(c,e,{inCall:false,muted:true,sharing:false});
         }else if(e.type==='media'){
-          if(!c.inCall||e.callId!==c.callId)return error(c,'INVALID_EVENT',requestId,e.type);
+          if(!c.inCall||e.callId!==c.callId||(e.generation!==undefined&&e.generation!==c.generation))return error(c,'INVALID_EVENT',requestId,e.type);
           if(e.muted!==undefined)c.muted=e.muted;if(e.sharing!==undefined)c.sharing=e.sharing;
           ack(c,e);presence(c.room);
         }else if(e.type==='signal'){
           const target=clients.get(e.to);
+          if(e.generation!==undefined&&e.generation!==c.generation)return error(c,'INVALID_EVENT',requestId,e.type);
           if(!c.inCall||c.callId!==e.callId||!target?.inCall||target.room!==c.room||target.callId!==e.toCallId)return error(c,'PARTICIPANT_UNAVAILABLE',requestId,e.type);
           send(target,{type:'signal',from:c.id,fromCallId:c.callId,callId:target.callId,signal:e.signal});
         }
       }catch(cause){logFailure(e.type,'INVALID_EVENT',requestId,cause);error(c,'INVALID_EVENT',requestId,e.type);}
     });
-    ws.on('close',()=>{clients.delete(c.id);if(!closing)presence(c.room);});
+    ws.on('close',()=>{clock.clearTimeout(c.expiryTimer);clients.delete(c.id);if(!closing)presence(c.room);});
   });
-  const heartbeat=setInterval(()=>{
-    for(const c of clients.values())if(Date.now()-c.lastPong>=60000){clients.delete(c.id);endCall(c);c.ws.terminate();presence(c.room);}else c.ws.ping();
-  },30000);heartbeat.unref();
+  const heartbeat=clock.setInterval(()=>{for(const c of clients.values())c.ws.ping();},30000);heartbeat?.unref?.();
   return {app,server,wss,setDevelopmentUpgrade(handler){developmentUpgrade=handler;},close(){
     if(closePromise)return closePromise;
-    closing=true;clearInterval(heartbeat);
+    closing=true;clock.clearInterval(heartbeat);
     closePromise=(async()=>{
       let timer;
       try{
         const failures=[];
-        for(const c of clients.values())try{c.ws.terminate();}catch(cause){failures.push(cause);}
+        for(const c of clients.values()){clock.clearTimeout(c.expiryTimer);try{c.ws.terminate();}catch(cause){failures.push(cause);}}
         for(const socket of sockets)try{socket.destroy();}catch(cause){failures.push(cause);}
         const results=await Promise.race([
           Promise.allSettled([new Promise((resolve,reject)=>wss.close(cause=>cause?reject(cause):resolve())),new Promise((resolve,reject)=>server.close(cause=>cause&&cause.code!=='ERR_SERVER_NOT_RUNNING'?reject(cause):resolve()))]),

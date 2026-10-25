@@ -112,8 +112,9 @@ test('STAB-51/52: connection cap refuses 25th and slow consumer cannot block hea
 });
 
 test('STAB-32: heartbeat releases silent participant within 60 seconds',async t=>{
-  t.mock.timers.enable({apis:['setInterval','Date'],now:0});
-  const s=await start(t), a=await client(s.url,'Ana','geral',{autoPong:false}), b=await client(s.url,'Bia','geral',{autoPong:false});
+  t.mock.timers.enable({apis:['setInterval','setTimeout','Date'],now:0});
+  const clock={now:()=>Date.now(),setTimeout:(fn,ms)=>setTimeout(fn,ms),clearTimeout:id=>clearTimeout(id),setInterval:(fn,ms)=>setInterval(fn,ms),clearInterval:id=>clearInterval(id)};
+  const s=await start(t,{clock}), a=await client(s.url,'Ana','geral',{autoPong:false}), b=await client(s.url,'Bia','geral',{autoPong:false});
   await a.request({type:'call-join'}); const closed=Promise.all([once(a.ws,'close'), ...[...s.wss.clients].map(ws=>once(ws,'close'))]);
   t.mock.timers.tick(60000); await closed;
   assert.equal(a.ws.readyState,3); assert.equal(s.wss.clients.size,0);
@@ -134,4 +135,70 @@ test('STAB-37/67: failed cleanup still closes remaining resources and diagnostic
   await assert.rejects(s.close(),e=>e.code==='SHUTDOWN_FAILED');
   assert.equal(s.server.listening,false);assert.equal(warnings[0].phase,'shutdown');assert.equal(warnings[0].code,'SHUTDOWN_FAILED');
   assert.equal(warnings[0].version,'0.1.1');assert.equal(JSON.stringify(warnings).includes('SECRET_TOKEN'),false);
+});
+
+test('MEDIA-24/28: leave delivered before a held join makes that generation terminal without touching a newer call',async t=>{
+  const s=await start(t), a=await client(s.url), observer=await client(s.url,'Bia');
+  const delayedJoin={type:'call-join',callId:'old',generation:1,muted:false};
+  const left=await a.request({type:'call-leave',callId:'old',generation:1});
+  assert.deepEqual({callId:left.callId,generation:left.generation,inCall:left.inCall,muted:left.muted,sharing:left.sharing},
+    {callId:'old',generation:1,inCall:false,muted:true,sharing:false});
+  const oldId=a.send(delayedJoin), refused=await a.next('error',e=>e.requestId===oldId);
+  assert.equal(refused.code,'INVALID_EVENT'); assert.equal(refused.phase,'call-join');
+  const admitted=await a.request({type:'call-join',callId:'new',generation:2,muted:false});
+  assert.equal(admitted.generation,2); assert.equal(admitted.inCall,true);
+  await a.request({type:'media',callId:'new',generation:2,sharing:true});
+  const duplicate=await a.request({type:'call-join',callId:'new',generation:2,muted:true});
+  assert.equal(duplicate.sharing,true); assert.equal(duplicate.muted,false);
+  const repeated=await a.request({type:'call-leave',callId:'old',generation:1});
+  assert.equal(repeated.generation,1); assert.equal(repeated.inCall,false);
+  for(const type of ['call-join','call-leave','media','signal']) {
+    const requestId=a.send({type,callId:'different-id',generation:2,muted:true,sharing:false,to:observer.id,toCallId:'none',signal:{candidate:{candidate:''}}});
+    assert.equal((await a.next('error',e=>e.requestId===requestId)).code,'INVALID_EVENT');
+  }
+  const snapshot=await a.request({type:'media',callId:'new',generation:2,muted:false});
+  assert.equal(snapshot.inCall,true); assert.equal(snapshot.sharing,true); assert.equal(snapshot.generation,2);
+  const present=await observer.next('presence',e=>e.members.some(m=>m.callId==='new'&&m.sharing));
+  assert.equal(present.members.filter(m=>m.inCall).length,1);
+  const revisions=observer.events.filter(e=>e.type==='presence').map(e=>e.revision);
+  assert.ok(revisions.every(Number.isSafeInteger));
+  assert.ok(revisions.every((value,i)=>!i||value>revisions[i-1]));
+});
+
+test('MEDIA-25/26: saturated message, media and signaling budgets still allow stop and replacement at capacity',async t=>{
+  const s=await start(t), people=[];
+  for(let i=0;i<7;i++)people.push(await client(s.url,`Pessoa ${i}`));
+  for(const p of people.slice(0,6))await p.request({type:'call-join'});
+  const a=people[0], b=people[1], extra=people[6];
+  const excess=extra.send({type:'call-join'}); assert.equal((await extra.next('error',e=>e.requestId===excess)).code,'CALL_FULL');
+  for(const type of ['message','media','signal']) {
+    for(let i=0;i<101;i++)a.send({type,text:'quota',muted:false,sharing:true,to:b.id,signal:{candidate:{candidate:''}}});
+    await a.next('error',e=>e.code==='RATE_LIMITED'&&e.phase===type);
+  }
+  const started=performance.now(), stopped=await a.request({type:'media',sharing:false});
+  assert.equal(stopped.sharing,false); assert.equal(stopped.inCall,true);
+  const left=await a.request({type:'call-leave',generation:1});
+  assert.equal(left.inCall,false); assert.equal(left.sharing,false); assert.equal(left.generation,1);
+  const terminal=await b.next('presence',e=>e.members.find(m=>m.id===a.id)?.inCall===false);
+  assert.equal(terminal.members.find(m=>m.id===a.id).sharing,false); assert.ok(performance.now()-started<1000);
+  await extra.request({type:'call-join'});
+  const replacement=await b.next('presence',e=>e.members.find(m=>m.id===extra.id)?.inCall);
+  assert.equal(replacement.members.filter(m=>m.inCall).length,6);
+});
+
+test('MEDIA-27: heartbeat deadline follows an off-tick pong and clears timers on close',async t=>{
+  let time=0,next=0;const jobs=new Map();
+  const clock={now:()=>time,setTimeout:(fn,ms)=>{const id=++next;jobs.set(id,{at:time+ms,fn});return id;},clearTimeout:id=>jobs.delete(id),
+    setInterval:()=>++next,clearInterval:()=>{}};
+  const tick=ms=>{time+=ms;for(const [id,job]of [...jobs])if(job.at<=time){jobs.delete(id);job.fn();}};
+  const s=await start(t,{clock}), a=await client(s.url,'Ana','geral',{autoPong:false});
+  await a.request({type:'call-join'}); const serverSocket=[...s.wss.clients][0];
+  assert.equal(jobs.size,1); tick(12345);
+  const pong=once(serverSocket,'pong');a.ws.pong();await pong; assert.equal(jobs.size,1);
+  tick(59999); assert.equal(a.ws.readyState,1); assert.equal(s.wss.clients.size,1);
+  const closed=Promise.all([once(a.ws,'close'),once(serverSocket,'close')]); tick(1); await closed;
+  assert.equal(a.ws.readyState,3); assert.equal(s.wss.clients.size,0); assert.equal(jobs.size,0);
+  const b=await client(s.url,'Bia','geral',{autoPong:false});assert.equal(jobs.size,1);
+  const gone=once([...s.wss.clients][0],'close');b.ws.close();await gone;assert.equal(jobs.size,0);
+  await s.close();assert.equal(jobs.size,0);
 });
