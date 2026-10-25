@@ -291,3 +291,14 @@ R2: `ce848a7`. As conjunções MEDIA-08/28 voltaram aos testes de Call/Session; 
 | MEDIA-28, sinal dirigido à tentativa local anterior | `tests/session.test.js:216` signals=[] e activeCallId=new/conectado; `:217` sinal novo chega exatamente uma vez | PASS, guarda não equivale a ignorar todo sinal |
 
 Reverso C/D: a ampliação do teste de escuta e os dois testes novos correspondem exatamente às três linhas. Os resultados anteriores de mic, mute, envio/contexto e terminal permanecem. Guidelines/estilo e frameworks existentes mantidos. Adequação do autor R3: PASS; sem inferência física e com reverify independente ainda pendente.
+
+## R4 — cancelamento estruturado e consentimento visível
+
+R3: `08675ff`. Retorno T5: o checker nativo agora espera o finish da operação específica e confere o resultado inteiro de Escape, além da cardinalidade anterior. A primeira redação observou o finish de um documento anterior antes de o browser assentar; a espera agora é pelo requestId atual, sem mudar o resultado exigido. Avisos do consentimento são verificados na UI real. Sem mudança de produto.
+
+| AC | Evidência e expressão | Adequação A/B |
+| --- | --- | --- |
+| MEDIA-31, cancelamento voluntário | `scripts/desktop-capture-check.mjs:62` resultado exatamente cancelled/CANCELLED/capture-selection/requestId atual; `:63` chave do finish exatamente igual à seleção atual | PASS; distinto de TIMEOUT/MEDIA_FAILED/INVALID_EVENT já exigidos no mesmo checker |
+| MEDIA-10, aviso global apresentado | `scripts/desktop-capture-check.mjs:140` texto de todos os aplicativos/própria chamada visível em Configurações; `:145` aviso correspondente visível no seletor com consentimento ligado | PASS de apresentação; concessões false/true e default off preservados; conteúdo físico segue T9 |
+
+Reverso C/D: as três novas comparações e a espera correlacionada só atendem às duas linhas. Callbacks/grants/guardas/câmera/documentos antigos continuam assertados. **80/80 = 50 + 30**, zero falhas/skips/cancelled; Full + captura/perfil source PASS, logs `test-results/media-r4`. Adequação do autor R4: PASS, pendente de Verifier.

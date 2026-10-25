@@ -52,10 +52,15 @@ try {
   await expect(survivor.getByRole('heading', { name: 'Vamos nos encontrar?' })).toBeVisible();
   await enterCall(survivor);
   await desktop.evaluate(({ desktopCapturer }) => { desktopCapturer.getSources = globalThis.__nativeInventory; });
+  await survivor.evaluate(()=>{window.desktop.onCaptureSources(value=>{window.__cancelSources=value;});});
   await survivor.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
   const picker = survivor.getByRole('dialog', { name: 'O que vamos compartilhar?' });
+  await expect(picker).toBeVisible();const cancelledSources=await survivor.evaluate(()=>window.__cancelSources);
   await expect(picker).toBeVisible(); await survivor.keyboard.press('Escape'); await expect(picker).toHaveCount(0);
   await expect.poll(async () => (await snapshot()).requests[2].calls).toBe(1);
+  await expect.poll(()=>desktop.evaluate(()=>globalThis.__captureDetails.outcomes.at(-1)?.requestId)).toBe(cancelledSources.requestId);
+  expect(await desktop.evaluate(()=>globalThis.__captureDetails.outcomes.at(-1))).toEqual({outcome:'cancelled',code:'CANCELLED',phase:'capture-selection',requestId:cancelledSources.requestId});
+  expect(await desktop.evaluate(()=>[...globalThis.__captureMessages].reverse().find(value=>value.channel==='capture-finish').value.key)).toEqual(cancelledSources.key);
   await survivor.reload();
   expect(await snapshot()).toEqual({ requests: [
     { calls: 1, results: ['cancelled'], finished: true }, { calls: 1, results: ['cancelled'], finished: true },
@@ -132,10 +137,13 @@ try {
   await native.evaluate((window, title) => window.setTitle(title),sourceTitle);
   for (const audio of [false,true]) {
     await survivor.getByRole('button', { name: 'Configurações', exact: true }).click();
+    await expect(survivor.getByRole('dialog',{name:'Do seu jeito'}).getByText('No Windows, pode incluir o som de todos os aplicativos, inclusive da chamada.',{exact:true})).toBeVisible();
     await survivor.getByRole('checkbox', { name: /Incluir áudio do sistema/ }).setChecked(audio);
     await survivor.keyboard.press('Escape');
     await survivor.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
-    await expect(picker).toBeVisible();await picker.getByRole('button', { name: sourceTitle, exact: true }).click();
+    await expect(picker).toBeVisible();
+    if(audio)await expect(picker.getByText(/O áudio do sistema pode incluir todos os aplicativos, inclusive a própria chamada/)).toBeVisible();
+    await picker.getByRole('button', { name: sourceTitle, exact: true }).click();
     await expect.poll(() => desktop.evaluate(() => globalThis.__captureDetails.grants.length)).toBe(audio ? 2 : 1);
     expect(await desktop.evaluate(() => globalThis.__captureDetails.grants.at(-1))).toEqual({audioRequested:audio,audio:audio?'loopback':null,video:true});
     await survivor.getByRole('button', { name: 'Encerrar chamada', exact: true }).click();

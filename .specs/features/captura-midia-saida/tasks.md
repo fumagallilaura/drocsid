@@ -297,6 +297,8 @@ T8 -> T9
 
 **R3 (T1/T3)**: conjunções de escuta sem mic com tela e sinalização antiga contra tentativas locais/remotas novas demonstradas por valores em Call/Session, sem mudança de produto. Full 80/80 + build + smoke source PASS. R2 em `ce848a7`; [adequação](execution.md#r3--escuta-com-tela-e-sinalização-antiga).
 
+**R4 (T5)**: cancelamento voluntário tem resultado inteiro CANCELLED/fase/requestId e chave atual assertados; avisos de áudio global visíveis nos dois pontos de consentimento. Full 80/80 + captura/perfil source PASS, sem mudança de produto. [Adequação](execution.md#r4--cancelamento-estruturado-e-consentimento-visível).
+
 #### T9: Registrar a aceitação física com dois PCs
 
 **What**: Produzir o relatório do protocolo físico A7 para o mesmo portátil aprovado em T8.
