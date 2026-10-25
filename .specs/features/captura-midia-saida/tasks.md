@@ -319,6 +319,7 @@ T8 -> T9
 - [ ] Physical aprovado com referência ao Build e total Node `50 + Δ` já registrado em T8. Não há mudança de código nesta tarefa; uma correção necessária volta ao proprietário e invalida a candidata anterior.
 
 **Tests**: manual/integration, todo o protocolo A7. Dois PCs e participantes disponíveis são pré-requisitos reais, ainda não demonstrados nesta entrega de planejamento.
+**Preparação em 2026-10-25**: [uat.md](uat.md) contém identificação e todas as etapas marcadas NÃO EXECUTADAS. Recursos/operadores não confirmados; a preparação não cumpre nenhum Done when, não executa o gate Physical e não fecha T9.
 **Gate**: physical; todas as etapas A7 aprovadas para o hash de T8, sem omitir etapas.
 **Commit**: `docs(media): record physical call and capture acceptance`
 
