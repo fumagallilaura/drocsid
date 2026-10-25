@@ -232,18 +232,18 @@ Os IDs MEDIA detalham o recorte sem substituir os IDs STAB. As linhas de código
 | MEDIA-06 | US1 | STAB-07/38 | R02/R10 | T1, T3, T6, T8 | Execute | Implementing |
 | MEDIA-07 | US1 | STAB-08 | R01/R02 | T1, T7, T8 | Execute | Implementing |
 | MEDIA-08 | US1 | STAB-09 | R02 | T1, T7, T8 | Execute | Implementing |
-| MEDIA-09 | US2 | STAB-10 | R03 | T4, T5, T7, T8 | Tasks | In Tasks |
-| MEDIA-10 | US2 | STAB-10/45 | R03/R11 | T4, T5, T7, T8, T9 | Tasks | In Tasks |
+| MEDIA-09 | US2 | STAB-10 | R03 | T4, T5, T7, T8 | Execute | Implementing |
+| MEDIA-10 | US2 | STAB-10/45 | R03/R11 | T4, T5, T7, T8, T9 | Execute | Implementing |
 | MEDIA-11 | US2 | STAB-48 | R17 | T5, T8 | Tasks | In Tasks |
 | MEDIA-12 | US2 | STAB-11/39/48 | R01/R03/R17 | T5, T8 | Tasks | In Tasks |
 | MEDIA-13 | US2 | STAB-11 | R03 | T5, T8 | Tasks | In Tasks |
-| MEDIA-14 | US2 | STAB-12 | R03 | T4, T8 | Tasks | In Tasks |
-| MEDIA-15 | US2 | STAB-13/39 | R03/R14 | T4, T8 | Tasks | In Tasks |
-| MEDIA-16 | US2 | STAB-14 | R03 | T4, T8, T9 | Tasks | In Tasks |
-| MEDIA-17 | US2 | STAB-15 | R03 | T4, T7, T8 | Tasks | In Tasks |
+| MEDIA-14 | US2 | STAB-12 | R03 | T4, T8 | Execute | Implementing |
+| MEDIA-15 | US2 | STAB-13/39 | R03/R14 | T4, T8 | Execute | Implementing |
+| MEDIA-16 | US2 | STAB-14 | R03 | T4, T8, T9 | Execute | Implementing |
+| MEDIA-17 | US2 | STAB-15 | R03 | T4, T7, T8 | Execute | Implementing |
 | MEDIA-18 | US2 | STAB-68 | R03/R06 | T2, T3, T4, T8 | Execute | Implementing |
-| MEDIA-19 | US2 | STAB-16 | R03 | T4, T8 | Tasks | In Tasks |
-| MEDIA-20 | US2 | STAB-06/44 | R02/R26 | T4, T7, T8 | Tasks | In Tasks |
+| MEDIA-19 | US2 | STAB-16 | R03 | T4, T8 | Execute | Implementing |
+| MEDIA-20 | US2 | STAB-06/44 | R02/R26 | T4, T7, T8 | Execute | Implementing |
 | MEDIA-21 | US3 | STAB-05 | R01/R02/R06 | T1, T4, T7, T8, T9 | Execute | Implementing |
 | MEDIA-22 | US3 | STAB-05; C2 | R01/R06 | T7, T8 | Tasks | In Tasks |
 | MEDIA-23 | US3 | STAB-05/36 (capturas) | R01/R03/R07 | T1, T4, T5, T7, T8 | Execute | Implementing |

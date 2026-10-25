@@ -110,3 +110,35 @@ Seis testes Node novos. A tentativa inicial sem a correção ficou aguardando o 
 | `scripts/desktop-smoke.mjs:210`, `:211` geração maior/callId diferente | Integração real obrigatória de T3 | Sim |
 
 Guidelines: matriz/README/skill. Nenhum teste histórico excluído, ignorado ou enfraquecido. **Veredito do autor T3: gate e adequação aprovados no recorte; MEDIA continua sem Verified.**
+
+## T4 — publicação e compensação de tela
+
+T3: `2006457`. Tela tem operação própria, captura provisória, conjunto de peers afetados e estado selecting/publishing/active/terminal. `display` só é atribuído após publicação/ack no prazo absoluto de 8 s desde a captura. As mutações de tracks passam pelas filas existentes. Stop encerra tracks antes da rede, compartilha a mesma limpeza e seu prazo de 1 s. Peer com escrita ainda pendente é fechado já no aborto; aguardar a fila poderia deixar uma escrita antiga ocorrer depois da remoção. Peers saudáveis conservam voz/mute. Áudio retornado sem consentimento é encerrado e não entra no sender.
+
+Arquivos: `src/rtc.js`, `tests/rtc.test.js`, status/evidência. Cinco testes novos. Os primeiros testes novos expuseram tela provisória anunciada como pronta; a execução vermelha com espera bloqueada foi interrompida. Na primeira correção, o teste histórico de sender suspenso também ficou aguardando o clock; a correção passou a fechar imediatamente apenas o peer com escrita pendente, preservando aquela asserção e o limite de 1 s. Nenhum teste foi alterado para contornar falha.
+
+Gate final: **69/69 Node = 50 + 19**, zero falhas/skips/cancelled; build PASS e smoke Electron source/interno PASS. Callback nativo e seleção entre controladores são T5; estados/diagnóstico da UI são T7. As referências de T1/T2/T3 acima identificam as linhas em seus commits `be83426`/`ca2ba07`/`2006457`; linhas atuais serão consolidadas em T8.
+
+### Adequação A/B
+
+| Critério | Evidência e expressão | Resultado esperado | Coberto |
+| --- | --- | --- | --- |
+| MEDIA-14/20, provisório e deadline absoluto | `tests/rtc.test.js:214` display null/sharingState publishing; `:227` TIMEOUT e fase screen-publication; `:228` publishing em 7999; `:229` ended/idle em 8000 | Sem sucesso antecipado; publicação/ack dividem 8 s | Sim |
+| MEDIA-15/19, três peers e peer tardio | `tests/rtc.test.js:217` `ended(f.captures[1])`; `:219` peer fechado ou sender sem captura após resolução tardia; `:220` mic saudável preservado; `:221` admitido/mic live | Nenhum envio residual, inclusive peer tardio | Sim |
+| MEDIA-16/17/19, stop repetido e mute | `tests/rtc.test.js:237` ended/display null; `:239` peer fechado/admitido/muted true; `:240` mic enabled false | Mesma limpeza, sem novo prazo ou alteração de mute | Sim |
+| MEDIA-02/09/10/28 | `tests/rtc.test.js:246` mesma promessa/um pedido; `:249` áudio ended/sender null; `:250` vídeo live/active; `:252` display e sender continuam novos | Um pedido por operação, áudio por consentimento, resultado antigo descartado | Sim, controlador; fonte nativa em T5 |
+| MEDIA-17/19/31, falha de notificação | `tests/rtc.test.js:262` ended/idle/admitido; `:263` MEDIA_FAILED/fase media; `:264` operationId/callId/geração iguais à chave da captura | Limpeza local e voz não dependem da notificação | Sim |
+| MEDIA-03/21/23/28, liberação terminal | `tests/rtc.test.js:85` `ended(late)`; `:252` preserva display novo; `:253` `ended(current)` | Toda captura antiga ou do controlador fechado encerra | Sim, domínio |
+| MEDIA-18/32, integração de estado e sem registro de mídia | `tests/rtc.test.js:230` evento final sharing false; smoke observa fim da tela remota; `:264` contexto técnico por valor | Estado terminal enviado com contexto; diagnóstico completo em T7 | Sim no recorte, sem certificação global |
+
+### Adequação C/D
+
+| Teste / expressão | Âncora | Manter |
+| --- | --- | --- |
+| `tests/rtc.test.js:214`, `:217`, `:219`, `:220`, `:221` estado/inventário/voz | MEDIA-14/15/19/20 e edge case de peer tardio | Sim |
+| `tests/rtc.test.js:227`, `:228`, `:229`, `:230` categoria/prazo/estado | MEDIA-14/17/18 | Sim |
+| `tests/rtc.test.js:237`, `:239`, `:240` liberação/prazo/mute | MEDIA-16/17/19 | Sim |
+| `tests/rtc.test.js:246`, `:249`, `:250`, `:252` exclusão/consentimento/estado | MEDIA-02/09/10/28 | Sim |
+| `tests/rtc.test.js:262`, `:263`, `:264` liberação/correlação | MEDIA-17/19/31 | Sim |
+
+Guidelines: README/matriz/skill. Resultados observam tracks, senders e estado; não apenas chamadas de mocks. **Veredito do autor T4: gate e adequação aprovados; sem Verified global, sem alteração de AC, testes históricos preservados.**

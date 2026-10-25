@@ -6,27 +6,30 @@ const realClock = { now: () => performance.now(), setTimeout: (fn, ms) => setTim
 export class Call {
   constructor({ id, send, iceServers, onStreams, onMedia, onError,
     mediaDevices = navigator.mediaDevices, PeerConnection = globalThis.RTCPeerConnection,
-    Stream = globalThis.MediaStream, clock = realClock, nextCallGeneration }) {
+    Stream = globalThis.MediaStream, clock = realClock, nextCallGeneration, captureDisplay, cancelDisplay = () => {} }) {
     Object.assign(this, { id, send, iceServers, onStreams, onMedia, onError, mediaDevices, PeerConnection, Stream, clock });
     this.peers = new Map(); this.failed = new Set(); this.members = [];
     this.generation = 0; this.screenGeneration = 0;
     let localGeneration = 0;
     this.nextCallGeneration = nextCallGeneration || (() => ++localGeneration);
     this.attempt = null;
+    this.captureDisplay = captureDisplay || ((_key, constraints) => this.mediaDevices.getDisplayMedia(constraints));
+    this.cancelDisplay = cancelDisplay;
     this.microphone = null; this.display = null;
     this.active = false; this.admitted = false; this.muted = true; this.closed = false;
   }
   current(attempt) { return this.active && !this.closed && this.attempt === attempt && attempt.state !== 'terminal'; }
-  notify() { this.onMedia({ muted: this.muted, display: this.display, pending: this.active && !this.admitted, admitted: this.admitted }); }
+  notify() { this.onMedia({ muted: this.muted, display: this.display, pending: this.active && !this.admitted, admitted: this.admitted,
+    sharingState: this.screenOperation?.state === 'terminal' ? 'idle' : this.screenOperation?.state || 'idle' }); }
   report(error) { this.onError(error instanceof Error ? error : new Error(String(error))); }
   failure(error, phase, attempt) {
     return Object.assign(new ProtocolError(error.code || 'MEDIA_FAILED', error.message), {
       phase: error.phase || phase, callId: attempt.callId, generation: attempt.generation,
     });
   }
-  announce(event, attempt = this.attempt) {
+  announce(event, attempt = this.attempt, operation = null) {
     if (!attempt) return Promise.resolve();
-    const failed = error => { if (this.attempt === attempt && !this.closed) this.report(this.failure(error, event.type, attempt)); };
+    const failed = error => { if (this.attempt === attempt && !this.closed && (!operation || this.screenOperation === operation)) this.report(Object.assign(this.failure(error, event.type, attempt), operation ? { operationId: operation.operationId } : {})); };
     try { return Promise.resolve(this.send({ ...event, callId: attempt.callId, generation: attempt.generation })).catch(failed); }
     catch (error) { failed(error); return Promise.resolve(); }
   }
@@ -87,7 +90,9 @@ export class Call {
       const stream = await this.acquireMicrophone(attempt);
       if (!stream || !this.current(attempt)) return;
       await Promise.all([...this.peers.values()].map(async entry => {
-        try { if (entry.mic) await this.deadline(entry.mic.sender.replaceTrack(stream.getAudioTracks()[0]), 1000); }
+        const work = entry.queue.then(() => { if (entry.mic && this.current(attempt) && this.peers.get(entry.id) === entry) return entry.mic.sender.replaceTrack(stream.getAudioTracks()[0]); });
+        entry.queue = work.catch(() => {});
+        try { await this.deadline(work, 1000); }
         catch { if (this.current(attempt) && this.peers.get(entry.id) === entry) this.failPeer(entry.id); }
       }));
     } else {
@@ -122,14 +127,25 @@ export class Call {
   }
   failPeer(id) { this.dropPeer(id); this.failed.add(id); this.report(new ProtocolError('MEDIA_FAILED', 'A mídia falhou. Tente reconectar a chamada.')); this.publishStreams(); }
   retryPeer(id) { this.dropPeer(id); this.failed.delete(id); this.sync(this.members); }
+  screenCurrent(operation) { return operation && this.screenOperation === operation && operation.state !== 'terminal' && this.current(operation.attempt); }
+  async replaceTracks(entry, tracks, operation) {
+    if (operation) entry.screenWrites = (entry.screenWrites || 0) + 1;
+    const results = await Promise.allSettled(tracks.map(async ([slot, track]) => {
+      try { await slot.sender.replaceTrack(track); }
+      catch (error) { operation?.reject(error); throw error; }
+    }));
+    if (operation) --entry.screenWrites;
+    const failed = results.find(result => result.status === 'rejected');
+    if (failed) throw failed.reason;
+  }
   async attachTracks(entry) {
-    if (!entry.mic) return;
+    const attempt = this.attempt, operation = this.screenOperation;
+    if (!entry.mic || !this.current(attempt) || this.peers.get(entry.id) !== entry) return;
     for (const slot of [entry.mic, entry.video, entry.audio]) slot.direction = 'sendrecv';
-    await Promise.all([
-      entry.mic.sender.replaceTrack(this.microphone?.getAudioTracks()[0] || null),
-      entry.video.sender.replaceTrack(this.display?.getVideoTracks()[0] || null),
-      entry.audio.sender.replaceTrack(this.display?.getAudioTracks()[0] || null),
-    ]);
+    const display = this.screenCurrent(operation) ? operation.stream : null;
+    if (display) operation.affected.add(entry);
+    await this.replaceTracks(entry, [[entry.mic, this.microphone?.getAudioTracks()[0] || null],
+      [entry.video, display?.getVideoTracks()[0] || null], [entry.audio, display?.getAudioTracks().find(track => track.readyState === 'live') || null]], display ? operation : null);
   }
   publishStreams() {
     const streams = [...this.peers.entries()].map(([id, entry]) => {
@@ -157,6 +173,7 @@ export class Call {
           await entry.pc.setLocalDescription(await entry.pc.createOffer());
           if (this.current(attempt) && this.peers.get(member.id) === entry) await this.announce({ type: 'signal', to: member.id, toCallId: entry.callId, signal: { description: entry.pc.localDescription.toJSON() } }, attempt);
         }).catch(() => { if (this.current(attempt) && this.peers.get(member.id) === entry) this.failPeer(member.id); });
+        this.trackScreenWork(entry, entry.queue);
       }
     }
     this.publishStreams();
@@ -185,46 +202,88 @@ export class Call {
       } else if (entry.pc.remoteDescription) await entry.pc.addIceCandidate(signal.candidate);
       else { this.expireCandidates(entry); if (entry.candidates.length < LIMITS.candidates) entry.candidates.push({ candidate: signal.candidate, at: this.clock.now() }); this.expireCandidates(entry); }
     }).catch(() => { if (this.current(attempt) && this.peers.get(from) === entry) this.failPeer(from); });
+    this.trackScreenWork(entry, entry.queue);
     return entry.queue;
+  }
+  trackScreenWork(entry, work) {
+    const operation = this.screenOperation;
+    if (!this.screenCurrent(operation) || !operation.stream) return;
+    operation.affected.add(entry); operation.publications.add(work);
+    work.catch(operation.reject).finally(() => operation.publications.delete(work));
   }
   shareScreen(systemAudio, quality) {
     if (!this.active || !this.admitted || this.closed) return Promise.resolve();
     if (this.screenPending) return this.screenPending;
     if (this.display) return Promise.resolve();
-    const attempt = this.attempt, screenGeneration = ++this.screenGeneration;
-    const operation = (async () => {
-      const display = await this.mediaDevices.getDisplayMedia({ video: { height: { ideal: Number(quality) }, frameRate: { ideal: 30, max: 30 } }, audio: systemAudio === true });
-      if (!this.current(attempt) || this.screenGeneration !== screenGeneration) { stop(display); return; }
-      this.display = display;
-      display.getVideoTracks()[0].onended = () => { void this.stopScreen().catch(error => this.report(error)); };
-      this.notify();
+    const attempt = this.attempt;
+    let reject;
+    const failed = new Promise((_, no) => { reject = no; }); failed.catch(() => {});
+    const operation = { operationId: crypto.randomUUID(), attempt, state: 'selecting', stream: null, affected: new Set(), publications: new Set(), reject };
+    operation.key = { callId: attempt.callId, generation: attempt.generation, operationId: operation.operationId };
+    this.screenOperation = operation; this.notify();
+    const pending = (async () => {
       try {
-        await Promise.all([...this.peers.values()].filter(p => p.video).map(async entry => {
-          try { await this.deadline(Promise.all([entry.video.sender.replaceTrack(display.getVideoTracks()[0]), entry.audio.sender.replaceTrack(display.getAudioTracks()[0] || null)]), LIMITS.requestMs); }
-          catch (error) { if (this.current(attempt) && this.screenGeneration === screenGeneration && this.peers.get(entry.id) === entry) this.failPeer(entry.id); throw error; }
-        }));
-        if (!this.current(attempt) || this.screenGeneration !== screenGeneration) { stop(display); return; }
-        await this.announce({ type: 'media', sharing: true }, attempt); this.notify();
-      } catch (error) { if (this.display === display) await this.stopScreen(); else stop(display); throw error; }
+        const display = await this.captureDisplay(operation.key, { video: { height: { ideal: Number(quality) }, frameRate: { ideal: 30, max: 30 } }, audio: systemAudio === true });
+        operation.stream = display;
+        if (!this.screenCurrent(operation)) { stop(display); return; }
+        operation.acquiredAt = this.clock.now();
+        if (!systemAudio) display.getAudioTracks().forEach(track => { track.onended = null; track.stop(); });
+        operation.state = 'publishing'; this.notify();
+        display.getVideoTracks()[0].onended = () => { void this.stopScreen(operation).catch(error => this.report(error)); };
+        const publish = (async () => {
+          for (const entry of this.peers.values()) if (entry.video) {
+            const work = entry.queue.then(() => {
+              if (!this.screenCurrent(operation) || this.peers.get(entry.id) !== entry) return;
+              return this.replaceTracks(entry, [[entry.video, display.getVideoTracks()[0]], [entry.audio, display.getAudioTracks().find(track => track.readyState === 'live') || null]], operation);
+            });
+            entry.queue = work.catch(() => {}); this.trackScreenWork(entry, work);
+          }
+          while (operation.publications.size) await Promise.all([...operation.publications]);
+          if (!this.screenCurrent(operation)) return;
+          await this.send({ type: 'media', sharing: true, callId: attempt.callId, generation: attempt.generation });
+          while (operation.publications.size) await Promise.all([...operation.publications]);
+        })();
+        await this.deadline(Promise.race([publish, failed]), Math.max(0, operation.acquiredAt + LIMITS.requestMs - this.clock.now()));
+        if (!this.screenCurrent(operation)) return;
+        operation.state = 'active'; this.display = display; this.notify();
+      } catch (error) {
+        if (!this.screenCurrent(operation)) return;
+        const phase = operation.state === 'selecting' ? 'capture' : 'screen-publication';
+        await this.stopScreen(operation);
+        throw Object.assign(this.failure(error, phase, attempt), { operationId: operation.operationId });
+      }
     })();
-    this.screenPending = operation;
-    operation.finally(() => { if (this.screenPending === operation) this.screenPending = null; }).catch(() => {});
-    return operation;
+    this.screenPending = pending;
+    pending.finally(() => { if (this.screenPending === pending) this.screenPending = null; }).catch(() => {});
+    return pending;
   }
-  async stopScreen() {
-    ++this.screenGeneration;
-    const display = this.display; this.display = null; stop(display); this.notify();
-    const notice = this.active && this.admitted ? this.announce({ type: 'media', sharing: false }) : Promise.resolve();
-    await Promise.all([...this.peers.values()].filter(p => p.video).map(async entry => {
-      try { await this.deadline(Promise.all([entry.video.sender.replaceTrack(null), entry.audio.sender.replaceTrack(null)]), 1000); }
-      catch { this.failPeer(entry.id); }
-    }));
-    await notice;
+  stopScreen(operation = this.screenOperation) {
+    if (!operation) return Promise.resolve();
+    if (operation.cleanup) return operation.cleanup;
+    operation.state = 'terminal'; operation.terminalAt = this.clock.now();
+    stop(operation.stream); this.cancelDisplay(operation.key);
+    if (this.screenOperation === operation) { this.display = null; this.notify(); }
+    operation.reject(new ProtocolError('CANCELLED'));
+    const notice = this.current(operation.attempt) && this.admitted ? this.announce({ type: 'media', sharing: false }, operation.attempt, operation) : Promise.resolve();
+    operation.cleanup = (async () => {
+      await Promise.all([...operation.affected].map(async entry => {
+        if (this.peers.get(entry.id) !== entry) return;
+        if (entry.screenWrites) { this.failPeer(entry.id); return; }
+        const work = entry.queue.then(() => this.replaceTracks(entry, [[entry.video, null], [entry.audio, null]]));
+        entry.queue = work.catch(() => {});
+        try { await this.deadline(work, Math.max(0, operation.terminalAt + 1000 - this.clock.now())); }
+        catch { if (this.peers.get(entry.id) === entry) this.failPeer(entry.id); }
+      }));
+      await notice;
+    })();
+    return operation.cleanup;
   }
   leave(announce = true) {
     const attempt = this.attempt;
     if (attempt) attempt.state = 'terminal';
     ++this.screenGeneration;
+    const screen = this.screenOperation;
+    if (screen) { screen.state = 'terminal'; stop(screen.stream); this.cancelDisplay(screen.key); screen.reject(new ProtocolError('CANCELLED')); }
     this.active = false; this.admitted = false; this.joining = null; this.screenPending = null;
     stop(this.microphone); this.microphone = null; stop(this.display); this.display = null;
     for (const id of [...this.peers.keys()]) this.dropPeer(id);

@@ -6,7 +6,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 
 **If the skill cannot be activated, STOP and tell the user - do not proceed without it.**
 
-**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T3 concluídas; T4–T9 pendentes. Ver [execução](execution.md).
+**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T4 concluídas; T5–T9 pendentes. Ver [execução](execution.md).
 
 O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem A recomendada; a geração do documento não marca essa arquitetura ou Execute como aprovados. Os padrões A1–A8 permanecem explícitos na spec.
 
@@ -181,14 +181,16 @@ T8 -> T9
 
 **Done when**:
 
-- [ ] Tela provisória não é publicada como sucesso; operação ativa exige commit dentro dos 8 s definidos no design.
-- [ ] Falha parcial para todas as tracks em A1; cleanup inclui peer que entrou durante a publicação e promessa de sender que resolve depois do aborto. Remoção travada fecha somente o peer incapaz de cessar o envio.
-- [ ] Voz dos peers saudáveis, admissão e mute anteriores permanecem íntegros; repetição de stop/onended/leave converge sem renovar deadline.
-- [ ] Testes do proprietário entram no mesmo commit; Full aprovado, `50 + Δ` registrado e zero falhas/skips. Nenhuma asserção é trocada por mera ocorrência de chamada.
+- [x] Tela provisória não é publicada como sucesso; operação ativa exige commit dentro dos 8 s definidos no design.
+- [x] Falha parcial para todas as tracks em A1; cleanup inclui peer que entrou durante a publicação e promessa de sender que resolve depois do aborto. Remoção travada fecha somente o peer incapaz de cessar o envio.
+- [x] Voz dos peers saudáveis, admissão e mute anteriores permanecem íntegros; repetição de stop/onended/leave converge sem renovar deadline.
+- [x] Testes do proprietário entram no mesmo commit; Full aprovado, `50 + Δ` registrado e zero falhas/skips. Nenhuma asserção é trocada por mera ocorrência de chamada.
 
 **Tests**: unit em `tests/rtc.test.js`; três peers com aceite/rejeição/suspensão, peer tardio, fonte encerrada, áudio do sistema presente/ausente, resolução antiga e tentativa nova. Medir ended em todas as tracks e `(sender sem captura) ou (peer fechado)`, além da voz preservada. Smoke verifica integração.
 **Gate**: full; Quick + build + smoke source/interno.
 **Commit**: `fix(rtc): settle screen publication and rollback every affected peer`
+
+**Execução T4 em 2026-10-25**: Full PASS, 69/69 Node (50 + 19), zero falhas/skips/cancelled. [Adequação](execution.md#t4--publicação-e-compensação-de-tela). T3 em `2006457`; T4 neste commit. MEDIA sem Verified.
 
 #### T5: Correlacionar e encerrar a seleção nativa da janela
 

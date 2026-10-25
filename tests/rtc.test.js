@@ -31,6 +31,7 @@ function fixture(overrides = {}) {
   const devices={ async getUserMedia() { const s=stream(); captures.push(s); return s; }, async getDisplayMedia() { const s=stream(['video','audio']); captures.push(s); return s; }, ...overrides.devices };
   const call = new Call({ id:'a', iceServers:[], mediaDevices:devices, PeerConnection:PC,
     nextCallGeneration: overrides.nextCallGeneration,
+    captureDisplay: overrides.captureDisplay, cancelDisplay: overrides.cancelDisplay,
     Stream: class { tracks=[]; addTrack(t) { this.tracks.push(t); } getTracks() { return this.tracks; } }, clock,
     send: overrides.send || (async e => { events.push(e); return { type:'ack', action:e.type, callId:e.callId, inCall:e.type!=='call-leave' }; }),
     onStreams() {}, onMedia: s=>states.push(s), onError: e=>errors.push(e) });
@@ -201,4 +202,64 @@ test('MEDIA-02/05/08/30/31: allocated context covers all sends, listen-only need
   await f.call.toggleMicrophone(); assert.equal(mic.getAudioTracks()[0].enabled,true);
   await f.call.leave(); ended(mic); assert.equal(f.call.peers.size,0);
   for(const event of f.events) { assert.equal(event.callId,callId); assert.equal(event.generation,41); }
+});
+
+test('MEDIA-14/15/19/20: provisional screen, late peer and stalled sender all roll back without disturbing healthy voice',async()=>{
+  const f=fixture();await f.call.join();f.call.sync(members(f.call));await drain();
+  const healthy=f.call.peers.get('b'), slow=f.call.peer('c','slow'), bad=f.call.peer('d','bad');
+  const slowWrite=deferred(),badWrite=deferred();
+  slow.video.sender.replaceTrack=async track=>{if(track)await slowWrite.promise;slow.video.sender.track=track;};
+  bad.video.sender.replaceTrack=async track=>{if(track)await badWrite.promise;bad.video.sender.track=track;};
+  const sharing=f.call.shareScreen(true,'1080'),rejected=assert.rejects(sharing);await drain();
+  assert.equal(f.call.display,null);assert.equal(f.states.at(-1).sharingState,'publishing');
+  const late=f.call.peer('e','late');await f.call.attachTracks(late);
+  badWrite.reject(Error('publication'));await drain();
+  ended(f.captures[1]);assert.equal(f.states.at(-1).sharingState,'idle');
+  f.clock.tick(1000);await rejected;slowWrite.resolve();await drain();
+  for(const entry of [healthy,slow,bad,late])assert.ok(entry.pc.connectionState==='closed'||!f.captures[1].getTracks().includes(entry.video.sender.track));
+  assert.equal(healthy.mic.sender.track,f.call.microphone.getAudioTracks()[0]);assert.equal(healthy.pc.connectionState,'new');
+  assert.equal(f.call.admitted,true);assert.equal(f.call.microphone.getTracks()[0].readyState,'live');f.call.close();
+});
+
+test('MEDIA-14/17/18: publication and acknowledgement share an absolute 8s budget',async()=>{
+  const ack=deferred(),events=[];
+  const f=fixture({send:e=>{events.push(e);if(e.type==='media'&&e.sharing)return ack.promise;return Promise.resolve({callId:e.callId,inCall:true});}});
+  await f.call.join();const sharing=f.call.shareScreen(false,'720'),rejected=assert.rejects(sharing,e=>e.code==='TIMEOUT'&&e.phase==='screen-publication');await drain();
+  f.clock.tick(7999);await drain();assert.equal(f.call.display,null);assert.equal(f.states.at(-1).sharingState,'publishing');
+  f.clock.tick(1);await rejected;ended(f.captures[1]);assert.equal(f.states.at(-1).sharingState,'idle');
+  assert.equal(events.at(-1).sharing,false);ack.resolve();await drain();assert.equal(f.call.display,null);assert.equal(f.call.admitted,true);f.call.close();
+});
+
+test('MEDIA-16/17/19: repeated stop shares its original cleanup deadline and preserves mute',async()=>{
+  const f=fixture();await f.call.join();f.call.sync(members(f.call));await drain();await f.call.toggleMicrophone();
+  await f.call.shareScreen(true,'1080');const display=f.call.display,peer=f.call.peers.get('b'),blocked=deferred();
+  peer.video.sender.replaceTrack=()=>blocked.promise;
+  const first=f.call.stopScreen();ended(display);assert.equal(f.call.display,null);
+  f.clock.tick(999);const repeated=f.call.stopScreen();f.clock.tick(1);await Promise.all([first,repeated]);
+  assert.equal(peer.pc.connectionState,'closed');assert.equal(f.call.admitted,true);assert.equal(f.call.muted,true);
+  assert.equal(f.call.microphone.getTracks()[0].enabled,false);blocked.resolve();await drain();f.call.close();
+});
+
+test('MEDIA-02/09/10/28: one selection per operation, audio requires consent and old display cannot replace a newer one',async()=>{
+  const oldPicker=deferred();let requests=0;
+  const f=fixture({devices:{getDisplayMedia:async()=>{requests++;if(requests===1)return oldPicker.promise;const s=stream(['video','audio']);f.captures.push(s);return s;}}});
+  await f.call.join();const old=f.call.shareScreen(true,'1080');assert.equal(f.call.shareScreen(true,'1080'),old);assert.equal(requests,1);
+  await f.call.leave();await f.call.join();f.call.sync(members(f.call));await drain();
+  await f.call.shareScreen(false,'720');const current=f.call.display;
+  assert.equal(current.getAudioTracks()[0].readyState,'ended');assert.equal(f.call.peers.get('b').audio.sender.track,null);
+  assert.equal(current.getVideoTracks()[0].readyState,'live');assert.equal(f.states.at(-1).sharingState,'active');
+  const late=stream(['video','audio']);oldPicker.resolve(late);await old;ended(late);
+  assert.equal(f.call.display,current);assert.equal(f.call.peers.get('b').video.sender.track,current.getVideoTracks()[0]);
+  f.call.close();ended(current);
+});
+
+test('MEDIA-17/19/31: failed terminal notification preserves local cleanup and identifies the screen operation',async()=>{
+  let key;const display=stream(['video','audio']);
+  const f=fixture({captureDisplay:async value=>{key=value;return display;},send:async e=>{
+    if(e.type==='media'&&e.sharing===false)throw Error('notification');return {callId:e.callId,inCall:true};
+  }});
+  await f.call.join();await f.call.shareScreen(true,'1080');await f.call.stopScreen();
+  ended(display);assert.equal(f.call.display,null);assert.equal(f.states.at(-1).sharingState,'idle');assert.equal(f.call.admitted,true);
+  assert.equal(f.errors.at(-1).code,'MEDIA_FAILED');assert.equal(f.errors.at(-1).phase,'media');
+  assert.equal(f.errors.at(-1).operationId,key.operationId);assert.equal(f.errors.at(-1).callId,key.callId);assert.equal(f.errors.at(-1).generation,key.generation);f.call.close();
 });
