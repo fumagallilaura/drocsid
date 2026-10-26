@@ -6,6 +6,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { WebSocket } from 'ws';
 import { createService, logFailure } from '../server/service.js';
 import { client } from './helpers/client.js';
 
@@ -221,4 +222,67 @@ test('MEDIA-32: media diagnostics exclude sensitive error properties and untrust
   logFailure('capture-inventory','MEDIA_FAILED','technical-request',error);
   assert.equal(warnings.length,1);assert.equal(warnings.join('').includes('MEDIA_PRIVATE_'),false);
   assert.deepEqual(JSON.parse(warnings[0]),{phase:'capture-inventory',code:'MEDIA_FAILED',requestId:'technical-request',version:'0.1.1',runtime:process.versions.node,cause:'Error',causeCode:null,sqliteCode:null});
+});
+
+test('STAB-19/23/24: a receipt stays in its original room and conflicts never alter either history',async t=>{
+  const s=await start(t),a=await client(s.url);
+  const accepted=await a.request({type:'message',operationId:'original-operation',text:'  texto original  '});
+  assert.equal(accepted.message.text,'texto original');await a.request({type:'join',name:'Ana',room:'cafe'});
+  const retry=await a.request({type:'message',room:'geral',operationId:'original-operation',text:'texto original'});
+  assert.deepEqual(retry.message,accepted.message);
+  for(const value of [{room:'cafe',text:'texto original'},{room:'geral',text:'outro texto'}]){
+    const requestId=a.send({type:'message',operationId:'original-operation',...value});
+    const result=await a.next(['message-accepted','error'],event=>event.requestId===requestId);
+    assert.equal(result.type,'error');assert.equal(result.code,'OPERATION_CONFLICT');assert.equal(result.phase,'message');
+  }
+  const mismatch=a.send({type:'message',room:'geral',operationId:'not-yet-persisted',text:'destino errado'});
+  const refused=await a.next(['message-accepted','error'],event=>event.requestId===mismatch);
+  assert.equal(refused.type,'error');assert.equal(refused.code,'ROOM_MISMATCH');
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'cafe'})).messages,[]);
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'geral'})).messages,[accepted.message]);
+});
+
+test('STAB-21/27: rejected text creates no record and 2000 UTF-16 units commit after trim',async t=>{
+  const s=await start(t),a=await client(s.url);
+  for(const text of ['', '   ', 'x'.repeat(2001)]){
+    const requestId=a.send({type:'message',text}),result=await a.next(['message-accepted','error'],event=>event.requestId===requestId);
+    assert.equal(result.type,'error');assert.equal(result.code,'INVALID_INPUT');
+  }
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'geral'})).messages,[]);
+  const text='😀'.repeat(1000),accepted=await a.request({type:'message',text:`  ${text}  `});
+  assert.equal(accepted.message.text,text);assert.equal(accepted.message.text.length,2000);assert.equal(accepted.message.sequence,1);
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'geral'})).messages,[accepted.message]);
+});
+
+test('STAB-35/37: pending shutdown refuses HTTP and WS with one terminal result',async t=>{
+  const s=await start(t),port=s.server.address().port,original=s.server.close.bind(s.server);let release;
+  s.server.close=callback=>{release=()=>{release=null;original(callback);};return s.server;};
+  const ending=s.close();t.after(async()=>{release?.();await ending;});
+  assert.equal(s.close(),ending);
+  const response=await fetch(`http://127.0.0.1:${port}/api/config`);
+  assert.equal(response.status,503);assert.deepEqual(await response.json(),{code:'SHUTTING_DOWN'});
+  const status=await new Promise((resolve,reject)=>{
+    const ws=new WebSocket(`ws://127.0.0.1:${port}/ws`);ws.on('error',()=>{});
+    const guard=setTimeout(()=>reject(Error('no WS response during shutdown')),1000);
+    ws.once('unexpected-response',(_req,res)=>{clearTimeout(guard);res.resume();ws.terminate();resolve(res.statusCode);});
+  });
+  assert.equal(status,503);release();await ending;assert.equal(s.server.listening,false);
+});
+
+test('STAB-36/37: repeated close does not extend a stalled cleanup deadline',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','setInterval']});
+  const s=createService({dbPath:':memory:',iceServers:[]});s.wss.close=()=>{};
+  t.after(()=>t.mock.timers.tick(10000));
+  let settled=false,cause;const ending=s.close();ending.then(()=>{settled=true;},error=>{settled=true;cause=error;});
+  t.mock.timers.tick(4999);await Promise.resolve();assert.equal(settled,false);assert.equal(s.close(),ending);
+  t.mock.timers.tick(1);for(let i=0;i<12;i++)await Promise.resolve();
+  assert.equal(settled,true);assert.equal(cause.code,'SHUTDOWN_FAILED');await assert.rejects(ending,error=>error.code==='SHUTDOWN_FAILED');
+});
+
+test('STAB-33/63/R07: an unknown Upgrade returns 404 and closes within 1s',async t=>{
+  const s=await start(t),socket=connect(s.server.address().port,'127.0.0.1');t.after(()=>socket.destroy());await once(socket,'connect');
+  let bytes='',closedAt;socket.on('data',data=>{bytes+=data;});socket.once('close',()=>{closedAt=performance.now();});
+  const started=performance.now();socket.write('GET /unused-upgrade HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n');
+  await new Promise(resolve=>setTimeout(resolve,1000));
+  assert.match(bytes,/^HTTP\/1\.1 404/);assert.equal(typeof closedAt,'number');assert.ok(closedAt-started<=1000);assert.equal(socket.destroyed,true);
 });

@@ -4,11 +4,13 @@
 
 Usar tlc-spec-driven pelo MCP Agent Skills e seu ciclo de Execute: teste derivado da spec, implementação mínima, gate, revisão de adequação e commit atômico. Este protocolo pertence ao plano histórico de oito entregáveis; não é prova de autorização daquela execução nem de atendimento integral da spec. Verificador independente obrigatório para o fechamento funcional.
 
-**Design:** [design.md](design.md). **Status:** In Progress no registro histórico, pausado e sem certificação integral STAB.
+**Design:** [design.md](design.md). **Status:** In Progress, retomada autorizada em 2026-10-26, sem certificação integral STAB. Oito entregáveis, execução inline; preservar os resultados históricos e validar o que falta, sem reimplementar capacidades já presentes.
 
 **Reconciliação em 2026-10-25:** T1–T6 abaixo preservam as marcas e gates relatados pelo autor, nos commits `5c1a05a`, `ae07a55`, `7d24f4b`, `5626a06`, `d456168` e `dc8d7a1`, respectivamente. A spec corrigiu a atribuição original de autorização; nenhuma marca equivale a Verified dos 68 STAB. T7/T8 continuam incompletas neste plano: BUILD verificou parte de seus resultados em escopo próprio, sem fechar automaticamente seus requisitos transversais. Não refazer integrações já verificadas nem marcar esses itens completos apenas por essa sobreposição.
 
-A autorização atual é revisão documental seguida de estabilização pela sessão nova, conforme C6 da [spec](spec.md) e [Handoff](../../STATE.md). O recorte posterior de captura/saída está nas nove [tarefas MEDIA](../captura-midia-saida/tasks.md); T1–T8 têm execução e evidência no código `018019c`, ainda sem Verifier, e T9 física não foi executada. Isso não certifica os 68 STAB nem fecha automaticamente T7/T8 abaixo. Reconciliar gaps e cobertura entre os dois planos; não executar duas soluções de tela em paralelo. Gates e contagens dos itens históricos abaixo preservam suas referências originais.
+A autorização atual é revisão documental seguida de estabilização pela sessão nova, conforme C6 da [spec](spec.md) e [Handoff](../../STATE.md). O recorte posterior de captura/saída está nas nove [tarefas MEDIA](../captura-midia-saida/tasks.md): T1–T7 e R1–R5 foram executadas; a rodada independente 2 repetiu 80 testes e 16 gates, com sensor 6/6 por asserção e relatório em fechamento. T9 permanece pendente por indisponibilidade explícita de hardware/operadores. Isso não certifica os 68 STAB nem fecha automaticamente T7/T8 abaixo. Gates e contagens históricos continuam vinculados aos respectivos commits.
+
+**Retomada STAB:** reutilizar os testes existentes e a evidência MEDIA somente onde a asserção comprovar o AC. Primeiro completar as conjunções de mensagens e encerramento nos proprietários T3/T5; depois fechar a evidência desktop T7 e a avaliação transversal T8. Sem dependências novas, refatoração geral ou TypeScript. Correções de adequação retornam ao proprietário e têm teste/gate/commit próprios. O Verifier final deriva os 68 ACs e injeta os sete comportamentos R01–R07 para STAB-63; não conta erro de import, timeout de helper ou reprodução histórica como aprovação.
 
 ## Test Coverage Matrix
 
@@ -87,6 +89,7 @@ T5 -> T6 -> T7 -> T8
 **Done when**:
 - [x] Destino, recibos/deduplicação, limite de chamada, saída com cota esgotada e histórico legado passam.
 - [x] Upgrade desconhecido e close concorrente não bloqueiam encerramento; falhas de entrega não perdem commit. Gate: 26/26 testes e build; T3 em evidence.md.
+- [x] Retomada: resultados explícitos de conflito em outra sala, texto recusado sem gravação, HTTP/WS 503 durante fechamento atendível, deadline original de 5 s sob limpeza suspensa e 404/socket encerrado em 1 s. Full 85/85 PASS, cinco testes novos sem mudança de produto; [adequação R1](execution.md#r1--t3--mensagens-persistidas-e-encerramento-do-serviço). Asserções de resultado antes de qualquer espera que esconderia R07 por watchdog. Commit correspondente é o que contém esta atualização.
 **Tests**: integration em tests/server.test.js e tests/service.test.js; adaptar somente o helper de protocolo dos três testes existentes.
 **Gate**: full
 
@@ -115,6 +118,7 @@ T5 -> T6 -> T7 -> T8
 **Done when**:
 - [x] Nenhuma resposta antiga altera a sessão atual; handshake sem hello termina em timeout.
 - [x] Texto e operação sobrevivem à troca/reconexão na execução; reenvio reconcilia pelo recibo. Gate: 39/39 testes e build; T5 em evidence.md.
+- [ ] Retomada: falha de transporte preserva texto integral; recibo atrasado não muda a sala atual; todas as fases A1 terminam no limite e permitem nova tentativa. R04/R05 devem falhar por asserção de resultado no sensor.
 **Tests**: unit em tests/session.test.js com transporte controlado.
 **Gate**: quick
 
@@ -143,6 +147,7 @@ T5 -> T6 -> T7 -> T8
 **Done when**:
 - [ ] Reinício com outra porta preserva preferências; outro host do perfil é recusado.
 - [ ] Frame alheio/câmera/IPC inválido não obtém capacidade e fechamento cancela picker.
+- [ ] Retomada: configuração ICE efetiva desktop/servidor equivalente e diagnóstico de falha de playback com correlação disponível e sem conteúdo sensível, além dos resultados já reutilizáveis de perfil/permissão.
 **Tests**: integration/e2e em tests/desktop-policy.test.js e scripts/desktop-smoke.mjs.
 **Gate**: build
 

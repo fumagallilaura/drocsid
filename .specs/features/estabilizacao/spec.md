@@ -6,6 +6,8 @@
 
 ## Problem Statement
 
+**Retomada em 2026-10-26:** a continuidade autorizada reutiliza a implementação existente e completa evidência nos proprietários. Estados Execute/Implementing na rastreabilidade registram essa execução atual, sem alterar os textos dos 68 ACs ou promover aprovação MEDIA/BUILD a Verified STAB. Ver [execução atual](execution.md).
+
 O Conversa oferece texto, voz e tela em um protótipo desktop Windows. A revisão dessa referência registrou 26 achados, incluindo capturas sem controle, mensagens enviadas à sala errada, perda de texto e recursos que impedem o servidor de terminar. Esta especificação define a estabilização para testes com pessoas de confiança. Alterações locais posteriores à revisão ainda precisam de verificação contra estes requisitos.
 
 ## Goals
@@ -348,25 +350,25 @@ As marcas T1–T6 no [plano histórico](tasks.md) são relatos do autor com comm
 | STAB-68 | US2 | R03, R06, R13 | src/rtc.js:119; server/service.js:95 | Specify | Pending |
 | STAB-17 | US3 | R04 | src/main.jsx:101; src/main.jsx:144 | Specify | Pending |
 | STAB-18 | US3 | R04, R05, R13 | src/main.jsx:144; server/service.js:75 | Specify | Pending |
-| STAB-19 | US3 | R04 | server/service.js:72 | Specify | Pending |
+| STAB-19 | US3 | R04 | server/service.js:72 | Execute | Implementing |
 | STAB-20 | US3 | R04, R05 | src/main.jsx:78; src/main.jsx:120 | Specify | Pending |
-| STAB-21 | US3 | R05, R13, R16 | server/service.js:75 | Specify | Pending |
+| STAB-21 | US3 | R05, R13, R16 | server/service.js:75 | Execute | Implementing |
 | STAB-22 | US3 | R05 | src/main.jsx:46; src/main.jsx:144 | Specify | Pending |
-| STAB-23 | US3 | R05, R13 | server/service.js:75; src/main.jsx:87 | Specify | Pending |
-| STAB-24 | US3 | R05, R13 | server/service.js:72 | Specify | Pending |
+| STAB-23 | US3 | R05, R13 | server/service.js:75; src/main.jsx:87 | Execute | Implementing |
+| STAB-24 | US3 | R05, R13 | server/service.js:72 | Execute | Implementing |
 | STAB-25 | US3 | R05, R16, R25 | server/service.js:76; server/service.js:107 | Specify | Pending |
 | STAB-26 | US3 | R05, R16 | server/service.js:11; tests/server.test.js:62 | Specify | Pending |
-| STAB-27 | US3 | R05, R13 | server/service.js:73; src/main.jsx:144 | Specify | Pending |
+| STAB-27 | US3 | R05, R13 | server/service.js:73; src/main.jsx:144 | Execute | Implementing |
 | STAB-28 | US4 | R06 | server/service.js:59; server/service.js:92 | Specify | Pending |
 | STAB-29 | US4 | R06, R13 | server/service.js:92 | Specify | Pending |
 | STAB-30 | US4 | R06, R13 | server/service.js:92; src/main.jsx:107 | Specify | Pending |
 | STAB-31 | US4 | R01, R20, R26 | src/main.jsx:52; electron/main.js:44 | Specify | Pending |
 | STAB-32 | US4 | R06, R14 | server/service.js:109; server/service.js:111 | Specify | Pending |
-| STAB-33 | US5 | R07 | server/service.js:42 | Specify | Pending |
+| STAB-33 | US5 | R07 | server/service.js:42 | Execute | Implementing |
 | STAB-34 | US5 | R07, R18 | server/index.js:18 | Specify | Pending |
-| STAB-35 | US5 | R07, R18 | server/service.js:42; server/service.js:118 | Specify | Pending |
-| STAB-36 | US5 | R07 | server/service.js:118; electron/main.js:72; server/index.js:25 | Specify | Pending |
-| STAB-37 | US5 | R07, R25 | server/service.js:118; server/index.js:25 | Specify | Pending |
+| STAB-35 | US5 | R07, R18 | server/service.js:42; server/service.js:118 | Execute | Implementing |
+| STAB-36 | US5 | R07 | server/service.js:118; electron/main.js:72; server/index.js:25 | Execute | Implementing |
+| STAB-37 | US5 | R07, R25 | server/service.js:118; server/index.js:25 | Execute | Implementing |
 | STAB-38 | US6 | R02, R05, R10 | src/main.jsx:61; src/main.jsx:68 | Specify | Pending |
 | STAB-39 | US6 | R01, R04, R13, R14 | src/main.jsx:69; src/main.jsx:92; src/rtc.js:72 | Specify | Pending |
 | STAB-40 | US6 | R13 | server/service.js:61; src/main.jsx:69 | Specify | Pending |
