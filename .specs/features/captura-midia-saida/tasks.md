@@ -414,7 +414,8 @@ MCP 0.17.14 (`f465b52756b8`) limita o campo Mutations a cinco. Os sensores adici
 Proof: node scripts/startup-audio-check.mjs
 
 **C2** - WHILE uma aquisição de um tipo estiver pendente na mesma tentativa o Conversa SHALL reutilizar ou recusar pedidos concorrentes desse tipo sem iniciar outra aquisição. (MEDIA-02)
-Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:|MEDIA\-02/09/10/28:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:" tests/rtc.test.js
 
 **C3** - IF uma aquisição resolver após o terminal de sua tentativa THEN o Conversa SHALL liberar todas as tracks retornadas dentro de A1, sem incorporá-las à tentativa nova. (MEDIA-03)
 Proof: node --test --test-name-pattern="MEDIA\-03/28:" tests/rtc.test.js
@@ -423,10 +424,16 @@ Proof: node --test --test-name-pattern="MEDIA\-03/28:" tests/rtc.test.js
 Proof: node --test --test-name-pattern="MEDIA\-04/28:" tests/rtc.test.js
 
 **C5** - WHILE não houver admissão confirmada da tentativa vigente o Conversa SHALL impedir publicação de sua captura provisória aos outros participantes. (MEDIA-05)
-Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:|MEDIA\-05/06/28:|MEDIA\-05/21/28:|MEDIA\-05/24/25/28:|MEDIA\-05/24/28:|MEDIA\-05/28:" tests/protocol.test.js tests/rtc.test.js tests/service.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/06/28:" tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/21/28:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:" tests/protocol.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/24/28:" tests/service.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/28:" tests/session.test.js
 
 **C6** - IF a admissão for recusada ou exceder os 8 s de A2 THEN o Conversa SHALL encerrar a tentativa e liberar sua captura provisória dentro de A1, qualquer que seja o código ou idioma do erro. (MEDIA-06)
-Proof: node --test --test-name-pattern="MEDIA\-05/06/28:|MEDIA\-06/31:" tests/rtc.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/06/28:" tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-06/31:" tests/rtc.test.js
 
 **C7** - WHILE aquisição ou admissão estiver pendente o Conversa SHALL oferecer cancelamento por teclado que torne a tentativa terminal dentro de A1 sem aguardar a permissão nativa. (MEDIA-07)
 Proof: node scripts/desktop-smoke.mjs
@@ -435,7 +442,8 @@ Proof: node scripts/desktop-smoke.mjs
 Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
 
 **C9** - WHEN iniciar cada compartilhamento THEN o Conversa SHALL exigir escolha explícita de uma fonte pertencente à lista daquele pedido, sem reutilizar seleção antiga. (MEDIA-09)
-Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:|MEDIA\-09/11/28:" tests/desktop-policy.test.js tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-09/11/28:" tests/desktop-policy.test.js
 Proof: node scripts/desktop-capture-check.mjs
 
 **C10** - WHEN obter mídia de tela THEN o Conversa SHALL incluir áudio do sistema somente conforme o consentimento de A6, informando que o áudio pode abranger aplicativos além da janela selecionada. (MEDIA-10)
@@ -453,28 +461,39 @@ Proof: node scripts/desktop-capture-check.mjs
 Proof: node scripts/desktop-capture-check.mjs
 
 **C14** - IF qualquer publicação falhar ou não concluir nos 8 s de A2 THEN o Conversa SHALL abortar o novo compartilhamento e liberar todas as suas tracks dentro de A1. (MEDIA-14)
-Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:|MEDIA\-14/17/18:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-14/17/18:" tests/rtc.test.js
 
 **C15** - WHEN abortar uma publicação parcial THEN o Conversa SHALL cessar o envio dessa captura por todos os peers locais dentro de A1, inclusive com remoção rejeitada ou publicação que resolva depois do aborto. (MEDIA-15)
 Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:" tests/rtc.test.js
 
 **C16** - WHEN o usuário parar a tela ou o sistema encerrar sua fonte THEN o Conversa SHALL encerrar todas as tracks de tela e áudio do sistema dessa operação dentro de A1. (MEDIA-16)
-Proof: node --test --test-name-pattern="MEDIA\-16/17/19:|MEDIA\-16/17/21/24:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-16/17/19:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-16/17/21/24:" tests/rtc.test.js
 
 **C17** - WHEN a tela terminar, inclusive por parada repetida ou falha de sender/notificação THEN o Conversa SHALL convergir dentro de A1 para estado local sem compartilhamento e controles utilizáveis. (MEDIA-17)
-Proof: node --test --test-name-pattern="MEDIA\-14/17/18:|MEDIA\-16/17/19:|MEDIA\-16/17/21/24:|MEDIA\-17/19/31:|MEDIA\-17/26:|MEDIA\-17/28:" tests/rtc.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-14/17/18:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-16/17/19:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-16/17/21/24:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-17/19/31:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-17/26:" tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-17/28:" tests/rtc.test.js tests/session.test.js
 
 **C18** - WHEN o compartilhamento terminar com transporte saudável THEN o Conversa SHALL confirmar aos participantes o estado sem compartilhamento em até 8 s de A2. (MEDIA-18)
 Proof: node --test --test-name-pattern="MEDIA\-14/17/18:" tests/rtc.test.js
 
 **C19** - IF iniciar ou parar tela falhar THEN o Conversa SHALL preservar a voz anterior nos peers saudáveis conforme o vocabulário, sem encerrar a chamada inteira. (MEDIA-19)
-Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:|MEDIA\-16/17/19:|MEDIA\-17/19/31:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-16/17/19:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-17/19/31:" tests/rtc.test.js
 
 **C20** - WHILE a seleção ou publicação estiver pendente o Conversa SHALL apresentar esse estado sem indicar publicação concluída ou mídia remota pronta apenas por presença de participantes. (MEDIA-20)
 Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:" tests/rtc.test.js
 
 **C21** - WHEN sair ou cancelar a chamada THEN o Conversa SHALL liberar todas as capturas já adquiridas e fechar os peers dessa tentativa dentro de A1, independentemente da confirmação da rede. (MEDIA-21)
-Proof: node --test --test-name-pattern="MEDIA\-05/21/28:|MEDIA\-16/17/21/24:|MEDIA\-21/26/31:" tests/rtc.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/21/28:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-16/17/21/24:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-21/26/31:" tests/session.test.js
 Proof: node scripts/desktop-lifecycle-check.mjs
 
 **C22** - WHEN solicitar troca de sala de texto THEN o Conversa SHALL tornar a chamada anterior terminal sem aguardar a confirmação da nova sala. (MEDIA-22)
@@ -484,19 +503,40 @@ Proof: node scripts/desktop-lifecycle-check.mjs
 Proof: node scripts/desktop-lifecycle-check.mjs
 
 **C24** - WHEN repetir saída da mesma tentativa THEN o serviço SHALL devolver seu estado terminal sem erro de recurso já encerrado nem efeito sobre uma tentativa posterior. (MEDIA-24)
-Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:|MEDIA\-05/24/28:|MEDIA\-16/17/21/24:|MEDIA\-24/28/31:|MEDIA\-24/28:" tests/protocol.test.js tests/rtc.test.js tests/service.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:" tests/protocol.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/24/28:" tests/service.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-16/17/21/24:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-24/28/31:" tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-24/28:" tests/service.test.js
 
 **C25** - WHEN receber saída válida ou parada válida de tela da tentativa vigente THEN o serviço SHALL processá-la mesmo com a cota de mensagens ou sinalização esgotada. (MEDIA-25)
-Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:|MEDIA\-25/26:" tests/protocol.test.js tests/service.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:" tests/protocol.test.js
+Proof: node --test --test-name-pattern="MEDIA\-25/26:" tests/service.test.js
 
 **C26** - WHEN receber saída válida THEN o serviço SHALL liberar a vaga e representar o participante fora da chamada e sem compartilhamento em até 1 s de A4, com confirmação correlacionada. (MEDIA-26)
-Proof: node --test --test-name-pattern="MEDIA\-17/26:|MEDIA\-21/26/31:|MEDIA\-25/26:|MEDIA\-26/28:" tests/protocol.test.js tests/service.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-17/26:" tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-21/26/31:" tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-25/26:" tests/service.test.js
+Proof: node --test --test-name-pattern="MEDIA\-26/28:" tests/protocol.test.js
 
 **C27** - IF perder o transporte sem saída confirmada THEN o serviço SHALL liberar a participação em até 60 s de A4 sem exigir reconexão do cliente. (MEDIA-27)
 Proof: node --test --test-name-pattern="MEDIA\-27:" tests/service.test.js
 
 **C28** - IF confirmação, pedido de admissão, inventário de fontes, sinalização ou presença de uma tentativa terminal chegar atrasado THEN o receptor SHALL descartá-lo sem reativar captura, seletor, reprodução ou ocupação e sem alterar a tentativa nova. (MEDIA-28)
-Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:|MEDIA\-03/28:|MEDIA\-04/28:|MEDIA\-05/06/28:|MEDIA\-05/21/28:|MEDIA\-05/24/25/28:|MEDIA\-05/24/28:|MEDIA\-05/28:|MEDIA\-09/11/28:|MEDIA\-17/28:|MEDIA\-24/28/31:|MEDIA\-24/28:|MEDIA\-26/28:|MEDIA\-28:" tests/desktop-policy.test.js tests/protocol.test.js tests/rtc.test.js tests/service.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-03/28:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-04/28:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/06/28:" tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/21/28:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:" tests/protocol.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/24/28:" tests/service.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-05/28:" tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-09/11/28:" tests/desktop-policy.test.js
+Proof: node --test --test-name-pattern="MEDIA\-17/28:" tests/rtc.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-24/28/31:" tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-24/28:" tests/service.test.js
+Proof: node --test --test-name-pattern="MEDIA\-26/28:" tests/protocol.test.js
+Proof: node --test --test-name-pattern="MEDIA\-28:" tests/rtc.test.js tests/session.test.js
 
 **C29** - WHILE estiver fora de chamada admitida ou com “Silenciar áudio” ativo o desktop SHALL bloquear a reprodução de mídia, inclusive depois de recarga e eventos tardios. (MEDIA-29)
 Proof: node scripts/desktop-smoke.mjs
@@ -505,7 +545,11 @@ Proof: node scripts/desktop-smoke.mjs
 Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
 
 **C31** - WHEN uma operação de admissão, captura, publicação ou saída falhar THEN o Conversa SHALL expor categoria estável, fase e identificação da operação disponível, distinguindo cancelamento voluntário sem depender do texto traduzido. (MEDIA-31)
-Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:|MEDIA\-06/31:|MEDIA\-17/19/31:|MEDIA\-21/26/31:|MEDIA\-24/28/31:" tests/rtc.test.js tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-06/31:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-17/19/31:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="MEDIA\-21/26/31:" tests/session.test.js
+Proof: node --test --test-name-pattern="MEDIA\-24/28/31:" tests/session.test.js
 Proof: node scripts/desktop-smoke.mjs
 
 **C32** - WHEN registrar diagnóstico de mídia THEN o Conversa SHALL omitir áudio/vídeo, thumbnails, títulos de fontes, SDP, candidatos ICE, credenciais e conteúdo de mensagens, mantendo apenas metadados técnicos de correlação e versão. (MEDIA-32)

@@ -1,0 +1,30 @@
+[
+  {
+    "label": "F1 normalized name bound",
+    "file": "shared/protocol.js",
+    "old": "const name = value => typeof value === 'string' && string(value.trim(), 32);",
+    "new": "const name = value => typeof value === 'string' && string(value, 32);",
+    "proof": "node --test --test-name-pattern=\"STAB-40: received\" tests/protocol.test.js"
+  },
+  {
+    "label": "F2 local protocol diagnostic",
+    "file": "server/service.js",
+    "old": "    logFailure(phase,code,requestId,cause||new ProtocolError(code));",
+    "new": "    // omitted diagnostic",
+    "proof": "node --test --test-name-pattern=\"STAB-67: validation\" tests/service.test.js"
+  },
+  {
+    "label": "F3 per candidate lifetime",
+    "file": "src/rtc.js",
+    "old": "    entry.candidates = entry.candidates.filter(c => this.clock.now() - c.at < LIMITS.candidateMs);",
+    "new": "    entry.candidates = entry.candidates;",
+    "proof": "node --test --test-name-pattern=\"STAB-43: each queued\" tests/rtc.test.js"
+  },
+  {
+    "label": "F4 interior history order",
+    "file": "server/service.js",
+    "old": "ORDER BY sequence DESC LIMIT 200) ORDER BY sequence",
+    "new": "ORDER BY sequence DESC LIMIT 200) ORDER BY CASE WHEN sequence % 2 = 0 THEN sequence + 1 ELSE sequence - 1 END",
+    "proof": "node --test --test-name-pattern=\"STAB-53/54/55/61:\" tests/service.test.js"
+  }
+]
