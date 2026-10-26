@@ -1,5 +1,8 @@
 # Estabilização do Conversa Specification
 
+**Approved**: 2026-10-26 - user: "Prossiga autonomamente pelas tarefas autorizadas, com testes de resultado e gates antes de marcar conclusão."
+
+
 **Data:** 2026-10-24. **Escopo:** Large/Complex. **Estado:** spec elaborada e validada na etapa Specify. Os 68 critérios descrevem o resultado exigido e permanecem sem certificação integral. O pedido posterior de concluir o build originou a entrega separada [build-confiavel](../build-confiavel/spec.md), aprovada em seu escopo local; não equivale a executar ou aprovar toda esta spec.
 
 **Reconciliação em 2026-10-25:** C3 descreve o limite da entrega original; C5 autorizou BUILD depois dela. A nova autorização C6 determina revisão documental primeiro e continuidade da estabilização pela sessão nova depois. Não houve implementação nesta revisão. O [relatório de coerência](../../../docs/revisao-coerencia-documental.md) registra as correções e o [Handoff](../../STATE.md) define o próximo passo. Os textos dos 68 ACs, prazos e estados Pending foram preservados.

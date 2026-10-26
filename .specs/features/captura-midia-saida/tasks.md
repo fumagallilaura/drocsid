@@ -1,5 +1,8 @@
 # Captura de mídia e saída da chamada Tasks
 
+**Approved**: 2026-10-26 - user: "Prossiga autonomamente pelas tarefas autorizadas, com testes de resultado e gates antes de marcar conclusão."
+
+
 ## Execution Protocol (MANDATORY -- do not skip)
 
 Implement these tasks with the `tlc-spec-driven` skill: **activate it by name and follow its Execute flow and Critical Rules.** Do not search for skill files by filesystem path. The skill is the source of truth for the full flow (per-task cycle, sub-agent delegation, adequacy review, Verifier, discrimination sensor).
@@ -305,7 +308,7 @@ T8 -> T9
 
 **Rodada independente 2 encerrada em 26/10:** [validation-round2.md](validation-round2.md), range `38062db..2c9d60e`. Build 16/16 e sensor 6/6 por valor passaram, 80/80 Node. A candidata nova acima superou o bloqueio histórico sem mudar política/launcher. FAIL global: 28 ACs automáticos integrais, quatro parciais pela conjunção stop+leave e dois físicos ausentes. A conjunção retorna a T4/T1 como R6 antes da rodada 3; não houve novo defeito funcional demonstrado.
 
-**R6 (T4/T1), 26/10**: stop-first/leave-first, remoção e confirmação retidas, inventário antigo ended/peers closed em A1, prazo não renovado e reentrada preservada após conclusões antigas. Um teste novo, sem mudança de produto; Full 86/86 + build + smoke source PASS (inclui cinco testes do lote STAB). [Adequação](execution.md#r6--parar-tela-e-sair-com-operações-sobrepostas). A rodada 3 independente deve reverificar a conjunção antes de aprovar o subconjunto automatizado; T9 mantém a feature globalmente incompleta.
+**R6 (T4/T1), 26/10**: stop-first/leave-first, remoção e confirmação retidas, inventário antigo ended/peers closed em A1, prazo não renovado e reentrada preservada após conclusões antigas. Um teste novo, sem mudança de produto; Full 86/86 + build + smoke source PASS (inclui cinco testes do lote STAB). [Adequação](execution.md#r6--parar-tela-e-sair-com-operações-sobrepostas). A reexecução das provas e dos mutantes independentes deve reverificar a conjunção antes de aprovar o subconjunto automatizado; T9 mantém a feature globalmente incompleta.
 
 #### T9: Registrar a aceitação física com dois PCs
 
@@ -337,7 +340,7 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9
 
 Fases 1/2/3 contêm 3/4/2 tarefas. Nove tarefas ultrapassam o limiar de um lote da skill: antes de Execute, oferecer execução inline ou workers por lotes de fases inteiras, sem auto-spawn. Essa oferta não é necessária para gerar estes documentos. Os MCPs/skills por tarefa já estão especificados conforme o pedido persistente do usuário; confirmar somente ferramentas novas ou recursos realmente ausentes.
 
-Depois do último commit de tarefa, o Verifier fresco obrigatório avalia os 34 ACs sem herdar a conclusão do autor. Injeta pelo menos seis falhas semânticas em scratch isolado, uma por categoria: captura obsoleta, compensação, callback/seleção, terminal anterior à admissão, cota e prazo. Confere detecção por asserção e restaura o scratch. Compara o porcelain real antes/depois, escreve `validation.md` e destila lições apenas por falha fundamentada. Corrigir/reverificar até três iterações; rodar `validate_state.py captura-midia-saida` antes de declarar a feature concluída. Sem T9 aprovado não há PASS integral ou Verified de MEDIA-33/34.
+Depois do último commit de tarefa, o Verifier fresco obrigatório avalia os 34 ACs sem herdar a conclusão do autor. Injeta pelo menos seis falhas semânticas em scratch isolado, uma por categoria: captura obsoleta, compensação, callback/seleção, terminal anterior à admissão, cota e prazo. Confere detecção por asserção e restaura o scratch. Compara o porcelain real antes/depois, escreve `validation.md` e destila lições apenas por falha fundamentada. Registro histórico da revisão 7bed1026351b: até três iterações. A revisão atual não abre terceiro Verifier; reexecutar provas/mutantes e rodar `validate_verification.py captura-midia-saida` antes de declarar a feature concluída. Sem T9 aprovado não há PASS integral ou Verified de MEDIA-33/34.
 
 ## Task Granularity Check
 
@@ -397,3 +400,120 @@ Depois do último commit de tarefa, o Verifier fresco obrigatório avalia os 34 
 34/34 ACs mapeados; os dez edge cases da spec constam dos testes e resultados das tarefas proprietárias. Nenhum AC é marcado como implementado pelo planejamento. A validação estrutural obrigatória é `validate_tasks.py captura-midia-saida --strict`, seguida da conferência semântica das três tabelas acima e da spec.
 
 **Validação documental em 2026-10-25:** spec/tasks --strict PASS, exit 0, zero erros/avisos. Nove tarefas com dependências consistentes, testes e gates; 34/34 ACs mapeados e intactos; nenhum item executado. Código, testes e artefatos BUILD permanecem inalterados.
+
+## Checks
+
+Uma claim por AC, sem alterar seu texto. Provas Node selecionam testes nomeados; checkers desktop exercitam controles e resultados da integração. Mais de uma camada pode ser necessária. Node não possui adapter agrupado nesta revisão; cada comando roda diretamente.
+
+**Build**: npm.cmd test; npm.cmd run build; node scripts/desktop-smoke.mjs
+**Mutations**: 5
+
+MCP 0.17.14 (`f465b52756b8`) limita o campo Mutations a cinco. Os sensores adicionais do plano continuam obrigatórios: seis categorias MEDIA e sete regressões STAB R01–R07, sem reduzir os mínimos anteriores. MEDIA preserva os dois pareceres independentes; R6 retorna às provas e aos mutantes existentes, sem terceiro Verifier na revisão atual. STAB recebe seu primeiro Verifier depois das provas. Sem captura visual vinculante; UI exercitada pelos checkers. Não há lint/typecheck no repositório e TypeScript não começa agora.
+
+**C1** - WHEN abrir ou recarregar fora de uma chamada THEN o Conversa SHALL permanecer sem iniciar captura de microfone, tela ou áudio do sistema. (MEDIA-01)
+Proof: node scripts/startup-audio-check.mjs
+
+**C2** - WHILE uma aquisição de um tipo estiver pendente na mesma tentativa o Conversa SHALL reutilizar ou recusar pedidos concorrentes desse tipo sem iniciar outra aquisição. (MEDIA-02)
+Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:|MEDIA\-02/09/10/28:" tests/rtc.test.js
+
+**C3** - IF uma aquisição resolver após o terminal de sua tentativa THEN o Conversa SHALL liberar todas as tracks retornadas dentro de A1, sem incorporá-las à tentativa nova. (MEDIA-03)
+Proof: node --test --test-name-pattern="MEDIA\-03/28:" tests/rtc.test.js
+
+**C4** - WHILE o controlador estiver definitivamente fechado o Conversa SHALL recusar ações de captura antes de invocar a API de mídia. (MEDIA-04)
+Proof: node --test --test-name-pattern="MEDIA\-04/28:" tests/rtc.test.js
+
+**C5** - WHILE não houver admissão confirmada da tentativa vigente o Conversa SHALL impedir publicação de sua captura provisória aos outros participantes. (MEDIA-05)
+Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:|MEDIA\-05/06/28:|MEDIA\-05/21/28:|MEDIA\-05/24/25/28:|MEDIA\-05/24/28:|MEDIA\-05/28:" tests/protocol.test.js tests/rtc.test.js tests/service.test.js tests/session.test.js
+
+**C6** - IF a admissão for recusada ou exceder os 8 s de A2 THEN o Conversa SHALL encerrar a tentativa e liberar sua captura provisória dentro de A1, qualquer que seja o código ou idioma do erro. (MEDIA-06)
+Proof: node --test --test-name-pattern="MEDIA\-05/06/28:|MEDIA\-06/31:" tests/rtc.test.js tests/session.test.js
+
+**C7** - WHILE aquisição ou admissão estiver pendente o Conversa SHALL oferecer cancelamento por teclado que torne a tentativa terminal dentro de A1 sem aguardar a permissão nativa. (MEDIA-07)
+Proof: node scripts/desktop-smoke.mjs
+
+**C8** - IF o microfone for negado ou indisponível THEN o Conversa SHALL permitir entrada em escuta e compartilhamento após admissão válida, sem track de microfone nem novas solicitações de microfone sem ação explícita. (MEDIA-08)
+Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
+
+**C9** - WHEN iniciar cada compartilhamento THEN o Conversa SHALL exigir escolha explícita de uma fonte pertencente à lista daquele pedido, sem reutilizar seleção antiga. (MEDIA-09)
+Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:|MEDIA\-09/11/28:" tests/desktop-policy.test.js tests/rtc.test.js
+Proof: node scripts/desktop-capture-check.mjs
+
+**C10** - WHEN obter mídia de tela THEN o Conversa SHALL incluir áudio do sistema somente conforme o consentimento de A6, informando que o áudio pode abranger aplicativos além da janela selecionada. (MEDIA-10)
+Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:" tests/rtc.test.js
+Proof: node scripts/desktop-capture-check.mjs
+
+**C11** - IF câmera, frame secundário, origem alheia ou remetente IPC não autorizado pedir uma capacidade de mídia privilegiada THEN o desktop SHALL negá-la, mantendo essas capacidades restritas ao frame principal local confiável. (MEDIA-11)
+Proof: node --test --test-name-pattern="MEDIA\-09/11/28:" tests/desktop-policy.test.js
+Proof: node scripts/desktop-capture-check.mjs
+
+**C12** - WHEN um pedido nativo de seleção for concluído por escolha, cancelamento, timeout, recarga ou fechamento THEN o host SHALL resolvê-lo exatamente uma vez, com a fonte válida ou cancelamento. (MEDIA-12)
+Proof: node scripts/desktop-capture-check.mjs
+
+**C13** - IF o seletor for cancelado, falhar, expirar nos 60 s de A2 ou devolver fonte inválida THEN o Conversa SHALL terminar a operação sem conservar captura de tela ou áudio do sistema. (MEDIA-13)
+Proof: node scripts/desktop-capture-check.mjs
+
+**C14** - IF qualquer publicação falhar ou não concluir nos 8 s de A2 THEN o Conversa SHALL abortar o novo compartilhamento e liberar todas as suas tracks dentro de A1. (MEDIA-14)
+Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:|MEDIA\-14/17/18:" tests/rtc.test.js
+
+**C15** - WHEN abortar uma publicação parcial THEN o Conversa SHALL cessar o envio dessa captura por todos os peers locais dentro de A1, inclusive com remoção rejeitada ou publicação que resolva depois do aborto. (MEDIA-15)
+Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:" tests/rtc.test.js
+
+**C16** - WHEN o usuário parar a tela ou o sistema encerrar sua fonte THEN o Conversa SHALL encerrar todas as tracks de tela e áudio do sistema dessa operação dentro de A1. (MEDIA-16)
+Proof: node --test --test-name-pattern="MEDIA\-16/17/19:|MEDIA\-16/17/21/24:" tests/rtc.test.js
+
+**C17** - WHEN a tela terminar, inclusive por parada repetida ou falha de sender/notificação THEN o Conversa SHALL convergir dentro de A1 para estado local sem compartilhamento e controles utilizáveis. (MEDIA-17)
+Proof: node --test --test-name-pattern="MEDIA\-14/17/18:|MEDIA\-16/17/19:|MEDIA\-16/17/21/24:|MEDIA\-17/19/31:|MEDIA\-17/26:|MEDIA\-17/28:" tests/rtc.test.js tests/session.test.js
+
+**C18** - WHEN o compartilhamento terminar com transporte saudável THEN o Conversa SHALL confirmar aos participantes o estado sem compartilhamento em até 8 s de A2. (MEDIA-18)
+Proof: node --test --test-name-pattern="MEDIA\-14/17/18:" tests/rtc.test.js
+
+**C19** - IF iniciar ou parar tela falhar THEN o Conversa SHALL preservar a voz anterior nos peers saudáveis conforme o vocabulário, sem encerrar a chamada inteira. (MEDIA-19)
+Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:|MEDIA\-16/17/19:|MEDIA\-17/19/31:" tests/rtc.test.js
+
+**C20** - WHILE a seleção ou publicação estiver pendente o Conversa SHALL apresentar esse estado sem indicar publicação concluída ou mídia remota pronta apenas por presença de participantes. (MEDIA-20)
+Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:" tests/rtc.test.js
+
+**C21** - WHEN sair ou cancelar a chamada THEN o Conversa SHALL liberar todas as capturas já adquiridas e fechar os peers dessa tentativa dentro de A1, independentemente da confirmação da rede. (MEDIA-21)
+Proof: node --test --test-name-pattern="MEDIA\-05/21/28:|MEDIA\-16/17/21/24:|MEDIA\-21/26/31:" tests/rtc.test.js tests/session.test.js
+Proof: node scripts/desktop-lifecycle-check.mjs
+
+**C22** - WHEN solicitar troca de sala de texto THEN o Conversa SHALL tornar a chamada anterior terminal sem aguardar a confirmação da nova sala. (MEDIA-22)
+Proof: node scripts/desktop-lifecycle-check.mjs
+
+**C23** - WHEN desconectar, desmontar, recarregar ou fechar a janela THEN o Conversa SHALL executar a liberação terminal de suas capturas e seleções pendentes conforme A1. (MEDIA-23)
+Proof: node scripts/desktop-lifecycle-check.mjs
+
+**C24** - WHEN repetir saída da mesma tentativa THEN o serviço SHALL devolver seu estado terminal sem erro de recurso já encerrado nem efeito sobre uma tentativa posterior. (MEDIA-24)
+Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:|MEDIA\-05/24/28:|MEDIA\-16/17/21/24:|MEDIA\-24/28/31:|MEDIA\-24/28:" tests/protocol.test.js tests/rtc.test.js tests/service.test.js tests/session.test.js
+
+**C25** - WHEN receber saída válida ou parada válida de tela da tentativa vigente THEN o serviço SHALL processá-la mesmo com a cota de mensagens ou sinalização esgotada. (MEDIA-25)
+Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:|MEDIA\-25/26:" tests/protocol.test.js tests/service.test.js
+
+**C26** - WHEN receber saída válida THEN o serviço SHALL liberar a vaga e representar o participante fora da chamada e sem compartilhamento em até 1 s de A4, com confirmação correlacionada. (MEDIA-26)
+Proof: node --test --test-name-pattern="MEDIA\-17/26:|MEDIA\-21/26/31:|MEDIA\-25/26:|MEDIA\-26/28:" tests/protocol.test.js tests/service.test.js tests/session.test.js
+
+**C27** - IF perder o transporte sem saída confirmada THEN o serviço SHALL liberar a participação em até 60 s de A4 sem exigir reconexão do cliente. (MEDIA-27)
+Proof: node --test --test-name-pattern="MEDIA\-27:" tests/service.test.js
+
+**C28** - IF confirmação, pedido de admissão, inventário de fontes, sinalização ou presença de uma tentativa terminal chegar atrasado THEN o receptor SHALL descartá-lo sem reativar captura, seletor, reprodução ou ocupação e sem alterar a tentativa nova. (MEDIA-28)
+Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:|MEDIA\-03/28:|MEDIA\-04/28:|MEDIA\-05/06/28:|MEDIA\-05/21/28:|MEDIA\-05/24/25/28:|MEDIA\-05/24/28:|MEDIA\-05/28:|MEDIA\-09/11/28:|MEDIA\-17/28:|MEDIA\-24/28/31:|MEDIA\-24/28:|MEDIA\-26/28:|MEDIA\-28:" tests/desktop-policy.test.js tests/protocol.test.js tests/rtc.test.js tests/service.test.js tests/session.test.js
+
+**C29** - WHILE estiver fora de chamada admitida ou com “Silenciar áudio” ativo o desktop SHALL bloquear a reprodução de mídia, inclusive depois de recarga e eventos tardios. (MEDIA-29)
+Proof: node scripts/desktop-smoke.mjs
+
+**C30** - WHILE o microfone estiver silenciado o Conversa SHALL impedir a transmissão de fala pela track de microfone, permitindo mantê-la capturada conforme A5 sem apresentar mute como liberação do dispositivo. (MEDIA-30)
+Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
+
+**C31** - WHEN uma operação de admissão, captura, publicação ou saída falhar THEN o Conversa SHALL expor categoria estável, fase e identificação da operação disponível, distinguindo cancelamento voluntário sem depender do texto traduzido. (MEDIA-31)
+Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:|MEDIA\-06/31:|MEDIA\-17/19/31:|MEDIA\-21/26/31:|MEDIA\-24/28/31:" tests/rtc.test.js tests/session.test.js
+Proof: node scripts/desktop-smoke.mjs
+
+**C32** - WHEN registrar diagnóstico de mídia THEN o Conversa SHALL omitir áudio/vídeo, thumbnails, títulos de fontes, SDP, candidatos ICE, credenciais e conteúdo de mensagens, mantendo apenas metadados técnicos de correlação e versão. (MEDIA-32)
+Proof: node --test --test-name-pattern="MEDIA\-32:" tests/service.test.js
+Proof: node scripts/desktop-smoke.mjs
+
+**C33** - WHEN executar os três ciclos físicos de abertura/recarga fora de chamada definidos em A7 THEN o Conversa SHALL permanecer sem captura ou reprodução de mídia não solicitada durante os 30 s de cada ciclo, com resultado de ruído registrado por ciclo. (MEDIA-33)
+Proof: node -e "process.stderr.write('T9 NAO EXECUTADA: PCs Windows, hardware real e operadores indisponiveis'); process.exit(1)"
+
+**C34** - WHEN executar a sessão física de 10 minutos de A7 THEN o Conversa SHALL completar o protocolo físico abaixo com 5/5 frases compreendidas em cada sentido nas duas medições e todos os passos aprovados dentro dos prazos A1/A2/A4. (MEDIA-34)
+Proof: node -e "process.stderr.write('T9 NAO EXECUTADA: PCs Windows, hardware real e operadores indisponiveis'); process.exit(1)"

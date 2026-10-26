@@ -1,5 +1,8 @@
 # Captura de mídia e saída da chamada Specification
 
+**Approved**: 2026-10-26 - user: "Prossiga autonomamente pelas tarefas autorizadas, com testes de resultado e gates antes de marcar conclusão."
+
+
 **Data:** 2026-10-25. **Escopo:** Large/Complex. **Fase atual:** Execute, T1–T8 concluídas pelo autor, com [evidência automatizada](evidence.md) no código `018019c`; Verifier pendente. MEDIA-01–32 Implementing, MEDIA-33/34 e T9 físicos não executados, nenhum Verified. **Planejamento histórico:** código `1d97d46`, base `cd53044`, Draft para revisão conjunta. A autorização sequencial posterior rege a execução atual; não se reutiliza aquele limite somente documental para interrompê-la.
 
 **Cronologia atualizada em 2026-10-25:** as restrições C3/C4/C6 delimitam as respectivas entregas históricas de spec, planejamento e investigação. Depois delas, C7 autorizou revisão/correção documental e continuidade da estabilização em sequência. A revisão atual não executa tarefas; os nove itens continuam Draft. A sessão nova retoma após o término comprovado da revisão, conferindo código, gates e propostas técnicas. Ver [relatório de coerência](../../../docs/revisao-coerencia-documental.md) e [Handoff](../../STATE.md).

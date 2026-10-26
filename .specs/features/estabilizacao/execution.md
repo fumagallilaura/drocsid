@@ -54,7 +54,7 @@ R3: `8955755`. Nenhuma alteração do host foi necessária. O checker de perfil 
 | AC | Evidência e resultado | Adequação A/B |
 | --- | --- | --- |
 | STAB-50 | `scripts/desktop-profile-check.mjs:31`: standalone.iceServers e embedded.iceServers iguais ao array configurado e entre si, obtidos de dois `/api/config` reais | PASS para configuração válida; parser compartilhado tem limites/tipos próprios em `tests/protocol.test.js` |
-| STAB-45/56 | `scripts/desktop-profile-check.mjs:58`: host adicional exit=1/ALREADY_RUNNING, janelas originais preservadas; `:66`–`:69`: nome/endereço/qualidade restaurados em outra porta; `:74` áudio do sistema inicia off | PASS source, mesmos dados userData temporários |
-| STAB-48 | `scripts/desktop-profile-check.mjs:38` câmera e `:46` iframe retornam NotAllowedError; política/IPC unitários e checker de captura mantêm origem/frame/chave não confiáveis negados | PASS, câmera continua fora do escopo e sem capacidade concedida |
+| STAB-45/56 | `scripts/desktop-profile-check.mjs:58`: host adicional exit=1/ALREADY_RUNNING, janelas originais preservadas; `:65`–`:68`: nome/endereço restaurados em outra porta, `:72` qualidade; `:73` áudio do sistema inicia off | PASS source, mesmos dados userData temporários |
+| STAB-48 | `scripts/desktop-profile-check.mjs:37` câmera e `:45` iframe retornam NotAllowedError; política/IPC unitários e checker de captura mantêm origem/frame/chave não confiáveis negados | PASS, câmera continua fora do escopo e sem capacidade concedida |
 
 Reverso C/D: a comparação nova e o recurso de servidor/cleanup pertencem a STAB-50; as comparações já existentes sustentam as outras linhas. Não há escolha de STUN/TURN de produto; a URL de loopback é só dado de teste, sem credenciais. **89/89**, zero fail/skip/cancelled/todo; Build STAB (Quick + build + smoke source) e perfil source PASS em `test-results/stab-r4`. Adequação do autor R4: PASS; T8 e o Verifier transversal permanecem necessários.
