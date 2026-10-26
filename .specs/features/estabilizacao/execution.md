@@ -66,3 +66,9 @@ Sem mudança de produto. `tests/service.test.js:106` ensaia dois bancos reais: v
 ## R6 / T3 — falha de abertura no bootstrap
 
 STAB-49: `tests/bootstrap.test.js:34` fornece um diretório onde se exige arquivo SQLite. `:38` exige BOOTSTRAP_FAILED e causa ERR_SQLITE_ERROR; `:39` e `:43` exigem contagens SIGINT/SIGTERM originais; `:41` exige HTTP200 na nova execução e `:42` listener fechado após close. O servidor existente passa sem mudança de produto. As preparações/asserções pertencem somente a essa fronteira. Build/co-localizado PASS, **91/91 = 50 + 41**, zero fail/skip/cancelled/todo, Vite e smoke desktop source PASS em `test-results/stab-r6`. Nenhum teste antigo alterado; autor PASS, parecer independente pendente.
+
+## R7 / T6 — autoria legada sem identidade
+
+STAB-61/A10: `scripts/desktop-smoke.mjs:269` entrega dois eventos de contrato válidos na sala/contexto vigentes, mesmo nome e authorId/operationId null. `:274` exige cada artigo sem grouped e `:275` a autoria visível em ambos. Complementa convidados homônimos com IDs distintos (`:268`) e a migração de 10000 registros (`tests/service.test.js:92`), sem adivinhar identidade histórica. Produto existente passa; nenhuma asserção anterior alterada. Reverso: fixture e duas comparações pertencem somente a esse requisito.
+
+**91/91**, zero fail/skip/cancelled/todo, Vite e smoke interno PASS. O externo inicial passou as asserções funcionais, mas retornou exit1 no teardown (`Test cleanup timed out`), portanto não foi aprovação. Inspeção de processos não encontrou remanescente; a repetição integral passou com teardown, sem mudança de prazo ou teste (`test-results/stab-r7/smoke-external-retry.log`). Causa do incidente de teardown não estabelecida; logs inicial e repetido preservados. A matriz final volta a exercitar esse caminho. Autor PASS para agrupamento; não declarar falha intermitente corrigida por uma repetição.

@@ -144,6 +144,8 @@ T5 -> T6 -> T7 -> T8
 **Tests**: e2e em scripts/desktop-smoke.mjs, incluindo falhas controladas e teclado.
 **Gate**: full
 
+**Retomada T6 / R7:** mensagens válidas legadas com authorId=null não agrupam e ambas mostram autoria; smoke source interno/externo PASS, 91/91 + build. A primeira execução externa passou as asserções e falhou no teardown; não foi contada como PASS. Nenhum processo remanescente foi encontrado; repetição completa externa passou, sem relaxar deadline/asserts. Logs `test-results/stab-r7`.
+
 ### T7: Restringir permissões e persistir perfil desktop
 
 **What**: Host Electron guarda preferências por perfil e valida o frame de cada capacidade.

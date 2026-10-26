@@ -266,6 +266,14 @@ desktop = await electron.launch({
   await observer.getByRole('button', { name: 'Enviar mensagem', exact: true }).click();
   const homonym = first.locator('.message').filter({ hasText: 'Outra pessoa chamada Ana' });
   await expect(homonym).not.toHaveClass(/grouped/);
+  await first.evaluate(v=>{
+    for(const [index,text]of ['Legado sem identidade 1','Legado sem identidade 2'].entries())window.__testSocket.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({v,type:'message',context:window.__testRoomContext,message:{id:`legacy-${index}`,room:'geral',author:'Mesmo nome',authorId:null,operationId:null,text,created:1,sequence:100000+index}})}));
+  },PROTOCOL_VERSION);
+  for(const text of ['Legado sem identidade 1','Legado sem identidade 2']){
+    const legacy=first.locator('.message').filter({hasText:text});
+    await expect(legacy).not.toHaveClass(/grouped/);
+    await expect(legacy.locator('.message-meta strong')).toHaveText('Mesmo nome');
+  }
 
   await first.getByRole('button', { name: 'Entrar na chamada', exact: true }).click();
   await expect(first.getByText('VOCÊ ESTÁ NA CHAMADA', { exact: true })).toBeVisible();
