@@ -335,22 +335,22 @@ As marcas T1–T6 no [plano histórico](tasks.md) são relatos do autor com comm
 | Requirement ID | Story | Achados | Origem na referência revisada (file:line) | Phase | Status |
 | --- | --- | --- | --- | --- | --- |
 | STAB-01 | US1 | R01, R20 | src/rtc.js:8; electron/main.js:50 | Execute | Implementing |
-| STAB-02 | US1 | R01 | src/rtc.js:8; src/rtc.js:92 | Specify | Pending |
-| STAB-03 | US1 | R01, R03 | src/rtc.js:8; src/rtc.js:106 | Specify | Pending |
-| STAB-04 | US1 | R01 | src/rtc.js:130 | Specify | Pending |
+| STAB-02 | US1 | R01 | src/rtc.js:8; src/rtc.js:92 | Execute | Implementing |
+| STAB-03 | US1 | R01, R03 | src/rtc.js:8; src/rtc.js:106 | Execute | Implementing |
+| STAB-04 | US1 | R01 | src/rtc.js:130 | Execute | Implementing |
 | STAB-05 | US1 | R01, R02, R03, R26 | src/rtc.js:121; src/main.jsx:101 | Execute | Implementing |
-| STAB-06 | US1 | R02, R13 | src/main.jsx:81; server/service.js:86 | Specify | Pending |
-| STAB-07 | US1 | R02 | src/main.jsx:90; src/rtc.js:8 | Specify | Pending |
-| STAB-08 | US1 | R01, R02 | src/main.jsx:108; src/main.jsx:142 | Specify | Pending |
-| STAB-09 | US1 | R02 | src/rtc.js:14 | Specify | Pending |
+| STAB-06 | US1 | R02, R13 | src/main.jsx:81; server/service.js:86 | Execute | Implementing |
+| STAB-07 | US1 | R02 | src/main.jsx:90; src/rtc.js:8 | Execute | Implementing |
+| STAB-08 | US1 | R01, R02 | src/main.jsx:108; src/main.jsx:142 | Execute | Implementing |
+| STAB-09 | US1 | R02 | src/rtc.js:14 | Execute | Implementing |
 | STAB-10 | US2 | R03, R17 | electron/main.js:25; src/rtc.js:106 | Execute | Implementing |
 | STAB-11 | US2 | R01, R03 | electron/main.js:30; src/main.jsx:150 | Execute | Implementing |
-| STAB-12 | US2 | R03 | src/rtc.js:106 | Specify | Pending |
-| STAB-13 | US2 | R03 | src/rtc.js:112; src/rtc.js:118 | Specify | Pending |
-| STAB-14 | US2 | R03 | src/rtc.js:111; src/rtc.js:115 | Specify | Pending |
-| STAB-15 | US2 | R03, R13 | src/rtc.js:119; src/main.jsx:113 | Specify | Pending |
-| STAB-16 | US2 | R03, R14 | src/rtc.js:106; src/rtc.js:115 | Specify | Pending |
-| STAB-68 | US2 | R03, R06, R13 | src/rtc.js:119; server/service.js:95 | Specify | Pending |
+| STAB-12 | US2 | R03 | src/rtc.js:106 | Execute | Implementing |
+| STAB-13 | US2 | R03 | src/rtc.js:112; src/rtc.js:118 | Execute | Implementing |
+| STAB-14 | US2 | R03 | src/rtc.js:111; src/rtc.js:115 | Execute | Implementing |
+| STAB-15 | US2 | R03, R13 | src/rtc.js:119; src/main.jsx:113 | Execute | Implementing |
+| STAB-16 | US2 | R03, R14 | src/rtc.js:106; src/rtc.js:115 | Execute | Implementing |
+| STAB-68 | US2 | R03, R06, R13 | src/rtc.js:119; server/service.js:95 | Execute | Implementing |
 | STAB-17 | US3 | R04 | src/main.jsx:101; src/main.jsx:144 | Execute | Implementing |
 | STAB-18 | US3 | R04, R05, R13 | src/main.jsx:144; server/service.js:75 | Execute | Implementing |
 | STAB-19 | US3 | R04 | server/service.js:72 | Execute | Implementing |
@@ -362,45 +362,45 @@ As marcas T1–T6 no [plano histórico](tasks.md) são relatos do autor com comm
 | STAB-25 | US3 | R05, R16, R25 | server/service.js:76; server/service.js:107 | Execute | Implementing |
 | STAB-26 | US3 | R05, R16 | server/service.js:11; tests/server.test.js:62 | Execute | Implementing |
 | STAB-27 | US3 | R05, R13 | server/service.js:73; src/main.jsx:144 | Execute | Implementing |
-| STAB-28 | US4 | R06 | server/service.js:59; server/service.js:92 | Specify | Pending |
-| STAB-29 | US4 | R06, R13 | server/service.js:92 | Specify | Pending |
-| STAB-30 | US4 | R06, R13 | server/service.js:92; src/main.jsx:107 | Specify | Pending |
+| STAB-28 | US4 | R06 | server/service.js:59; server/service.js:92 | Execute | Implementing |
+| STAB-29 | US4 | R06, R13 | server/service.js:92 | Execute | Implementing |
+| STAB-30 | US4 | R06, R13 | server/service.js:92; src/main.jsx:107 | Execute | Implementing |
 | STAB-31 | US4 | R01, R20, R26 | src/main.jsx:52; electron/main.js:44 | Execute | Implementing |
-| STAB-32 | US4 | R06, R14 | server/service.js:109; server/service.js:111 | Specify | Pending |
+| STAB-32 | US4 | R06, R14 | server/service.js:109; server/service.js:111 | Execute | Implementing |
 | STAB-33 | US5 | R07 | server/service.js:42 | Execute | Implementing |
-| STAB-34 | US5 | R07, R18 | server/index.js:18 | Specify | Pending |
+| STAB-34 | US5 | R07, R18 | server/index.js:18 | Execute | Implementing |
 | STAB-35 | US5 | R07, R18 | server/service.js:42; server/service.js:118 | Execute | Implementing |
 | STAB-36 | US5 | R07 | server/service.js:118; electron/main.js:72; server/index.js:25 | Execute | Implementing |
 | STAB-37 | US5 | R07, R25 | server/service.js:118; server/index.js:25 | Execute | Implementing |
 | STAB-38 | US6 | R02, R05, R10 | src/main.jsx:61; src/main.jsx:68 | Execute | Implementing |
 | STAB-39 | US6 | R01, R04, R13, R14 | src/main.jsx:69; src/main.jsx:92; src/rtc.js:72 | Execute | Implementing |
-| STAB-40 | US6 | R13 | server/service.js:61; src/main.jsx:69 | Specify | Pending |
-| STAB-41 | US6 | R02, R05, R06, R13, R25 | server/service.js:40; src/main.jsx:90 | Specify | Pending |
-| STAB-42 | US6 | R14 | src/rtc.js:31; src/rtc.js:62 | Specify | Pending |
-| STAB-43 | US6 | R13, R14, R15 | src/rtc.js:27; src/rtc.js:85 | Specify | Pending |
-| STAB-44 | US6 | R14, R26 | src/main.jsx:132; src/main.jsx:141 | Specify | Pending |
+| STAB-40 | US6 | R13 | server/service.js:61; src/main.jsx:69 | Execute | Implementing |
+| STAB-41 | US6 | R02, R05, R06, R13, R25 | server/service.js:40; src/main.jsx:90 | Execute | Implementing |
+| STAB-42 | US6 | R14 | src/rtc.js:31; src/rtc.js:62 | Execute | Implementing |
+| STAB-43 | US6 | R13, R14, R15 | src/rtc.js:27; src/rtc.js:85 | Execute | Implementing |
+| STAB-44 | US6 | R14, R26 | src/main.jsx:132; src/main.jsx:141 | Execute | Implementing |
 | STAB-45 | US7 | R11 | src/main.jsx:21; electron/main.js:20 | Execute | Implementing |
-| STAB-46 | US7 | R12 | src/main.jsx:43; src/main.jsx:59; src/main.jsx:123 | Specify | Pending |
-| STAB-47 | US7 | R12, R18 | src/main.jsx:59; src/main.jsx:76 | Specify | Pending |
+| STAB-46 | US7 | R12 | src/main.jsx:43; src/main.jsx:59; src/main.jsx:123 | Execute | Implementing |
+| STAB-47 | US7 | R12, R18 | src/main.jsx:59; src/main.jsx:76 | Execute | Implementing |
 | STAB-48 | US7 | R17 | electron/main.js:11; electron/main.js:23; electron/preload.cjs:2 | Execute | Implementing |
 | STAB-49 | US7 | R16, R18, R25 | server/index.js:8; server/index.js:22; electron/main.js:13 | Execute | Implementing |
 | STAB-50 | US7 | R18 | electron/main.js:13; server/index.js:12 | Execute | Implementing |
-| STAB-51 | US8 | R15 | server/service.js:52; server/service.js:81 | Specify | Pending |
-| STAB-52 | US8 | R15 | server/service.js:36 | Specify | Pending |
-| STAB-53 | US8 | R16, R20 | server/service.js:23; tests/server.test.js:36 | Specify | Pending |
-| STAB-54 | US8 | R16 | server/service.js:15; server/service.js:23 | Specify | Pending |
-| STAB-55 | US8 | R15, R16 | server/service.js:11; server/service.js:76 | Specify | Pending |
+| STAB-51 | US8 | R15 | server/service.js:52; server/service.js:81 | Execute | Implementing |
+| STAB-52 | US8 | R15 | server/service.js:36 | Execute | Implementing |
+| STAB-53 | US8 | R16, R20 | server/service.js:23; tests/server.test.js:36 | Execute | Implementing |
+| STAB-54 | US8 | R16 | server/service.js:15; server/service.js:23 | Execute | Implementing |
+| STAB-55 | US8 | R15, R16 | server/service.js:11; server/service.js:76 | Execute | Implementing |
 | STAB-56 | US8 | R16, R18 | electron/main.js:12; electron/main.js:13 | Execute | Implementing |
-| STAB-57 | US9 | R19 | src/main.jsx:16 | Specify | Pending |
-| STAB-58 | US9 | R19 | src/main.jsx:16; src/main.jsx:150 | Specify | Pending |
-| STAB-59 | US9 | R19 | src/style.css:1; review/data-probes.json:43 | Specify | Pending |
-| STAB-60 | US9 | R26 | src/main.jsx:51 | Specify | Pending |
-| STAB-61 | US9 | R16, R26 | server/service.js:14; src/main.jsx:144 | Specify | Pending |
-| STAB-62 | US9 | R26 | src/main.jsx:149; src/rtc.js:108 | Specify | Pending |
-| STAB-63 | US10 | R20, R22 | tests/server.test.js:36; review/REVISAO_COMPLETA.md:210 | Specify | Pending |
-| STAB-64 | US10 | R21 | scripts/startup-audio-check.mjs:7 | Specify | Pending |
-| STAB-65 | US10 | R21 | scripts/desktop-smoke.mjs:15; tests/server.test.js:14 | Specify | Pending |
-| STAB-66 | US10 | R21 | scripts/desktop-smoke.mjs:12; scripts/startup-audio-check.mjs:30 | Specify | Pending |
+| STAB-57 | US9 | R19 | src/main.jsx:16 | Execute | Implementing |
+| STAB-58 | US9 | R19 | src/main.jsx:16; src/main.jsx:150 | Execute | Implementing |
+| STAB-59 | US9 | R19 | src/style.css:1; review/data-probes.json:43 | Execute | Implementing |
+| STAB-60 | US9 | R26 | src/main.jsx:51 | Execute | Implementing |
+| STAB-61 | US9 | R16, R26 | server/service.js:14; src/main.jsx:144 | Execute | Implementing |
+| STAB-62 | US9 | R26 | src/main.jsx:149; src/rtc.js:108 | Execute | Implementing |
+| STAB-63 | US10 | R20, R22 | tests/server.test.js:36; review/REVISAO_COMPLETA.md:210 | Execute | Implementing |
+| STAB-64 | US10 | R21 | scripts/startup-audio-check.mjs:7 | Execute | Implementing |
+| STAB-65 | US10 | R21 | scripts/desktop-smoke.mjs:15; tests/server.test.js:14 | Execute | Implementing |
+| STAB-66 | US10 | R21 | scripts/desktop-smoke.mjs:12; scripts/startup-audio-check.mjs:30 | Execute | Implementing |
 | STAB-67 | US10 | R25 | server/service.js:54; server/service.js:107; src/main.jsx:13; electron/main.js:34 | Execute | Implementing |
 
 **Coverage:** 68 requisitos associados a histórias e evidências de origem; 68 linhas de rastreabilidade e nenhum requisito órfão. Nenhuma tarefa é criada ou aprovada por esta entrega. Pending significa atendimento ainda não certificado. Nenhum mapeamento equivale a aprovação do produto.

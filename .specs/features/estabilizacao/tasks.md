@@ -170,7 +170,7 @@ T5 -> T6 -> T7 -> T8
 **Requirement**: STAB-63–67 e verificação transversal dos 68 ACs.
 **Tools**: MCP Agent Skills; tlc-spec-driven; shell/Playwright; Verifier independente.
 **Done when**:
-- [ ] Source funciona sem manifesto; launch/close/WS falhando não deixam recursos de teste e flags 0/1 são corretas.
+- [x] Source funciona sem manifesto; launch/close/WS falhando não deixam recursos de teste e flags 0/1 são corretas. Harness e matriz16 atuais aprovados, ver [evidência atual](evidence-current.md).
 - [ ] Todos os gates automatizáveis passam; relatório independente registra hardware real como não demonstrado, sem inventar aprovação.
 **Tests**: integration em tests/harness.test.js e scripts/desktop-smoke.mjs.
 **Gate**: build
@@ -433,3 +433,11 @@ Proof: node scripts/desktop-smoke.mjs
 
 **C68** - WHEN o compartilhamento terminar com transporte saudável THEN o Conversa SHALL confirmar aos participantes da sala o estado sem compartilhamento em até 8 s, inclusive após erro parcial ou cota esgotada. (STAB-68)
 Proof: node --test --test-name-pattern="STAB\-12/13/15/16/68:|STAB\-14/15/68:|STAB\-28/29/30/68:" tests/rtc.test.js tests/service.test.js
+
+## Handoff
+
+**Settled mid-build:** 2026-10-26, user: "Executar nesta sessão; Verifier independente no fechamento". Recursos físicos indisponíveis: "Não estão disponíveis agora; manter T9 pendente".
+
+**Walked:** US1 entrada/cancelamento por teclado/escuta; US2 seleção/consentimento/tela/parada; US3 composição bloqueada na troca/retry; US4 mute/saída/cota; US5 shutdown via service/bootstrap e fechamento de janela; US6 falha/reentrada manual/estado de peer; US7 preferências/frame/câmera/ICE; US8 limites/legado por testes de serviço; US9 modal Tab/Escape, contraste, scroll, homônimos/legados e qualidade próxima captura; US10 startup/harness por checkers e Node. Gestos desktop executados em perfis isolados dos checkers; estados sem captura de design vinculante. Fontes/packaged aprovados em f85926e, logs stabilizacao-final. Mídia sintética não é aceitação física.
+
+**Dispatched:** nenhum Verifier STAB enviado ainda; primeiro executar check_proofs.py em HEAD.
