@@ -290,3 +290,38 @@ test('MEDIA-28: signaling from a terminal remote call cannot mutate the new peer
   assert.equal(old.pc.connectionState,'closed');assert.equal(f.call.peers.get('b'),current);assert.equal(current.queue,queue);
   assert.equal(current.pc.remoteDescription,undefined);assert.equal(current.mic.sender.track,mic.getAudioTracks()[0]);assert.equal(mic.getAudioTracks()[0].readyState,'live');assert.deepEqual(f.errors,[]);f.call.close();
 });
+
+test('MEDIA-16/17/21/24: stop and leave overlap without losing tracks, extending cleanup or changing reentry',async()=>{
+  for(const order of ['stop-first','leave-first']){
+    const stopAck=deferred(),leaveAck=deferred(),removal=deferred(),events=[];
+    const f=fixture({send:event=>{
+      events.push(event);
+      if(event.type==='media'&&event.sharing===false)return stopAck.promise;
+      if(event.type==='call-leave')return leaveAck.promise;
+      return Promise.resolve({callId:event.callId,generation:event.generation,inCall:true});
+    }});
+    await f.call.join();f.call.sync(members(f.call));await drain();await f.call.shareScreen(true,'1080');
+    const mic=f.call.microphone,display=f.call.display,operation=f.call.screenOperation,peer=f.call.peers.get('b');
+    const previous={callId:f.call.callId,generation:f.call.generation},replace=peer.video.sender.replaceTrack.bind(peer.video.sender);
+    peer.video.sender.replaceTrack=async track=>{if(track===null)await removal.promise;return replace(track);};
+    let cleanup,leaving,settled=false;
+    if(order==='stop-first'){cleanup=f.call.stopScreen();await drain();leaving=f.call.leave();}
+    else{leaving=f.call.leave();cleanup=f.call.stopScreen(operation);}
+    cleanup.then(()=>{settled=true;});
+    ended(mic);ended(display);assert.equal(f.call.peers.size,0);assert.equal(peer.pc.connectionState,'closed');
+    assert.equal(f.call.active,false);assert.equal(f.call.admitted,false);assert.equal(f.states.at(-1).sharingState,'idle');
+    await f.call.join();f.call.sync(members(f.call));await drain();const currentMic=f.call.microphone,currentId=f.call.callId;
+    assert.notEqual(currentId,previous.callId);assert.equal(f.call.generation,previous.generation+1);
+    f.clock.tick(999);assert.equal(f.call.stopScreen(operation),cleanup);f.clock.tick(1);await new Promise(setImmediate);
+    assert.equal(settled,true);await cleanup;
+    removal.resolve();
+    if(order==='stop-first')stopAck.reject(Object.assign(Error('old stop'),{code:'TIMEOUT'}));else stopAck.resolve();
+    leaveAck.resolve();await leaving;await drain();
+    ended(mic);ended(display);assert.equal(peer.pc.connectionState,'closed');assert.equal(f.call.callId,currentId);
+    assert.equal(f.call.admitted,true);assert.equal(f.call.microphone,currentMic);assert.equal(currentMic.getAudioTracks()[0].readyState,'live');assert.deepEqual(f.errors,[]);
+    for(const event of events.filter(event=>event.type==='call-leave'||event.sharing===false)){
+      assert.equal(event.callId,previous.callId);assert.equal(event.generation,previous.generation);
+    }
+    f.call.close();ended(currentMic);
+  }
+});

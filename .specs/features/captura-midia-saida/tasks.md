@@ -301,9 +301,11 @@ T8 -> T9
 
 **R5 (T7)**: contadores pré-App na abertura/reload, teclado nas duas pendências e prazos A1, eventos antigos com reprodução silenciada, tela nova antes de ack antigo e inventário completo nos quatro terminais. Full 80/80 + ciclo/startup/externo/captura/perfil source PASS; Build final deve incluir ciclo source e win-unpacked (16 gates). [Adequação](execution.md#r5--fronteiras-de-integração-e-ciclo-da-janela).
 
-**Reexecução T8 após `e4c9efe`**: Node 80/80; matriz 16 com 11 PASS, 1 FAIL ao lançar win-unpacked bloqueado por Device Guard e quatro gates unpacked não executados. Wrapper portátil real PASS separadamente. SHA-256 atual `fc7c344e52717757f02700a5a3050164bc087433ff977ae66256fb64f330f993`. [Evidência atual](evidence.md); T8 reaberta, sem Build integral e sem Verified. Verifier final deve repetir a avaliação/sensor e registrar o bloqueio caso persista, sem contorno da política.
+**Reexecução T8 do autor em 25/10, histórica**: Node 80/80; matriz 16 com 11 PASS, 1 FAIL ao lançar win-unpacked bloqueado por Device Guard e quatro gates unpacked não executados. Wrapper portátil real PASS separadamente. SHA-256 daquela candidata `fc7c344e52717757f02700a5a3050164bc087433ff977ae66256fb64f330f993`. Naquele momento T8 foi reaberta, sem Build integral e sem Verified. A rodada independente 2 abaixo substitui esse estado da candidata; logs preservam a ocorrência sem contorno de política.
 
 **Rodada independente 2 encerrada em 26/10:** [validation-round2.md](validation-round2.md), range `38062db..2c9d60e`. Build 16/16 e sensor 6/6 por valor passaram, 80/80 Node. A candidata nova acima superou o bloqueio histórico sem mudar política/launcher. FAIL global: 28 ACs automáticos integrais, quatro parciais pela conjunção stop+leave e dois físicos ausentes. A conjunção retorna a T4/T1 como R6 antes da rodada 3; não houve novo defeito funcional demonstrado.
+
+**R6 (T4/T1), 26/10**: stop-first/leave-first, remoção e confirmação retidas, inventário antigo ended/peers closed em A1, prazo não renovado e reentrada preservada após conclusões antigas. Um teste novo, sem mudança de produto; Full 86/86 + build + smoke source PASS (inclui cinco testes do lote STAB). [Adequação](execution.md#r6--parar-tela-e-sair-com-operações-sobrepostas). A rodada 3 independente deve reverificar a conjunção antes de aprovar o subconjunto automatizado; T9 mantém a feature globalmente incompleta.
 
 #### T9: Registrar a aceitação física com dois PCs
 

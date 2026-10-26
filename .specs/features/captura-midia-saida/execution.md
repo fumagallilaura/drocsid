@@ -316,3 +316,15 @@ R4: `319b584`. Conjunções restantes T7 receberam testes de resultado, sem muda
 | MEDIA-23, todo inventário nos quatro terminais | `scripts/desktop-lifecycle-check.mjs:62`–`:65` exigem mic+vídeo+áudio adquiridos/live; `:80` cada ID deve ter registro ended, start numérico e duração 0..1000; `:83` playback nativo muted, zero elementos; `:85` root vazio em unmount | PASS source, reload/disconnect/Root.unmount/BrowserWindow.close; fechamento nativo observado, sem inferência física |
 
 Reverso C/D: contadores e amostragem adicionais ancoram MEDIA-01; helper de teclado/timing MEDIA-07; replay e nova tela MEDIA-17/28/29; fixture/inventário/timing de ciclo MEDIA-23. Não há teste de comportamento externo nem expectativa espelhando método privado do produto. Assert de zero pageerrors incluído. O init de ciclo se restringe ao documento HTTP loopback com App, evitando instrumentar about:blank sem mediaDevices. **80/80 = 50 + 30**, zero falhas/skips/cancelled. Full + ciclo/startup/externo/captura/perfil source PASS em `test-results/media-r5`. Próximo Build repete ciclo em win-unpacked, elevando a matriz a 16 gates. Adequação do autor R5: PASS, sujeita ao Verifier independente; T9 continua pendente.
+
+## R6 — parar tela e sair com operações sobrepostas
+
+A [rodada 2 independente](validation-round2.md), preservada em `b7a11cc`, passou Build 16/16 e sensor 6/6, mas exigiu o edge case cruzado stop+leave. O teste novo de T4/T1 inicia mic+vídeo+áudio, suspende remoção de sender e notificações, sai antes de completar a parada, reentra e só depois assenta o trabalho antigo. Exercita stop-first e leave-first; não foi necessário alterar produto.
+
+| AC / conjunção | Evidência e valor esperado | Adequação A/B |
+| --- | --- | --- |
+| MEDIA-16/21, inventário no término | `tests/rtc.test.js:311`: ended(mic), ended(display), peers.size=0 e PC antigo closed antes de qualquer confirmação | PASS nas duas ordens; inclui todas as tracks de vídeo/áudio |
+| MEDIA-17/24, terminal e deadline original | `tests/rtc.test.js:312`: inactive/not admitted/idle; `:315` repetição devolve a mesma limpeza em 999; `:316` settled=true em 1000 antes de await | PASS, sem renovar prazo nem depender da rede |
+| MEDIA-24/28, conclusões antigas e reentrada | `tests/rtc.test.js:314`: ID novo/geração seguinte; `:320` antigo ended/closed e ID novo inalterado; `:321` mic novo live/admitido e errors=[] depois de remoção/erro/ack antigos; `:323` envios terminais mantêm ID/geração antigos | PASS, nenhuma captura ou peer antigo volta a participar |
+
+Reverso C/D: o único teste novo corresponde às três linhas e ao edge case explícito da spec, sem relaxar os casos anteriores. A fixture rejeita somente a notificação que chegou a ser emitida; a ordem leave-first não fabrica erro de promessa sem consumidor. **86/86 = 50 + 31 MEDIA + 5 STAB**, zero fail/skip/cancelled/todo; Full (Quick + build + smoke source) PASS em `test-results/media-r6`. A candidata `efa7fb4e...edf9092e` não mudou em bytes de produto; revisão independente final pendente. T9 continua não executada por recurso indisponível, conforme o usuário.
