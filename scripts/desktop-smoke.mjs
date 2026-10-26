@@ -14,6 +14,15 @@ async function instrument(page) {
     window.__testCaptures = [];
     window.__testDisplays = [];
     window.__testCallEvents = [];
+    const play=HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play=function(...args){
+      if(window.__rejectNextPlayback){
+        window.__rejectNextPlayback=false;
+        const error=Object.assign(Error('STAB_PRIVATE_MESSAGE'),{name:'STAB_PRIVATE_NAME',sdp:'STAB_PRIVATE_SDP',credential:'STAB_PRIVATE_SECRET'});
+        return Promise.reject(error);
+      }
+      return play.apply(this,args);
+    };
     const Original = window.RTCPeerConnection;
     window.RTCPeerConnection = class extends Original { constructor(...args) { super(...args); window.__testConnections.push(this); } };
     const send = WebSocket.prototype.send;
@@ -275,8 +284,17 @@ desktop = await electron.launch({
   expect(await firstMuted()).toBe(true);expect(await first.getByRole('button',{name:'Ativar áudio',exact:true}).count()).toBe(1);
   await first.getByRole('button', { name: 'Ativar áudio', exact: true }).click();
   await expect.poll(firstMuted).toBe(false);
+  const playbackAttempt=await first.evaluate(()=>window.__testCallEvents.filter(event=>event.type==='call-join').at(-1));
+  const playbackBefore=diagnostics.filter(value=>value.phase==='playback').length;
+  await first.evaluate(()=>{window.__rejectNextPlayback=true;});
   await second.getByRole('button', { name: 'Participar', exact: true }).click();
+  await expect.poll(()=>diagnostics.filter(value=>value.phase==='playback').length).toBeGreaterThan(playbackBefore);
+  expect(await first.evaluate(()=>window.__rejectNextPlayback)).toBe(false);
+  expect(diagnostics.filter(value=>value.phase==='playback')[playbackBefore]).toMatchObject({code:'MEDIA_FAILED',phase:'playback',callId:playbackAttempt.callId,generation:playbackAttempt.generation,version:'0.1.1',cause:'Error'});
+  expect(JSON.stringify(diagnostics)+nativeDiagnostics).not.toContain('STAB_PRIVATE_');
   await expect.poll(() => first.evaluate(() => window.__testConnections.some(pc => pc.connectionState === 'connected')), { timeout: 20000 }).toBe(true);
+  // Recovery remains the manual call reentry below. Native play-promise
+  // completion/audibility is not the diagnostic outcome required by STAB-67.
   await first.evaluate(() => window.__testConnections.filter(pc => pc.connectionState === 'connected').forEach(pc => { pc.close(); pc.dispatchEvent(new Event('connectionstatechange')); }));
   await expect(first.getByText('Mídia indisponível', { exact: true })).toBeVisible();
   await first.getByRole('button', { name: 'Encerrar chamada', exact: true }).click();

@@ -398,7 +398,7 @@ As marcas T1–T6 no [plano histórico](tasks.md) são relatos do autor com comm
 | STAB-64 | US10 | R21 | scripts/startup-audio-check.mjs:7 | Specify | Pending |
 | STAB-65 | US10 | R21 | scripts/desktop-smoke.mjs:15; tests/server.test.js:14 | Specify | Pending |
 | STAB-66 | US10 | R21 | scripts/desktop-smoke.mjs:12; scripts/startup-audio-check.mjs:30 | Specify | Pending |
-| STAB-67 | US10 | R25 | server/service.js:54; server/service.js:107; src/main.jsx:13; electron/main.js:34 | Specify | Pending |
+| STAB-67 | US10 | R25 | server/service.js:54; server/service.js:107; src/main.jsx:13; electron/main.js:34 | Execute | Implementing |
 
 **Coverage:** 68 requisitos associados a histórias e evidências de origem; 68 linhas de rastreabilidade e nenhum requisito órfão. Nenhuma tarefa é criada ou aprovada por esta entrega. Pending significa atendimento ainda não certificado. Nenhum mapeamento equivale a aprovação do produto.
 

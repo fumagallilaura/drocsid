@@ -133,6 +133,7 @@ T5 -> T6 -> T7 -> T8
 **Done when**:
 - [x] UI conecta Call/Session sem depender de texto de erro; pending tem cancelamento e texto falho é recuperável.
 - [x] Keyboard modal, agrupamento por ID, leitura e qualidade correspondem aos ACs. Gate: 39 testes Node, build e smoke desktop ampliado; T6 em evidence.md.
+- [x] Retomada R3: falha de playback tem callId/geração da tentativa capturados e diagnóstico sem sentinelas sensíveis. Falhou por valor antes da correção; 89/89 + build/smokes interno e externo/captura/perfil source PASS. [Adequação](execution.md#r3--t6--correlação-de-diagnóstico-de-reprodução), no commit que contém esta marca.
 **Tests**: e2e em scripts/desktop-smoke.mjs, incluindo falhas controladas e teclado.
 **Gate**: full
 
@@ -147,7 +148,7 @@ T5 -> T6 -> T7 -> T8
 **Done when**:
 - [ ] Reinício com outra porta preserva preferências; outro host do perfil é recusado.
 - [ ] Frame alheio/câmera/IPC inválido não obtém capacidade e fechamento cancela picker.
-- [ ] Retomada: configuração ICE efetiva desktop/servidor equivalente e diagnóstico de falha de playback com correlação disponível e sem conteúdo sensível, além dos resultados já reutilizáveis de perfil/permissão.
+- [ ] Retomada: configuração ICE efetiva desktop/servidor equivalente, além dos resultados já reutilizáveis de perfil/permissão. Diagnóstico de playback pertence ao componente Media e foi tratado em R3/T6, sem duplicação no host.
 **Tests**: integration/e2e em tests/desktop-policy.test.js e scripts/desktop-smoke.mjs.
 **Gate**: build
 
