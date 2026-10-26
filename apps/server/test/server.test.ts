@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { createApp } from '../src/app.ts';
 import { pool, migrate } from '../src/db.ts';
 import { isPublicAddress, parseEmbed, unfurl } from '../src/embeds.ts';
 import { Close, Op } from '../src/gateway.ts';
+import { uploadPath } from '../src/uploads.ts';
 
 const app = createApp();
 const fastApp = createApp({ heartbeatInterval: 50 });
@@ -61,14 +63,17 @@ function connect(host = base, skip = ['PRESENCE_UPDATE', 'GUILD_MEMBER_ADD']) {
 
 test('cadastro, login e rejeições', async () => {
   const username = uniqueName();
-  const reg = await post('/api/auth/register', { username, password: 'senha-segura' });
+  assert.equal((await post('/api/auth/register', { username, password: 'senha-segura' })).status, 400);
+  assert.equal((await post('/api/auth/register', { username, password: 'senha-segura', accept_terms: 'sim' })).status, 400);
+
+  const reg = await post('/api/auth/register', { username, password: 'senha-segura', accept_terms: true });
   assert.equal(reg.status, 201);
   assert.equal(reg.body.user.username, username);
   assert.ok(reg.body.token);
 
-  assert.equal((await post('/api/auth/register', { username, password: 'senha-segura' })).status, 409);
-  assert.equal((await post('/api/auth/register', { username: 'A B', password: 'senha-segura' })).status, 400);
-  assert.equal((await post('/api/auth/register', { username: uniqueName(), password: 'curta' })).status, 400);
+  assert.equal((await post('/api/auth/register', { username, password: 'senha-segura', accept_terms: true })).status, 409);
+  assert.equal((await post('/api/auth/register', { username: 'A B', password: 'senha-segura', accept_terms: true })).status, 400);
+  assert.equal((await post('/api/auth/register', { username: uniqueName(), password: 'curta', accept_terms: true })).status, 400);
 
   const ok = await post('/api/auth/login', { username, password: 'senha-segura' });
   assert.equal(ok.status, 200);
@@ -79,7 +84,7 @@ test('cadastro, login e rejeições', async () => {
 });
 
 test('gateway: HELLO, IDENTIFY, READY e heartbeat', async () => {
-  const { token, user } = (await post('/api/auth/register', { username: uniqueName(), password: 'senha-segura' })).body;
+  const { token, user } = (await post('/api/auth/register', { username: uniqueName(), password: 'senha-segura', accept_terms: true })).body;
   const gw = connect();
 
   const hello = await gw.next();
@@ -113,7 +118,7 @@ test('gateway: token inválido e opcode desconhecido fecham a conexão', async (
 });
 
 async function signedIn(skip?: string[]) {
-  const { token, user } = (await post('/api/auth/register', { username: uniqueName(), password: 'senha-segura' })).body;
+  const { token, user } = (await post('/api/auth/register', { username: uniqueName(), password: 'senha-segura', accept_terms: true })).body;
   const gw = connect(base, skip);
   await gw.next();
   gw.send(Op.IDENTIFY, { token });
@@ -391,6 +396,44 @@ test('anexos: pedir URL, enviar, anexar e baixar', async () => {
   await request('DELETE', `/api/channels/${channel}/messages/${sent.body.id}`, undefined, alice.token);
   assert.equal((await fetch(`http://${base}${file.url}`)).status, 404);
   alice.gw.close();
+});
+
+test('conta: exportar dados e excluir apaga mensagens, anexos e servidores próprios', async () => {
+  const alice = await signedIn();
+  const bob = await signedIn();
+  const join = async (owner: typeof alice, member: typeof alice, name: string) => {
+    const guild = (await post('/api/guilds', { name }, owner.token)).body;
+    const { code } = (await post(`/api/guilds/${guild.id}/invites`, {}, owner.token)).body;
+    await post(`/api/invites/${code}`, {}, member.token);
+    return guild.channels.find((c: any) => c.type === 'text').id;
+  };
+  const aliceChannel = await join(alice, bob, 'Da Alice');
+  const bobChannel = await join(bob, alice, 'Do Bob');
+
+  await post(`/api/channels/${aliceChannel}/messages`, { content: 'do bob na casa da alice' }, bob.token);
+  const slot = (await post(`/api/channels/${bobChannel}/attachments`, { files: [{ filename: 'a.txt', file_size: 2 }] }, alice.token)).body.attachments[0];
+  await fetch(`http://${base}${slot.upload_url}`, { method: 'PUT', headers: { authorization: alice.token, 'content-type': 'text/plain' }, body: 'oi' });
+  const withFile = (await post(`/api/channels/${bobChannel}/messages`, { content: 'da alice', attachments: [{ uploaded_filename: slot.upload_filename }] }, alice.token)).body;
+  await post(`/api/channels/${bobChannel}/messages`, { content: 'do bob' }, bob.token);
+
+  const exported = await request('GET', '/api/users/@me/data', undefined, alice.token);
+  assert.equal(exported.status, 200);
+  assert.equal(exported.body.account.username, alice.user.username);
+  assert.ok(exported.body.account.terms_accepted_at);
+  assert.deepEqual(exported.body.messages.map((m: any) => m.content), ['da alice']);
+  assert.deepEqual(exported.body.guilds.map((g: any) => [g.name, g.owner]), [['Da Alice', true], ['Do Bob', false]]);
+  assert.equal(exported.body.account.password_hash, undefined);
+
+  assert.equal((await request('DELETE', '/api/users/@me', undefined, alice.token)).status, 204);
+  assert.equal((await request('GET', '/api/users/@me/data', undefined, alice.token)).status, 401);
+  assert.equal((await post('/api/auth/login', { username: alice.user.username, password: 'senha-segura' })).status, 401);
+  assert.equal((await request('GET', `/api/channels/${aliceChannel}/messages`, undefined, bob.token)).status, 404, 'servidor da Alice some');
+  const left = (await request('GET', `/api/channels/${bobChannel}/messages`, undefined, bob.token)).body;
+  assert.deepEqual(left.map((m: any) => m.content), ['do bob']);
+  assert.equal((await fetch(`http://${base}${withFile.attachments[0].url}`)).status, 404);
+  assert.equal(existsSync(uploadPath(slot.upload_filename)), false, 'arquivo apagado do disco');
+  alice.gw.close();
+  bob.gw.close();
 });
 
 test('embeds: lê Open Graph e não acessa a rede interna', async () => {

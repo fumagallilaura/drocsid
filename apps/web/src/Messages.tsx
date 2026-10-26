@@ -49,14 +49,14 @@ function AttachmentView({ file }: { file: Attachment }) {
 // ponytail: imagens de embeds carregam direto do site de origem; o Discord passa por um proxy para não expor o IP de quem lê.
 function EmbedView({ embed }: { embed: Embed }) {
   if (embed.type === 'image') {
-    return <a href={embed.url} target="_blank" rel="noreferrer"><img className="attachment-media" src={embed.url} alt="" loading="lazy" /></a>;
+    return <a href={embed.url} target="_blank" rel="noreferrer"><img className="attachment-media" src={embed.url} alt={`Imagem de ${new URL(embed.url).hostname}`} loading="lazy" /></a>;
   }
   return (
     <article className="embed">
       {embed.site_name && <small>{embed.site_name}</small>}
       {embed.title && <a href={embed.url} target="_blank" rel="noreferrer noopener"><strong>{embed.title}</strong></a>}
       {embed.description && <p>{embed.description}</p>}
-      {embed.image && <img src={embed.image.url} alt="" loading="lazy" />}
+      {embed.image && <img src={embed.image.url} alt={embed.title ? `Imagem de prévia: ${embed.title}` : 'Imagem de prévia do link'} loading="lazy" />}
     </article>
   );
 }
@@ -246,7 +246,7 @@ export function Messages({ api, me, channelId, label, messages, users, mentionab
                   <button title="Apagar (Shift pula a confirmação)" aria-label="Apagar" className="danger" onClick={(e) => remove(m, e.shiftKey)}>🗑</button>
                 )}
                 {picker === m.id && (
-                  <div className="emoji-picker">
+                  <div className="emoji-picker" onKeyDown={(e) => e.key === 'Escape' && setPicker(null)}>
                     {QUICK_REACTIONS.map((emoji) => (
                       <button key={emoji} aria-label={`Reagir com ${emoji}`}
                         onClick={() => react(m, emoji, !!m.reactions?.find((r) => r.emoji.name === emoji)?.me)}>{emoji}</button>
@@ -279,7 +279,7 @@ export function Messages({ api, me, channelId, label, messages, users, mentionab
         <div className="composer-row">
           <label className="upload-btn" title="Enviar arquivo">
             <span aria-hidden>+</span>
-            <input type="file" multiple hidden aria-label="Enviar arquivo" onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ''; }} />
+            <input type="file" multiple className="sr-only" aria-label="Enviar arquivo" onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ''; }} />
           </label>
           <textarea
             ref={inputRef}

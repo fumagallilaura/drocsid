@@ -35,7 +35,10 @@ async function createSession(userId: string) {
   return token;
 }
 
-export async function register(username: unknown, password: unknown) {
+export async function register(username: unknown, password: unknown, acceptTerms: unknown) {
+  if (acceptTerms !== true) {
+    throw new HttpError(400, 'Para criar uma conta, confirme que tem 18 anos ou mais e aceita os Termos de Uso e a Política de Privacidade');
+  }
   if (typeof username !== 'string' || !USERNAME.test(username)) {
     throw new HttpError(400, 'Nome de usuário deve ter 2 a 32 caracteres: letras minúsculas, números, _ ou .');
   }
@@ -43,7 +46,7 @@ export async function register(username: unknown, password: unknown) {
     throw new HttpError(400, 'Senha deve ter entre 8 e 128 caracteres');
   }
   const { rows } = await pool.query<User>(
-    `INSERT INTO users (username, password_hash) VALUES ($1, $2)
+    `INSERT INTO users (username, password_hash, terms_accepted_at) VALUES ($1, $2, now())
      ON CONFLICT (username) DO NOTHING RETURNING id, username`,
     [username, await hashPassword(password)],
   );

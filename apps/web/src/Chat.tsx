@@ -308,6 +308,22 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
     setStatusMenu(false);
   }
 
+  const downloadData = () =>
+    run(async () => {
+      const data = await api('GET', '/users/@me/data');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+      a.download = `drocsid-${user!.username}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+  function deleteAccount() {
+    const warning = 'Excluir a conta apaga para sempre seu usuário, todas as suas mensagens e anexos e os servidores que você criou, '
+      + 'com todo o conteúdo deles. Isso não pode ser desfeito. Deseja excluir sua conta?';
+    if (confirm(warning)) run(async () => { await api('DELETE', '/users/@me'); onLogout(); });
+  }
+
   const createGuild = () => {
     const name = prompt('Nome do servidor');
     if (name) run(async () => openGuild(await api('POST', '/guilds', { name })));
@@ -346,6 +362,7 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
         title={m.id === user.id ? undefined : `Mandar mensagem para ${m.username}`} onClick={() => openDm(m.id)}>
         <Avatar name={m.username} status={statusOf(m.id)} />
         <span>{m.username}{m.id === guild?.owner_id && <span title="Dono do servidor" aria-label="Dono do servidor"> 👑</span>}</span>
+        <span className="sr-only">, {STATUS_LABEL[statusOf(m.id)]}</span>
       </button>
     </li>
   );
@@ -432,6 +449,7 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
                     <button className="channel dm" aria-current={c.id === channelId || undefined} onClick={() => setChannelId(c.id)}>
                       <Avatar name={peer.username} status={statusOf(peer.id)} />
                       <span>{peer.username}</span>
+                      <span className="sr-only">, {STATUS_LABEL[statusOf(peer.id)]}</span>
                     </button>
                   </li>
                 );
@@ -458,6 +476,11 @@ export function Chat({ token, onLogout }: { token: string; onLogout: () => void 
                   </button>
                 </li>
               ))}
+              <li role="separator" className="menu-separator" />
+              <li><button role="menuitem" onClick={downloadData}>Baixar meus dados</button></li>
+              <li><a role="menuitem" href="/termos.html" target="_blank">Termos de Uso</a></li>
+              <li><a role="menuitem" href="/privacidade.html" target="_blank">Política de Privacidade</a></li>
+              <li><button role="menuitem" className="danger-text" onClick={deleteAccount}>Excluir conta</button></li>
             </ul>
           )}
         </div>

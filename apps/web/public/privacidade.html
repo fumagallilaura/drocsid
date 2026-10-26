@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Política de Privacidade · Drocsid</title>
+    <link rel="stylesheet" href="/legal.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Política de Privacidade</h1>
+      <p><small>Versão de [PREENCHER: data da publicação].</small></p>
+
+      <p>
+        Esta política explica quais dados pessoais o Drocsid trata, por que, com quem eles são compartilhados e como você
+        exerce seus direitos previstos na Lei Geral de Proteção de Dados (Lei 13.709/2018, “LGPD”).
+      </p>
+
+      <h2>1. Quem é a responsável pelos seus dados</h2>
+      <p>
+        A controladora dos dados é <strong>Laura Fumagalli</strong>, pessoa física, que mantém o Drocsid de forma gratuita e
+        sem fins lucrativos. Canal de atendimento sobre privacidade:
+        <strong>[PREENCHER: e-mail de contato]</strong>.
+      </p>
+
+      <h2>2. Quais dados tratamos</h2>
+      <ul>
+        <li><strong>Conta:</strong> nome de usuário, senha (guardada apenas como hash scrypt, nunca em texto) e a data em que você aceitou os Termos de Uso e esta política.</li>
+        <li><strong>Sessão:</strong> um token de acesso guardado no armazenamento local do seu navegador (<code>localStorage</code>). No servidor fica apenas um hash desse token.</li>
+        <li><strong>Conteúdo que você cria:</strong> mensagens, edições, respostas, reações, anexos (até 10 MB cada), servidores e canais que você cria e servidores em que entra.</li>
+        <li><strong>Relações:</strong> pedidos de amizade, amizades e conversas privadas (DMs).</li>
+        <li><strong>Prévias de links:</strong> quando uma mensagem tem um link, o servidor acessa a página e guarda título, descrição e endereço da imagem de prévia.</li>
+        <li><strong>Dados temporários, não gravados:</strong> seu status (disponível, ausente etc.), “digitando…” e em qual canal de voz você está ficam apenas na memória do servidor enquanto você está conectado.</li>
+      </ul>
+      <p>
+        Não pedimos nome real, e-mail, CPF, telefone, endereço nem localização. Não usamos cookies, ferramentas de
+        análise (como Google Analytics), pixels de rastreamento ou anúncios, e não vendemos dados.
+      </p>
+
+      <h2>3. Para que usamos e com qual base legal</h2>
+      <ul>
+        <li><strong>Prestar o serviço que você pediu</strong> (criar a conta, entregar mensagens, chamadas e anexos): execução de contrato (LGPD, art. 7º, V).</li>
+        <li><strong>Segurança e prevenção de abuso</strong> (por exemplo, apurar denúncias de conteúdo ilegal): legítimo interesse (art. 7º, IX).</li>
+        <li><strong>Atender ordens judiciais e obrigações legais</strong>: cumprimento de obrigação legal ou regulatória (art. 7º, II).</li>
+      </ul>
+      <p>Não fazemos perfilamento nem decisões automatizadas sobre você.</p>
+
+      <h2>4. Quem vê e com quem compartilhamos</h2>
+      <ul>
+        <li><strong>Outros usuários:</strong> seu nome de usuário, status e o conteúdo que você envia ficam visíveis para quem participa do mesmo servidor ou da mesma DM. O dono de um servidor pode apagar mensagens nele.</li>
+        <li><strong>Anexos:</strong> qualquer pessoa que tenha o link de um anexo consegue abri-lo, mesmo sem conta, até que a mensagem seja apagada. Não envie pelo Drocsid arquivos que não poderiam vazar.</li>
+        <li>
+          <strong>Chamadas de voz, vídeo e compartilhamento de tela:</strong> o áudio e o vídeo vão direto entre os
+          navegadores dos participantes (WebRTC) e não passam pelo servidor do Drocsid nem são gravados. Para estabelecer a
+          conexão, seu endereço IP é revelado aos outros participantes da chamada e a um servidor STUN do Google
+          (<code>stun.l.google.com</code>, Google LLC, Estados Unidos).
+        </li>
+        <li><strong>Sites de links compartilhados:</strong> as imagens de prévia são carregadas pelo seu navegador direto do site de origem, que recebe seu endereço IP, como acontece ao visitar qualquer site.</li>
+        <li><strong>Hospedagem:</strong> os dados ficam em [PREENCHER: provedor de hospedagem e país].</li>
+        <li><strong>Autoridades:</strong> somente quando houver ordem judicial ou obrigação legal.</li>
+      </ul>
+      <p>
+        Como o servidor STUN do Google fica nos Estados Unidos, entrar em uma chamada envolve transferência internacional
+        do seu endereço IP, necessária para executar a chamada que você iniciou (LGPD, art. 33).
+      </p>
+
+      <h2>5. Por quanto tempo guardamos</h2>
+      <ul>
+        <li>Os dados da conta e o conteúdo ficam guardados enquanto a conta existir.</li>
+        <li>Uma mensagem apagada é removida do banco de dados na hora, junto com os anexos dela.</li>
+        <li>
+          Ao <strong>excluir a conta</strong>, removemos imediatamente seu usuário, suas sessões, todas as suas mensagens e
+          anexos, suas reações, amizades e os servidores que você criou, com todo o conteúdo deles. Mensagens que outras
+          pessoas enviaram para você em DMs continuam com elas.
+        </li>
+        <li>Cópias de segurança: [PREENCHER: se há backups e em quantos dias são sobrescritos].</li>
+        <li>O Drocsid não guarda registros de acesso (IP e horário). O provedor de hospedagem pode guardar os seus: [PREENCHER].</li>
+      </ul>
+
+      <h2>6. Seus direitos</h2>
+      <p>Pela LGPD (art. 18), você pode, a qualquer momento:</p>
+      <ul>
+        <li><strong>Acessar e levar seus dados:</strong> no menu do seu usuário, use <em>Baixar meus dados</em> para receber um arquivo JSON.</li>
+        <li><strong>Corrigir:</strong> você pode editar ou apagar suas mensagens.</li>
+        <li><strong>Eliminar:</strong> no menu do seu usuário, use <em>Excluir conta</em>.</li>
+        <li><strong>Saber com quem compartilhamos, revogar consentimentos, opor-se a um tratamento</strong> ou pedir qualquer outro direito: escreva para o canal da seção 1. Respondemos em até 15 dias.</li>
+        <li>Reclamar à Autoridade Nacional de Proteção de Dados (ANPD) em <a href="https://www.gov.br/anpd">gov.br/anpd</a>.</li>
+      </ul>
+
+      <h2>7. Segurança</h2>
+      <p>
+        Usamos HTTPS [PREENCHER: confirmar que a publicação usa HTTPS], senhas com hash scrypt e tokens guardados apenas
+        como hash. As mensagens não têm criptografia de ponta a ponta: elas ficam no banco de dados do servidor, que a
+        mantenedora só acessa para manter o serviço, apurar denúncias ou cumprir a lei. Se houver um incidente de
+        segurança que possa causar risco ou dano relevante, comunicaremos você e a ANPD (LGPD, art. 48).
+      </p>
+
+      <h2>8. Idade mínima</h2>
+      <p>
+        O Drocsid é só para maiores de 18 anos. Se soubermos que uma conta pertence a alguém com menos de 18 anos, ela será
+        excluída.
+      </p>
+
+      <h2>9. Mudanças nesta política</h2>
+      <p>
+        Avisaremos dentro do Drocsid antes que uma mudança relevante passe a valer. A data da versão fica no topo desta
+        página.
+      </p>
+
+      <p><a href="/termos.html">Termos de Uso</a> · <a href="/">Voltar ao Drocsid</a></p>
+    </main>
+  </body>
+</html>

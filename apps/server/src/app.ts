@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { deleteAccount, exportData } from './account.ts';
 import { authenticate, HttpError, login, register } from './auth.ts';
 import { unfurl } from './embeds.ts';
 import { createGateway } from './gateway.ts';
@@ -72,8 +73,8 @@ export function createApp({ heartbeatInterval = 41_250 } = {}) {
 
   const routes: Route[] = [
     ['POST', /^\/api\/auth\/register$/, async (req) => {
-      const { username, password } = await readJson(req);
-      return [201, await register(username, password)];
+      const { username, password, accept_terms } = await readJson(req);
+      return [201, await register(username, password, accept_terms)];
     }],
     ['POST', /^\/api\/auth\/login$/, async (req) => {
       const { username, password } = await readJson(req);
@@ -108,6 +109,11 @@ export function createApp({ heartbeatInterval = 41_250 } = {}) {
       return [200, guild];
     }],
 
+    ['GET', /^\/api\/users\/@me\/data$/, async (req) => [200, await exportData(await auth(req))]],
+    ['DELETE', /^\/api\/users\/@me$/, async (req) => {
+      await deleteAccount(await auth(req));
+      return [204, null];
+    }],
     ['GET', /^\/api\/users\/@me\/relationships$/, async (req) => [200, await relationshipsFor((await auth(req)).id)]],
     ['POST', /^\/api\/users\/@me\/relationships$/, async (req) => {
       const user = await auth(req);
