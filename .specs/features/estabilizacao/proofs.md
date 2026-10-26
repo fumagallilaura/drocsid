@@ -1,8 +1,8 @@
 # estabilizacao proofs
 
-**HEAD**: 573491e
+**HEAD**: 699d4ed
 **Tree**: clean
-**Result**: 134 pass, 0 fail; mutations 0 killed, 0 not
+**Result**: 136 pass, 0 fail; mutations 0 killed, 0 not
 
 | Check | Proof | Ran | Passed | Result |
 | --- | --- | --- | --- | --- |
@@ -91,6 +91,7 @@
 | C41 | `node --test --test-name-pattern="STAB\-40/41:" tests/protocol.test.js tests/service.test.js tests/session.test` | count unknown | - | pass |
 | C42 | `node --test --test-name-pattern="STAB\-42/43:" tests/rtc.test.js` | count unknown | - | pass |
 | C43 | `node --test --test-name-pattern="STAB\-42/43:" tests/rtc.test.js` | count unknown | - | pass |
+| C43 | `node --test --test-name-pattern="STAB-43: each queued" tests/rtc.test.js` | count unknown | - | pass |
 | C44 | `node scripts/desktop-smoke.mjs` | count unknown | - | pass |
 | C45 | `node --test --test-name-pattern="STAB\-45:" tests/desktop-policy.test.js` | count unknown | - | pass |
 | C45 | `node scripts/desktop-profile-check.mjs` | count unknown | - | pass |
@@ -134,9 +135,15 @@
 | C66 | `node --test tests/harness.test.js` | count unknown | - | pass |
 | C67 | `node --test --test-name-pattern="STAB\-37/67:" tests/service.test.js` | count unknown | - | pass |
 | C67 | `node scripts/desktop-smoke.mjs` | count unknown | - | pass |
+| C67 | `node --test --test-name-pattern="STAB-67: validation" tests/service.test.js` | count unknown | - | pass |
 | C68 | `node --test --test-name-pattern="STAB\-12/13/15/16/68:" tests/rtc.test.js` | count unknown | - | pass |
 | C68 | `node --test --test-name-pattern="STAB\-14/15/68:" tests/rtc.test.js` | count unknown | - | pass |
 | C68 | `node --test --test-name-pattern="STAB\-28/29/30/68:" tests/service.test.js` | count unknown | - | pass |
 | Build | `npm.cmd test` | - | - | pass |
 | Build | `npm.cmd run build` | - | - | pass |
 | Build | `node scripts/desktop-smoke.mjs` | - | - | pass |
+
+## Mutations
+
+| Mutation | Location | Killed |
+| --- | --- | --- |

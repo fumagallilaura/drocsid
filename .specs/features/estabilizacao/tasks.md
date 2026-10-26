@@ -83,7 +83,7 @@ T5 -> T6 -> T7 -> T8
 **Tests**: unit em tests/rtc.test.js, incluindo promises de permissão/sender controladas.
 **Gate**: quick
 
-**Fix F3 / T2:** prova própria de idade dos candidatos, recebidos em instantes distintos: preservados14999/removidos15000 cada um, peer mantido e só candidato fresco entregue à descrição posterior. RTC/Full94/94 + Vite PASS em `test-results/stab-f3`; sem mudança de produto.
+**Fix F3 / T2:** prova própria de idade dos candidatos, recebidos em instantes distintos: preservados14999/removidos15000 cada um, peer mantido e só candidato fresco entregue à descrição posterior. RTC/Full 94/94 + Vite PASS em `test-results/stab-f3`; sem mudança de produto.
 
 ### T3: Estabilizar o componente createService
 
@@ -106,7 +106,7 @@ T5 -> T6 -> T7 -> T8
 
 **Fix F2 / T3:** toda recusa terminal do serviço registra metadados no proprietário error antes de responder, com causa disponível; catch de persistência/handler não duplica o diagnóstico. Wire phase/códigos preservados. Novo teste reproduziu warnings0 versus1 antes do fix;93/93 + build/co-localizado PASS em `test-results/stab-f2`.
 
-**Fix F4 / T3:** comparação completa dos200 IDs/textos/salas/timestamps legados em ordem; registro real adicional em café e nova consulta provam ausência em geral. Asserções antigas, plano indexado e count10000 mantidos antes da escrita extra. Service/Full94/94 + Vite PASS em `test-results/stab-f4`, sem mudança de produto.
+**Fix F4 / T3:** comparação completa dos200 IDs/textos/salas/timestamps legados em ordem; registro real adicional em café e nova consulta provam ausência em geral. Asserções antigas, plano indexado e count10000 mantidos antes da escrita extra. Service/Full 94/94 + Vite PASS em `test-results/stab-f4`, sem mudança de produto.
 
 ### T4: Validar o ciclo de bootstrap do servidor separado
 
@@ -178,7 +178,7 @@ T5 -> T6 -> T7 -> T8
 **Requirement**: STAB-63–67 e verificação transversal dos 68 ACs.
 **Tools**: MCP Agent Skills; tlc-spec-driven; shell/Playwright; Verifier independente.
 **Done when**:
-- [x] Source funciona sem manifesto; launch/close/WS falhando não deixam recursos de teste e flags 0/1 são corretas. Harness e matriz16 atuais aprovados, ver [evidência atual](evidence-current.md).
+- [x] Source funciona sem manifesto; launch/close/WS falhando não deixam recursos de teste e flags 0/1 são corretas. Harness e matriz 16 atuais aprovados, ver [evidência atual](evidence-current.md).
 - [ ] Todos os gates automatizáveis passam; relatório independente registra hardware real como não demonstrado, sem inventar aprovação.
 **Tests**: integration em tests/harness.test.js e scripts/desktop-smoke.mjs.
 **Gate**: build
@@ -495,8 +495,10 @@ Proof: node --test --test-name-pattern="STAB\-28/29/30/68:" tests/service.test.j
 
 **Settled mid-build:** 2026-10-26, user: "Executar nesta sessão; Verifier independente no fechamento". Recursos físicos indisponíveis: "Não estão disponíveis agora; manter T9 pendente".
 
-**Walked:** US1 entrada/cancelamento por teclado/escuta; US2 seleção/consentimento/tela/parada; US3 composição bloqueada na troca/retry; US4 mute/saída/cota; US5 shutdown via service/bootstrap e fechamento de janela; US6 falha/reentrada manual/estado de peer; US7 preferências/frame/câmera/ICE; US8 limites/legado por testes de serviço; US9 modal Tab/Escape, contraste, scroll, homônimos/legados e qualidade próxima captura; US10 startup/harness por checkers e Node. Gestos desktop executados em perfis isolados dos checkers; estados sem captura de design vinculante. Fontes/packaged aprovados em f85926e, logs stabilizacao-final. Mídia sintética não é aceitação física.
+**Walked:** US1 entrada/cancelamento por teclado/escuta; US2 seleção/consentimento/tela/parada; US3 composição bloqueada na troca/retry; US4 mute/saída/cota; US5 shutdown via service/bootstrap e fechamento de janela; US6 falha/reentrada manual/estado de peer; US7 preferências/frame/câmera/ICE; US8 limites/legado por testes de serviço; US9 modal Tab/Escape, contraste, scroll, homônimos/legados e qualidade próxima captura; US10 startup/harness por checkers e Node. Gestos desktop executados em perfis isolados dos checkers; estados sem captura de design vinculante. Fontes/packaged aprovados em `699d4ed`, logs stabilizacao-postfix. Mídia sintética não é aceitação física.
 
-**Dispatched:** 2026-10-26, primeiro despacho /root/stab_verifier invalidado e interrompido antes de parecer/sensor por leitura acidental do Handoff; confirmou nenhum arquivo/processo/scratch criado. Substituição fresca /root/stab_independent_verifier, HEAD573491e, range63810f4..573491e, após proofs87/87 PASS; recortes de matriz/Checks preparados sem Handoff. Retornado em573491e: verification.md FAIL, quatro achados F1–F4 e sensor7/7 por asserção. Provas sem alternância134pass; ferramenta mutate.py incompatível comSIGHUP Windows, fechamento sem aprovação. Author ≠ verifier.
+**Dispatched:** 2026-10-26, primeiro despacho /root/stab_verifier invalidado e interrompido antes de parecer/sensor por leitura acidental do Handoff; confirmou nenhum arquivo/processo/scratch criado. Substituição fresca /root/stab_independent_verifier, HEAD573491e, range63810f4..573491e, após proofs87/87 PASS; recortes de matriz/Checks preparados sem Handoff. Retornado em `573491e`: verification.md FAIL, quatro achados F1–F4 e sensor7/7 por asserção. Provas sem alternância134pass; ferramenta mutate.py incompatível comSIGHUP Windows, fechamento sem aprovação. Author ≠ verifier.
 
 **Fix pass do Verifier:** F1 `1c1bdbd`, F2 `0345015`, F3 `070dd2f`, F4 `9048e70`;94/94, sem Verified. Repetir matriz/provas e sete mutantes independentes, mais quatro sondas específicas dos fixes. Gate de fechamento da ferramenta continua pendente; T9 física ausente.
+
+**Fechamento automatizado em `699d4ed`:**94/94,16 gates,136 provas funcionais e7+4 sensores por asserção. F1–F4 fechados nos commits dos proprietários. T8 permanece formalmente aberta: validate_verification exit1 pela ausência de linhas emitidas por mutate.py (SIGHUP indisponível); não confundir sensor próprio com execução da ferramenta. Sucesso físico e T9 pendentes.

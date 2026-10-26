@@ -283,7 +283,7 @@ T8 -> T9
 
 **Done when**:
 
-- [x] Build completo passa para a candidata final; versão, git SHA, SHA-256, executável e portátil real são identificados e correspondem ao disco. Build atual do autor em f85926e, 16/16 e 91/91; SHA-256 `cecd15829760e1aa0d30f14db23584016c525d9ffee988c5ec06178b4f14b46e`. A rodada2 independente e seu hash anterior permanecem históricos.
+- [x] Build completo passa para a candidata final; versão, git SHA, SHA-256, executável e portátil real são identificados e correspondem ao disco. Build atual do autor em `699d4ed`,16/16 e94/94; SHA-256 `16caffca2bf5b129e48b8d79438baa0e5b23fd4ca225b1e3aca24e81b2646135`. A rodada2 independente e seu hash anterior permanecem históricos.
 - [x] Cada MEDIA-01–32 tem arquivo:linha, asserção de valor, resultado e limite de evidência. Nenhum caso é aprovado só pelo nome do teste ou pela sondagem histórica.
 - [x] D1/D2 continuam estáticos/parciais, D3–D5 documentais e D6–D11 com a autoridade/cobertura do relatório. U1 vale somente para UI/processo; controles indisponíveis não certificam captura ou sua causa. Renderer do cache não é atribuído à versão ativa e Browser não é presumido como engine Windows. As quatro dúvidas de runtime permanecem abertas sem prova correspondente; registrar diferenças deliberadas C2/A5.
 - [x] O relatório mantém MEDIA-33/34 pendentes de T9. Total Node `50 + Δ`, zero falhas/skips/cancelled e integridade do histórico de asserções são registrados.
@@ -566,6 +566,8 @@ Proof: node -e "process.stderr.write('T9 NAO EXECUTADA: PCs Windows, hardware re
 
 **Settled mid-build:** user: "Executar nesta sessão; Verifier independente no fechamento" e "Não estão disponíveis agora; manter T9 pendente".
 
-**Walked:** US1 entrada/escuta/mute/cancelamento por teclado, US2 seletor e consentimento/stop/rollback, US3 troca de sala/desconexão/unmount/close e reentrada manual, US4 fronteiras de protocolo/cota/presença por testes e checkers, US5 startup sem manifesto e diagnóstico. Matriz16 final em f85926e, perfis/bancos de teste isolados, controles acionados na UI. Ensaio físico T9 ausente, sem captura de design vinculante.
+**Walked:** US1 entrada/escuta/mute/cancelamento por teclado, US2 seletor e consentimento/stop/rollback, US3 troca de sala/desconexão/unmount/close e reentrada manual, US4 fronteiras de protocolo/cota/presença por testes e checkers, US5 startup sem manifesto e diagnóstico. Matriz 16 final em `699d4ed`, perfis/bancos de teste isolados, controles acionados na UI. Ensaio físico T9 ausente, sem captura de design vinculante.
 
 **Dispatched:** MEDIA rodada1 e rodada2 retornadas, preservadas em validation-round1.md e validation-round2.md. Revisão atual da skill: reexecutar provas e mutantes desses pareceres; não despachar terceiro Verifier.
+
+**Fechamento em `699d4ed`:**32 critérios automatizáveis com provas funcionais verdes,85pass/2 fail físicos. Sensor próprio6/6 por asserção;94/94 antes/após e fonte/porcelain preservados. O mutate.py atual falha por SIGHUP e não emite linhas; T8 formal não está fechada, T9 permanece pendente e nenhum MEDIA Verified. Ver verification.md.

@@ -1,5 +1,7 @@
 # Estabilizacao verification
 
+**Estado atual após a passada do autor em `699d4ed`:** F1–F4 corrigidos pelos commits da coluna Closed.94/94,16 gates,136 provas funcionais e7+4 sensores STAB por asserção. Gate formal FAIL: mutate.py/SIGHUP Windows não executa e proofs tem0 linhas de mutação. O parecer original do snapshot573491e abaixo permanece histórico, sem novo Verifier. Ver evidence-current.md para a candidata atual e limites.
+
 **Verdict**: FAIL. C40 aceita nome de sala fora do limite normalizado e C67 não registra a recusa de protocolo. Duas provas deixam valores exigidos sem asserção suficiente.
 
 **HEAD**: 573491e076203694113126065aa15331206e09ba
@@ -59,4 +61,4 @@ Recursos T9 foram informados indisponíveis: dois PCs Windows na LAN, fones/micr
 
 ## Author fix pass
 
-Os quatro achados do snapshot573491e foram tratados em uma passada, pelos commits indicados em Closed. Relato independente acima preservado. Full94/94 e Vite passaram; candidata/provas/sensor finais precisam ser repetidos após os dois fixes de produto. Nenhum novo Verifier ou nova rodada de julgamento. O fechamento continua sem aprovação enquanto validate_verification não passar; o utilitário de mutação da revisão atual falha no Python Windows por SIGHUP, sem mortes válidas atribuídas a ele.
+Os quatro achados do snapshot573491e foram tratados em uma passada, pelos commits indicados em Closed. Relato independente acima preservado. Full 94/94, Vite, matriz 16,136 provas e sensores7+4 repetidos em `699d4ed`, após os dois fixes de produto. Nenhum novo Verifier ou nova rodada de julgamento. O fechamento continua sem aprovação enquanto validate_verification não passar; o utilitário de mutação da revisão atual falha no Python Windows por SIGHUP, sem mortes válidas atribuídas a ele.
