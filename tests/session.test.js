@@ -52,7 +52,7 @@ test('STAB-39: old fetch/socket callbacks cannot overwrite a newer connection',a
 
 test('STAB-17/20/39: room transition blocks sending and preserves separate drafts',async()=>{
   const f=fixture(), ws=await f.connect();f.session.setDraft('rascunho A');let joining;
-  f.setBackend((_ws,e)=>{if(e.type==='join')joining=e;});
+  f.setBackend((socket,e)=>{if(e.type==='join')joining=e;else if(e.type==='message')socket.receive({type:'message-accepted',requestId:e.requestId,message:persisted(e)});});
   const changed=f.session.changeRoom('cafe');assert.equal(f.session.state.room.id,'geral');assert.equal(f.session.state.roomPending,true);
   await assert.rejects(f.session.sendText(),e=>e.code==='INVALID_EVENT');assert.equal(ws.sent.some(e=>e.type==='message'),false);
   ws.receive({type:'joined',requestId:joining.requestId,room:room('cafe'),messages:[]});await changed;
@@ -66,6 +66,7 @@ test('STAB-18/21/22/23: rejected text is recoverable and retry reconciles one pe
   const f=fixture(), ws=await f.connect();let first;
   f.setBackend((socket,e)=>{if(e.type==='message'){first=e;socket.receive({type:'error',requestId:e.requestId,code:'RATE_LIMITED',phase:'message',message:'Tente novamente'});}});
   f.session.setDraft('  texto integral  ');await assert.rejects(f.session.sendText(),e=>e.code==='RATE_LIMITED');
+  assert.equal(f.session.state.outbox.length,1);
   const failed=f.session.state.outbox[0];assert.equal(failed.text,'  texto integral  ');assert.equal(failed.room,'geral');assert.equal(failed.status,'failed');
   f.setBackend((socket,e)=>{if(e.type==='message'){assert.equal(e.operationId,first.operationId);socket.receive({type:'message-accepted',requestId:e.requestId,message:persisted(e)});socket.receive({type:'message',context:f.session.roomContext,message:persisted(e)});}});
   await f.session.retry(failed.operationId);assert.equal(f.session.state.messages.length,1);assert.equal(f.session.state.outbox.length,0);
@@ -215,4 +216,61 @@ test('MEDIA-28: signaling addressed to a terminal local attempt never reaches th
   const event={type:'signal',context:f.session.roomContext,from:'peer',fromCallId:'remote',signal:{candidate:{candidate:'candidate'}}};
   ws.receive({...event,callId:'old'});assert.deepEqual(signals,[]);assert.equal(f.session.activeCallId,'new');assert.equal(f.session.state.connected,true);
   ws.receive({...event,callId:'new'});assert.equal(signals.length,1);assert.equal(signals[0].callId,'new');f.session.disconnect();
+});
+
+test('STAB-18/20/22: a transport refusal preserves full text and both room drafts across reconnect',async()=>{
+  const f=fixture(),ws=await f.connect(),send=ws.send.bind(ws),text='  envio não aceito integral  ';
+  ws.send=bytes=>{if(JSON.parse(bytes).type==='message')throw Error('transport refused');return send(bytes);};
+  f.session.setDraft(text);await assert.rejects(()=>f.session.sendText(),error=>error.code==='CONNECTION_FAILED');
+  assert.equal(f.session.state.messages.length,0);assert.equal(f.session.state.outbox.length,1);
+  const failed=f.session.state.outbox[0];assert.equal(failed.text,text);assert.equal(failed.room,'geral');assert.equal(failed.status,'failed');
+  f.session.setDraft('rascunho geral');await f.session.changeRoom('cafe');f.session.setDraft('rascunho café');f.session.disconnect();
+  await f.connect(undefined,'cafe');assert.equal(f.session.state.draft,'rascunho café');assert.equal(f.session.state.outbox.length,0);
+  await f.session.changeRoom('geral');assert.equal(f.session.state.draft,'rascunho geral');assert.equal(f.session.state.outbox.length,1);
+  assert.equal(f.session.state.outbox[0].operationId,failed.operationId);assert.equal(f.session.state.outbox[0].text,text);assert.equal(f.session.state.outbox[0].status,'failed');f.session.disconnect();
+});
+
+test('STAB-18/20/21/23/39: a late receipt reconciles its original room without changing the new composition',async()=>{
+  const f=fixture(),ws=await f.connect(),oldContext=f.session.roomContext;let sent,committed;
+  f.setBackend((socket,event)=>{
+    if(event.type==='message')sent=event;
+    if(event.type==='join')socket.receive({type:'joined',requestId:event.requestId,room:room(event.room),messages:event.room==='geral'&&committed?[committed]:[]});
+  });
+  const sending=f.session.sendText('  destino fixo  ');assert.equal(f.session.state.outbox.length,1);
+  await f.session.changeRoom('cafe');f.session.setDraft('composição nova');
+  committed=persisted(sent);ws.receive({type:'message-accepted',requestId:sent.requestId,message:committed});assert.deepEqual(await sending,committed);
+  assert.equal(f.session.state.room.id,'cafe');assert.equal(f.session.state.draft,'composição nova');assert.deepEqual(f.session.state.messages,[]);assert.deepEqual(f.session.state.outbox,[]);
+  await f.session.changeRoom('geral');assert.deepEqual(f.session.state.messages,[committed]);assert.deepEqual(f.session.state.outbox,[]);
+  ws.receive({type:'message',context:oldContext,message:committed});assert.deepEqual(f.session.state.messages,[committed]);assert.deepEqual(f.errors,[]);f.session.disconnect();
+});
+
+test('STAB-38: every A1 phase ends at 8s and permits a manual retry',async()=>{
+  for(const phase of ['configuration','websocket','hello','join','call-join','message']){
+    const f=fixture(),fetcher=f.session.fetcher;
+    const confirm=(socket,event)=>{
+      if(event.type==='join')socket.receive({type:'joined',requestId:event.requestId,room:room(event.room),messages:[]});
+      else if(event.type==='call-join')socket.receive(callAck(event));
+      else if(event.type==='message')socket.receive({type:'message-accepted',requestId:event.requestId,message:persisted(event)});
+    };
+    let pending;
+    if(['configuration','websocket','hello'].includes(phase)){
+      if(phase==='configuration')f.session.fetcher=()=>new Promise(()=>{});
+      pending=f.session.connect({name:'Ana',server:'http://localhost:4310'});await drain();
+      if(phase==='hello')f.sockets.at(-1).open();
+    }else{
+      await f.connect();f.setBackend(()=>{});
+      if(phase==='join')pending=f.session.changeRoom('cafe');
+      else if(phase==='call-join')pending=f.session.request({type:'call-join',callId:'timed-out',generation:1,muted:true});
+      else pending=f.session.sendText('texto aguardando recibo');
+    }
+    let settled=false,cause;pending.then(()=>{settled=true;},error=>{settled=true;cause=error;});
+    f.clock.tick(7999);await new Promise(setImmediate);assert.equal(settled,false,phase);
+    f.clock.tick(1);await new Promise(setImmediate);assert.equal(settled,true,phase);assert.equal(cause.code,'TIMEOUT');assert.equal(cause.phase,phase);
+    f.session.fetcher=fetcher;f.setBackend(confirm);
+    if(['configuration','websocket','hello'].includes(phase)){await f.connect();assert.equal(f.session.state.connected,true);}
+    else if(phase==='join'){await f.session.changeRoom('cafe');assert.equal(f.session.state.room.id,'cafe');}
+    else if(phase==='call-join')assert.equal((await f.session.request({type:'call-join',callId:'retry',generation:2,muted:true})).inCall,true);
+    else{assert.equal(f.session.state.outbox.length,1);await f.session.retry(f.session.state.outbox[0].operationId);assert.equal(f.session.state.messages[0].text,'texto aguardando recibo');}
+    f.session.disconnect();assert.equal(f.clock.jobs.size,0);
+  }
 });

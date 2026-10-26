@@ -118,7 +118,7 @@ T5 -> T6 -> T7 -> T8
 **Done when**:
 - [x] Nenhuma resposta antiga altera a sessão atual; handshake sem hello termina em timeout.
 - [x] Texto e operação sobrevivem à troca/reconexão na execução; reenvio reconcilia pelo recibo. Gate: 39/39 testes e build; T5 em evidence.md.
-- [ ] Retomada: falha de transporte preserva texto integral; recibo atrasado não muda a sala atual; todas as fases A1 terminam no limite e permitem nova tentativa. R04/R05 devem falhar por asserção de resultado no sensor.
+- [x] Retomada: falha de transporte preserva texto integral; recibo atrasado não muda a sala atual; todas as fases A1 terminam no limite e permitem nova tentativa. Três testes novos, produto inalterado, Quick 89/89 PASS; [adequação R2](execution.md#r2--t5--composição-transporte-e-prazos-da-session). Fixture/asserção de R04/R05 fortalecidas; sensor independente ainda pendente. Commit correspondente é o que contém esta atualização.
 **Tests**: unit em tests/session.test.js com transporte controlado.
 **Gate**: quick
 

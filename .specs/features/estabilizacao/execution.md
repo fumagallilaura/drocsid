@@ -17,3 +17,18 @@ Gate da tarefa T3/Full: `npm.cmd test` PASS, **85/85 = 50 + 35**, zero fail/skip
 | STAB-33/63/R07 | `tests/service.test.js:287`: bytes HTTP404, evento close numérico, duração <=1000 e socket destruído, verificados após janela de observação de 1 s | PASS baseline; sensor deve remover resposta/fechamento e morrer na asserção, sem aguardar once(data/close) indefinidamente |
 
 Reverso C/D: cada teste novo corresponde a uma linha; helpers e statements do produto foram reutilizados. Somente falhas deliberadas de cleanup geram SHUTDOWN_FAILED esperado. O timer do teste limita a observação e as asserções conferem dados/estado efetivos; a morte no sensor não pode ser atribuída ao término desse timer. Sem abstração, dependência, refatoração ou alteração de requisito. Adequação do autor R1: PASS; avaliação independente dos 68 STAB continua pendente.
+
+## R2 / T5 — composição, transporte e prazos da Session
+
+R1: `088e701`. Três testes novos fecham conjunções de texto recusado pelo transporte, recibo recebido depois da navegação e fronteiras de todas as seis fases A1. A Session existente passou sem alteração de produto. O backend controlado do teste de troca de sala agora aceita mensagens válidas, como um servidor saudável: se a barreira for removida, a expectativa de rejeição falha por valor, sem timeout artificial. O teste de rejeição exige outbox.length=1 antes de acessar seu conteúdo, para R05 não terminar apenas em TypeError.
+
+Gate T5/Quick e teste co-localizado de Session: PASS, **89/89 = 50 + 39**, zero fail/skip/cancelled/todo. Logs em `test-results/stab-r2/{session,quick}.log`. Todos os resultados anteriores continuam exigidos.
+
+| AC / conjunção | Evidência e expressão de resultado | Adequação A/B |
+| --- | --- | --- |
+| STAB-18/20/22, transporte recusou enviar | `tests/session.test.js:225` messages=0/outbox.length=1; `:226` texto integral/geral/failed; `:228` rascunho café preservado após reconexão; `:229`/`:230` rascunho geral e operação/texto falho originais preservados | PASS, nenhuma confirmação fabricada e buffers por sala separados |
+| STAB-18/20/21/23/39, recibo atrasado | `tests/session.test.js:242` resultado igual ao recibo; `:243` sala café/draft novo intactos, mensagens/outbox atuais vazios; `:244` histórico geral com uma única mensagem; `:245` replay de contexto antigo não duplica e errors=[] | PASS, identidade/destino fixos sem alterar composição atual |
+| STAB-38, seis fases A1 e retry manual | `tests/session.test.js:266` settled=false em 7999; `:267` settled=true/TIMEOUT/fase exata em 8000; `:269`–`:273` conexão/sala/admissão/reenvio manual bem-sucedidos; `:274` zero timers ao terminar | PASS configuration/websocket/hello/join/call-join/message; a espera de permissão não entra no prazo de admissão |
+| STAB-63/R04/R05, sensor por resultado | `tests/session.test.js:56` backend pode confirmar mensagem válida e `:58` rejeição permanece obrigatória durante troca; `:68` outbox.length=1 antes de texto/estado | Baseline PASS, sensor independente ainda deve injetar regressões e comprovar AssertionError |
+
+Reverso C/D: cada teste novo corresponde às três primeiras linhas; as duas ampliações de fixture/asserção ancoram a quarta. Sem novos helpers de produção ou abstrações de estado. Asserções antigas não foram substituídas; os controles de confirmação apenas tornam a regressão observável. Adequação do autor R2: PASS, sem certificação integral STAB e sem resultado físico.

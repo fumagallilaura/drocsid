@@ -348,16 +348,16 @@ As marcas T1–T6 no [plano histórico](tasks.md) são relatos do autor com comm
 | STAB-15 | US2 | R03, R13 | src/rtc.js:119; src/main.jsx:113 | Specify | Pending |
 | STAB-16 | US2 | R03, R14 | src/rtc.js:106; src/rtc.js:115 | Specify | Pending |
 | STAB-68 | US2 | R03, R06, R13 | src/rtc.js:119; server/service.js:95 | Specify | Pending |
-| STAB-17 | US3 | R04 | src/main.jsx:101; src/main.jsx:144 | Specify | Pending |
-| STAB-18 | US3 | R04, R05, R13 | src/main.jsx:144; server/service.js:75 | Specify | Pending |
+| STAB-17 | US3 | R04 | src/main.jsx:101; src/main.jsx:144 | Execute | Implementing |
+| STAB-18 | US3 | R04, R05, R13 | src/main.jsx:144; server/service.js:75 | Execute | Implementing |
 | STAB-19 | US3 | R04 | server/service.js:72 | Execute | Implementing |
-| STAB-20 | US3 | R04, R05 | src/main.jsx:78; src/main.jsx:120 | Specify | Pending |
+| STAB-20 | US3 | R04, R05 | src/main.jsx:78; src/main.jsx:120 | Execute | Implementing |
 | STAB-21 | US3 | R05, R13, R16 | server/service.js:75 | Execute | Implementing |
-| STAB-22 | US3 | R05 | src/main.jsx:46; src/main.jsx:144 | Specify | Pending |
+| STAB-22 | US3 | R05 | src/main.jsx:46; src/main.jsx:144 | Execute | Implementing |
 | STAB-23 | US3 | R05, R13 | server/service.js:75; src/main.jsx:87 | Execute | Implementing |
 | STAB-24 | US3 | R05, R13 | server/service.js:72 | Execute | Implementing |
-| STAB-25 | US3 | R05, R16, R25 | server/service.js:76; server/service.js:107 | Specify | Pending |
-| STAB-26 | US3 | R05, R16 | server/service.js:11; tests/server.test.js:62 | Specify | Pending |
+| STAB-25 | US3 | R05, R16, R25 | server/service.js:76; server/service.js:107 | Execute | Implementing |
+| STAB-26 | US3 | R05, R16 | server/service.js:11; tests/server.test.js:62 | Execute | Implementing |
 | STAB-27 | US3 | R05, R13 | server/service.js:73; src/main.jsx:144 | Execute | Implementing |
 | STAB-28 | US4 | R06 | server/service.js:59; server/service.js:92 | Specify | Pending |
 | STAB-29 | US4 | R06, R13 | server/service.js:92 | Specify | Pending |
@@ -369,8 +369,8 @@ As marcas T1–T6 no [plano histórico](tasks.md) são relatos do autor com comm
 | STAB-35 | US5 | R07, R18 | server/service.js:42; server/service.js:118 | Execute | Implementing |
 | STAB-36 | US5 | R07 | server/service.js:118; electron/main.js:72; server/index.js:25 | Execute | Implementing |
 | STAB-37 | US5 | R07, R25 | server/service.js:118; server/index.js:25 | Execute | Implementing |
-| STAB-38 | US6 | R02, R05, R10 | src/main.jsx:61; src/main.jsx:68 | Specify | Pending |
-| STAB-39 | US6 | R01, R04, R13, R14 | src/main.jsx:69; src/main.jsx:92; src/rtc.js:72 | Specify | Pending |
+| STAB-38 | US6 | R02, R05, R10 | src/main.jsx:61; src/main.jsx:68 | Execute | Implementing |
+| STAB-39 | US6 | R01, R04, R13, R14 | src/main.jsx:69; src/main.jsx:92; src/rtc.js:72 | Execute | Implementing |
 | STAB-40 | US6 | R13 | server/service.js:61; src/main.jsx:69 | Specify | Pending |
 | STAB-41 | US6 | R02, R05, R06, R13, R25 | server/service.js:40; src/main.jsx:90 | Specify | Pending |
 | STAB-42 | US6 | R14 | src/rtc.js:31; src/rtc.js:62 | Specify | Pending |
