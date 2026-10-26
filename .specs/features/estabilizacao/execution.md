@@ -58,3 +58,7 @@ R3: `8955755`. Nenhuma alteração do host foi necessária. O checker de perfil 
 | STAB-48 | `scripts/desktop-profile-check.mjs:37` câmera e `:45` iframe retornam NotAllowedError; política/IPC unitários e checker de captura mantêm origem/frame/chave não confiáveis negados | PASS, câmera continua fora do escopo e sem capacidade concedida |
 
 Reverso C/D: a comparação nova e o recurso de servidor/cleanup pertencem a STAB-50; as comparações já existentes sustentam as outras linhas. Não há escolha de STUN/TURN de produto; a URL de loopback é só dado de teste, sem credenciais. **89/89**, zero fail/skip/cancelled/todo; Build STAB (Quick + build + smoke source) e perfil source PASS em `test-results/stab-r4`. Adequação do autor R4: PASS; T8 e o Verifier transversal permanecem necessários.
+
+## R5 / T3 — dados existentes incompatíveis
+
+Sem mudança de produto. `tests/service.test.js:106` ensaia dois bancos reais: versão futura e coluna obrigatória ausente. A abertura exige INVALID_INPUT e, após a falha, uma nova conexão SQLite compara todas as salas, mensagens e user_version aos valores anteriores (`:119`–`:124`). STAB-49/55 não permite exclusão automática ou confirmação falsa. Full/co-localizado PASS, **90/90 = 50 + 40**, zero fail/skip/cancelled/todo, logs `test-results/stab-r5`. As duas variantes afirmam os dados e a causa, não apenas ausência de crash. Nenhuma asserção antiga alterada. Cada preparação/asserção pertence a essa preservação; o cleanup remove só a pasta criada pelo próprio teste. Autor PASS; parecer STAB pendente.

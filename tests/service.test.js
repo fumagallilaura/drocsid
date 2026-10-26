@@ -103,6 +103,28 @@ test('STAB-53/54/55/61: legacy history keeps stable insertion order with an inde
   assert.equal(plan.some(row=>/TEMP B-TREE/.test(row.detail)),false); assert.equal(check.prepare('SELECT count(*) AS count FROM messages').get().count,10000); check.close();
 });
 
+test('STAB-49/55: incompatible stored data is refused without changing prior rows',t=>{
+  const dir=mkdtempSync(join(tmpdir(),'conversa-incompatible-'));
+  t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  for(const variant of ['newer-version','missing-column']){
+    const dbPath=join(dir,`${variant}.sqlite`),db=new DatabaseSync(dbPath);
+    db.exec(`CREATE TABLE rooms (id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL);
+      INSERT INTO rooms VALUES ('custom','Sala antiga','Preservar');
+      CREATE TABLE messages (id TEXT PRIMARY KEY, room TEXT NOT NULL, author TEXT NOT NULL, ${variant==='missing-column'?'':'text TEXT NOT NULL,'} created INTEGER NOT NULL);`);
+    if(variant==='missing-column')db.prepare('INSERT INTO messages VALUES (?,?,?,?)').run('old','custom','Ana',123);
+    else db.prepare('INSERT INTO messages VALUES (?,?,?,?,?)').run('old','custom','Ana','Texto anterior',123);
+    db.exec(`PRAGMA user_version=${variant==='newer-version'?2:0}`);
+    const before={rooms:db.prepare('SELECT * FROM rooms').all(),messages:db.prepare('SELECT * FROM messages').all(),version:db.prepare('PRAGMA user_version').get()};db.close();
+    assert.throws(()=>createService({dbPath,iceServers:[]}),error=>error.code==='INVALID_INPUT');
+    const reopened=new DatabaseSync(dbPath);
+    try{
+      assert.deepEqual(reopened.prepare('SELECT * FROM rooms').all(),before.rooms);
+      assert.deepEqual(reopened.prepare('SELECT * FROM messages').all(),before.messages);
+      assert.deepEqual(reopened.prepare('PRAGMA user_version').get(),before.version);
+    }finally{reopened.close();}
+  }
+});
+
 test('STAB-51/52: connection cap refuses 25th and slow consumer cannot block healthy delivery',async t=>{
   const s=await start(t), clients=[];
   for(let i=0;i<24;i++)clients.push(await client(s.url,`Pessoa ${i}`));

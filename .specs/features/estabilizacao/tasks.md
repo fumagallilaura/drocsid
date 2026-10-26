@@ -96,6 +96,8 @@ T5 -> T6 -> T7 -> T8
 **Tests**: integration em tests/server.test.js e tests/service.test.js; adaptar somente o helper de protocolo dos três testes existentes.
 **Gate**: full
 
+**Retomada T3 / R5:** incompatibilidade por versão de banco futura ou coluna obrigatória ausente recusa a abertura com INVALID_INPUT; salas/mensagens/versão anteriores permanecem iguais após reabrir. Full 90/90, zero falhas/skips; `test-results/stab-r5`. Sem mudança de produto.
+
 ### T4: Validar o ciclo de bootstrap do servidor separado
 
 **What**: Inicialização e sinais usam configuração validada e limpeza comum.
@@ -363,6 +365,7 @@ Proof: node scripts/desktop-profile-check.mjs
 
 **C49** - IF PORT ou qualquer entrada ICE configurada tiver formato inválido, ou o bootstrap falhar ao abrir banco/listener THEN o sistema SHALL recusar a inicialização com causa identificável e liberar os recursos já abertos. (STAB-49)
 Proof: node --test --test-name-pattern="STAB\-49/50:|STAB\-49:" tests/bootstrap.test.js tests/protocol.test.js
+Proof: node --test --test-name-pattern="STAB-49/55: incompatible" tests/service.test.js
 
 **C50** - WHEN desktop e servidor separado receberem a mesma configuração ICE válida THEN o sistema SHALL expor a mesma configuração efetiva de mídia para testes, respeitando os limites de acesso de C1 e A13. (STAB-50)
 Proof: node --test --test-name-pattern="STAB\-49/50:" tests/bootstrap.test.js tests/protocol.test.js
@@ -382,6 +385,7 @@ Proof: node --test --test-name-pattern="STAB\-53/54/55/61:" tests/service.test.j
 
 **C55** - IF houver erro de escrita, contenda de banco ou incompatibilidade de dados existentes THEN o sistema SHALL preservar os registros anteriores sem confirmação falsa ou exclusão automática de mensagens. (STAB-55)
 Proof: node --test --test-name-pattern="STAB\-25/26/55:|STAB\-53/54/55/61:" tests/service.test.js
+Proof: node --test --test-name-pattern="STAB-49/55: incompatible" tests/service.test.js
 
 **C56** - WHEN um segundo host desktop tentar abrir o mesmo userData ativo THEN o desktop SHALL recusar esse host adicional de forma identificável, preservando as janelas do host original. (STAB-56)
 Proof: node scripts/desktop-profile-check.mjs
