@@ -67,6 +67,8 @@ T5 -> T6 -> T7 -> T8
 **Tests**: unit em tests/protocol.test.js.
 **Gate**: quick
 
+**Fix F1 / T1:** nomes de sala/exibição validados em1–32 UTF16 após trim nos dois receptores. Strings em branco recusadas;32 úteis com padding aceitas sem coagir/alterar payload. Teste novo reproduziu Missing expected exception antes do fix;92/92 + build e protocol co-localizado PASS em `test-results/stab-f1`.
+
 ### T2: Corrigir o proprietário de captura e negociação Call
 
 **What**: Uma geração de chamada controla aquisição, publicação de tela e peers até o término.

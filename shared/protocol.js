@@ -10,6 +10,7 @@ export class ProtocolError extends Error {
 }
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const string = (value, max = 128) => typeof value === 'string' && value.length > 0 && value.length <= max;
+const name = value => typeof value === 'string' && string(value.trim(), 32);
 const integer = value => Number.isSafeInteger(value) && value >= 0;
 const optionalString = value => value == null || (typeof value === 'string' && value.length <= 256);
 const fail = (code = 'INVALID_EVENT') => { throw new ProtocolError(code); };
@@ -41,14 +42,14 @@ export function parseClientEvent(raw) {
   if (['call-join','call-leave','media','signal'].includes(e.type) && (!string(e.callId) || !integer(e.generation) || e.generation < 1)) fail();
   switch (e.type) {
     case 'join':
-      if (!string(e.room) || !string(e.name, 32) || !e.name.trim()) fail('INVALID_INPUT');
+      if (!string(e.room) || !name(e.name)) fail('INVALID_INPUT');
       break;
     case 'message':
       if (!string(e.room) || !string(e.operationId) || typeof e.text !== 'string') fail();
       if (!e.text.trim() || e.text.trim().length > LIMITS.text) fail('INVALID_INPUT');
       break;
     case 'create-room':
-      if (!string(e.name, 32) || !e.name.trim()) fail('INVALID_INPUT');
+      if (!name(e.name)) fail('INVALID_INPUT');
       break;
     case 'call-join':
       if (!string(e.callId) || !integer(e.generation) || e.generation < 1 || typeof e.muted !== 'boolean') fail();
@@ -68,12 +69,12 @@ export function parseClientEvent(raw) {
   return e;
 }
 
-const room = r => object(r) && string(r.id) && string(r.name, 32) && typeof r.description === 'string' && r.description.length <= 2000;
+const room = r => object(r) && string(r.id) && name(r.name) && typeof r.description === 'string' && r.description.length <= 2000;
 const rooms = list => Array.isArray(list) && list.length <= LIMITS.rooms && list.every(room);
-const message = m => object(m) && string(m.id) && string(m.room) && string(m.author, 32) &&
+const message = m => object(m) && string(m.id) && string(m.room) && name(m.author) &&
   string(m.text, LIMITS.text) && integer(m.created) && integer(m.sequence) && m.sequence > 0 &&
   (m.authorId === null || string(m.authorId)) && (m.operationId === null || string(m.operationId));
-const member = m => object(m) && string(m.id) && string(m.name, 32) &&
+const member = m => object(m) && string(m.id) && name(m.name) &&
   typeof m.inCall === 'boolean' && typeof m.muted === 'boolean' && typeof m.sharing === 'boolean' &&
   (m.inCall ? string(m.callId) : m.callId === null) && (!m.sharing || m.inCall) && integer(m.generation);
 

@@ -38,6 +38,24 @@ test('STAB-40: server data is validated before rendering or signaling', () => {
   }
 });
 
+test('STAB-40: received display and room names have 1 to 32 UTF-16 units after trim',()=>{
+  const received=name=>[
+    {v:2,type:'hello',id:'client',rooms:[{id:'geral',name,description:''}]},
+    {v:2,type:'presence',room:'geral',context:'context',revision:1,members:[{id:'guest',name,inCall:false,muted:true,sharing:false,callId:null,generation:0}]},
+    {v:2,type:'message',context:'context',message:{id:'message',room:'geral',author:name,text:'oi',created:1,sequence:1,authorId:null,operationId:null}},
+  ];
+  for(const name of ['', ' '.repeat(17), 'x'.repeat(33), null, []]){
+    for(const payload of received(name))rejects(()=>parseServerEvent(JSON.stringify(payload)),'INVALID_EVENT');
+    for(const type of ['join','create-room'])rejects(()=>decode(event(type,{name,room:'geral'})),'INVALID_INPUT');
+  }
+  for(const name of ['A','x'.repeat(32),'  Ana  ',`  ${'x'.repeat(32)}  `]){
+    for(const payload of received(name))assert.deepEqual(parseServerEvent(JSON.stringify(payload)),payload);
+    for(const type of ['join','create-room']){
+      const payload=event(type,{name,room:'geral'});assert.deepEqual(decode(payload),payload);
+    }
+  }
+});
+
 test('STAB-49/50: ICE config and ports use the same explicit validation', () => {
   const ice = [{ urls: ['stun:localhost:3478', 'turns:relay.example:5349'], username: 'test', credential: 'fictional' }];
   assert.deepEqual(readIceServers(ice), ice);
