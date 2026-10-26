@@ -5,24 +5,30 @@ import { resolve, join } from 'node:path';
 import { createServer } from 'node:net';
 import { spawn } from 'node:child_process';
 import { createTestProfile, removeTestProfile, closeDesktop, closeResources } from './test-runtime.mjs';
+import { startServer } from '../server/index.js';
 
 const profile = createTestProfile();
 const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
+const iceServers=[{urls:'stun:127.0.0.1:3478'}];env.ICE_SERVERS=JSON.stringify(iceServers);
 const executablePath = process.env.CONVERSA_TEST_EXECUTABLE;
 const args = [...(executablePath ? [] : [resolve('.')]), `--user-data-dir=${profile}`, '--use-fake-device-for-media-stream', '--mute-audio'];
 const launch = () => electron.launch({ ...(executablePath ? { executablePath } : {}), args, env, timeout: 15000 });
 const preferencesPath = join(profile, 'preferences.json');
-let desktop, blocker;
+let desktop, blocker, comparison;
 const nativeErrors = [];
 function observeNative(application) {
   application.process().stderr.on('data', bytes => { const text = bytes.toString(); if (/UnhandledPromiseRejection|uncaughtException/.test(text)) nativeErrors.push(text); });
 }
 try {
   writeFileSync(preferencesPath, '{invalid preferences');
+  comparison=await startServer({production:true,env:{DB_PATH:':memory:',HOST:'127.0.0.1',PORT:'0',ICE_SERVERS:env.ICE_SERVERS}});
   desktop = await launch();
   observeNative(desktop);
   let page = await desktop.firstWindow();
   await expect(page.getByRole('heading', { name: 'Vamos nos encontrar?' })).toBeVisible();
+  const standalone=await(await fetch(`http://127.0.0.1:${comparison.server.address().port}/api/config`)).json();
+  const embedded=await page.evaluate(async()=>await(await fetch('/api/config')).json());
+  expect(standalone.iceServers).toEqual(iceServers);expect(embedded.iceServers).toEqual(iceServers);expect(embedded.iceServers).toEqual(standalone.iceServers);
   expect(await page.evaluate(() => window.desktop.preferences)).toEqual({ name: '', server: '', quality: '1080' });
   expect(readFileSync(preferencesPath, 'utf8')).toBe('{invalid preferences');
   expect(await page.evaluate(async () => {
@@ -89,6 +95,6 @@ try {
   expect(nativeErrors).toEqual([]);
   console.log('PASS: profile survives a forced port change; camera/subframe denied; duplicate host exits 1; system audio starts off.');
 } finally {
-  try { await closeResources([() => closeDesktop(desktop), () => blocker && new Promise((resolveClose, reject) => blocker.close(error => error ? reject(error) : resolveClose()))]); }
+  try { await closeResources([() => closeDesktop(desktop), () => blocker && new Promise((resolveClose, reject) => blocker.close(error => error ? reject(error) : resolveClose())),()=>comparison?.close()]); }
   finally { removeTestProfile(profile); }
 }

@@ -146,9 +146,9 @@ T5 -> T6 -> T7 -> T8
 **Requirement**: STAB-01, STAB-05, STAB-10–11, STAB-31, STAB-36–37, STAB-45, STAB-48–50, STAB-56, STAB-67.
 **Tools**: MCP Agent Skills; tlc-spec-driven; shell/Playwright.
 **Done when**:
-- [ ] Reinício com outra porta preserva preferências; outro host do perfil é recusado.
-- [ ] Frame alheio/câmera/IPC inválido não obtém capacidade e fechamento cancela picker.
-- [ ] Retomada: configuração ICE efetiva desktop/servidor equivalente, além dos resultados já reutilizáveis de perfil/permissão. Diagnóstico de playback pertence ao componente Media e foi tratado em R3/T6, sem duplicação no host.
+- [x] Reinício com outra porta preserva preferências; outro host do perfil é recusado. Asserções de valor em perfil source reexecutadas na retomada; [adequação R4](execution.md#r4--t7--perfil-permissões-e-ice-efetiva).
+- [x] Frame alheio/câmera/IPC inválido não obtém capacidade e fechamento cancela picker. Políticas/IPC/captura e resultados de perfil atual conferidos; evidência não representa autenticação de convidados.
+- [x] Retomada: configuração ICE efetiva desktop/servidor equivalente por comparação de respostas reais; 89/89 + build/smoke/perfil source PASS. Diagnóstico de playback pertence ao componente Media, tratado em R3/T6 `8955755`, sem duplicação no host. Commit de T7 correspondente é o que contém estas marcas; sem Verified integral STAB.
 **Tests**: integration/e2e em tests/desktop-policy.test.js e scripts/desktop-smoke.mjs.
 **Gate**: build
 

@@ -46,3 +46,15 @@ R2: `9b0c3ba`. Uma rejeição controlada de `HTMLMediaElement.play()` comprovou 
 Reverso C/D: injeção e novas comparações estão ancoradas a STAB-67; props/effect só fornecem correlação disponível. Não foi adicionada recuperação automática de reprodução. Uma tentativa experimental no teste de esperar a promessa nativa de play foi retirada por não corresponder ao resultado de diagnóstico exigido; não comprovaria qualidade física. A recuperação continua a reentrada manual já prevista. Todas as asserções anteriores do smoke permaneceram. **89/89**, zero fail/skip/cancelled/todo; Quick/build/smokes interno e externo/captura/perfil source PASS em `test-results/stab-r3`. Adequação do autor R3: PASS; produto alterado exige nova candidata antes do fechamento MEDIA/STAB.
 
 Durante a redação do teste, um await nativo de play não terminou; somente a árvore de processos desse gate foi encerrada após conferir PIDs/parentesco. A remoção manual recursiva do perfil isolado `C:/Users/welli/AppData/Local/Temp/conversa-test-y4t7mS` foi bloqueada pela revisão automática (`blocked by policy`). A pasta foi mantida, sem tentativa por outro mecanismo; os processos foram encerrados. Os gates finais usaram novos perfis e teardown normal.
+
+## R4 / T7 — perfil, permissões e ICE efetiva
+
+R3: `8955755`. Nenhuma alteração do host foi necessária. O checker de perfil agora inicia um servidor separado isolado com a mesma configuração ICE do host desktop e compara os dois resultados efetivos. O servidor adicional participa do mesmo teardown independente dos demais recursos, inclusive em launch falhando. Os testes de perfil/permissões existentes e os resultados MEDIA foram reutilizados por suas asserções, sem assumir aprovação por nome de gate.
+
+| AC | Evidência e resultado | Adequação A/B |
+| --- | --- | --- |
+| STAB-50 | `scripts/desktop-profile-check.mjs:31`: standalone.iceServers e embedded.iceServers iguais ao array configurado e entre si, obtidos de dois `/api/config` reais | PASS para configuração válida; parser compartilhado tem limites/tipos próprios em `tests/protocol.test.js` |
+| STAB-45/56 | `scripts/desktop-profile-check.mjs:58`: host adicional exit=1/ALREADY_RUNNING, janelas originais preservadas; `:66`–`:69`: nome/endereço/qualidade restaurados em outra porta; `:74` áudio do sistema inicia off | PASS source, mesmos dados userData temporários |
+| STAB-48 | `scripts/desktop-profile-check.mjs:38` câmera e `:46` iframe retornam NotAllowedError; política/IPC unitários e checker de captura mantêm origem/frame/chave não confiáveis negados | PASS, câmera continua fora do escopo e sem capacidade concedida |
+
+Reverso C/D: a comparação nova e o recurso de servidor/cleanup pertencem a STAB-50; as comparações já existentes sustentam as outras linhas. Não há escolha de STUN/TURN de produto; a URL de loopback é só dado de teste, sem credenciais. **89/89**, zero fail/skip/cancelled/todo; Build STAB (Quick + build + smoke source) e perfil source PASS em `test-results/stab-r4`. Adequação do autor R4: PASS; T8 e o Verifier transversal permanecem necessários.
