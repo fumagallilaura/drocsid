@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { WebSocket } from 'ws';
@@ -27,6 +29,18 @@ test('STAB-49/50: separate server serves validated ICE config and closes idempot
   const config = await (await fetch(`http://127.0.0.1:${host.server.address().port}/api/config`)).json();
   assert.deepEqual(config.iceServers, [{ urls: 'stun:localhost:3478' }]); assert.equal(config.protocolVersion, 2);
   await Promise.all([host.close(), host.close()]); assert.equal(host.server.listening, false);
+});
+
+test('STAB-49: a database open failure retains its cause and leaves bootstrap retryable',async t=>{
+  const directory=mkdtempSync(resolve(tmpdir(),'conversa-bootstrap-'));
+  t.after(()=>rmSync(directory,{recursive:true,force:true}));
+  const signals=['SIGINT','SIGTERM'].map(name=>process.listenerCount(name));
+  await assert.rejects(startServer({production:true,env:env({DB_PATH:directory})}),error=>error.code==='BOOTSTRAP_FAILED'&&error.cause?.code==='ERR_SQLITE_ERROR');
+  assert.deepEqual(['SIGINT','SIGTERM'].map(name=>process.listenerCount(name)),signals);
+  const retry=await startServer({production:true,env:env()});t.after(()=>retry.close());
+  assert.equal((await fetch(`http://127.0.0.1:${retry.server.address().port}/api/health`)).status,200);
+  await retry.close();assert.equal(retry.server.listening,false);
+  assert.deepEqual(['SIGINT','SIGTERM'].map(name=>process.listenerCount(name)),signals);
 });
 
 test('STAB-34: registered Vite HMR upgrade works while unknown paths are rejected', async t => {

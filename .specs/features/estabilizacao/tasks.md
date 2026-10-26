@@ -98,6 +98,8 @@ T5 -> T6 -> T7 -> T8
 
 **Retomada T3 / R5:** incompatibilidade por versão de banco futura ou coluna obrigatória ausente recusa a abertura com INVALID_INPUT; salas/mensagens/versão anteriores permanecem iguais após reabrir. Full 90/90, zero falhas/skips; `test-results/stab-r5`. Sem mudança de produto.
 
+**Retomada T3 / R6 (bootstrap):** erro ao abrir banco retorna BOOTSTRAP_FAILED com causa SQLite, não deixa handlers e permite nova inicialização/fechamento. Build PASS, 91/91 + Vite + smoke source, logs `test-results/stab-r6`.
+
 ### T4: Validar o ciclo de bootstrap do servidor separado
 
 **What**: Inicialização e sinais usam configuração validada e limpeza comum.
@@ -366,6 +368,7 @@ Proof: node scripts/desktop-profile-check.mjs
 **C49** - IF PORT ou qualquer entrada ICE configurada tiver formato inválido, ou o bootstrap falhar ao abrir banco/listener THEN o sistema SHALL recusar a inicialização com causa identificável e liberar os recursos já abertos. (STAB-49)
 Proof: node --test --test-name-pattern="STAB\-49/50:|STAB\-49:" tests/bootstrap.test.js tests/protocol.test.js
 Proof: node --test --test-name-pattern="STAB-49/55: incompatible" tests/service.test.js
+Proof: node --test --test-name-pattern="STAB-49: a database open failure" tests/bootstrap.test.js
 
 **C50** - WHEN desktop e servidor separado receberem a mesma configuração ICE válida THEN o sistema SHALL expor a mesma configuração efetiva de mídia para testes, respeitando os limites de acesso de C1 e A13. (STAB-50)
 Proof: node --test --test-name-pattern="STAB\-49/50:" tests/bootstrap.test.js tests/protocol.test.js

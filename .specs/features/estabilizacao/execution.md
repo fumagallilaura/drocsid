@@ -62,3 +62,7 @@ Reverso C/D: a comparação nova e o recurso de servidor/cleanup pertencem a STA
 ## R5 / T3 — dados existentes incompatíveis
 
 Sem mudança de produto. `tests/service.test.js:106` ensaia dois bancos reais: versão futura e coluna obrigatória ausente. A abertura exige INVALID_INPUT e, após a falha, uma nova conexão SQLite compara todas as salas, mensagens e user_version aos valores anteriores (`:119`–`:124`). STAB-49/55 não permite exclusão automática ou confirmação falsa. Full/co-localizado PASS, **90/90 = 50 + 40**, zero fail/skip/cancelled/todo, logs `test-results/stab-r5`. As duas variantes afirmam os dados e a causa, não apenas ausência de crash. Nenhuma asserção antiga alterada. Cada preparação/asserção pertence a essa preservação; o cleanup remove só a pasta criada pelo próprio teste. Autor PASS; parecer STAB pendente.
+
+## R6 / T3 — falha de abertura no bootstrap
+
+STAB-49: `tests/bootstrap.test.js:34` fornece um diretório onde se exige arquivo SQLite. `:38` exige BOOTSTRAP_FAILED e causa ERR_SQLITE_ERROR; `:39` e `:43` exigem contagens SIGINT/SIGTERM originais; `:41` exige HTTP200 na nova execução e `:42` listener fechado após close. O servidor existente passa sem mudança de produto. As preparações/asserções pertencem somente a essa fronteira. Build/co-localizado PASS, **91/91 = 50 + 41**, zero fail/skip/cancelled/todo, Vite e smoke desktop source PASS em `test-results/stab-r6`. Nenhum teste antigo alterado; autor PASS, parecer independente pendente.
