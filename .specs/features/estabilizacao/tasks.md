@@ -106,6 +106,8 @@ T5 -> T6 -> T7 -> T8
 
 **Fix F2 / T3:** toda recusa terminal do serviço registra metadados no proprietário error antes de responder, com causa disponível; catch de persistência/handler não duplica o diagnóstico. Wire phase/códigos preservados. Novo teste reproduziu warnings0 versus1 antes do fix;93/93 + build/co-localizado PASS em `test-results/stab-f2`.
 
+**Fix F4 / T3:** comparação completa dos200 IDs/textos/salas/timestamps legados em ordem; registro real adicional em café e nova consulta provam ausência em geral. Asserções antigas, plano indexado e count10000 mantidos antes da escrita extra. Service/Full94/94 + Vite PASS em `test-results/stab-f4`, sem mudança de produto.
+
 ### T4: Validar o ciclo de bootstrap do servidor separado
 
 **What**: Inicialização e sinais usam configuração validada e limpeza comum.

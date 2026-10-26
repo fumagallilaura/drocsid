@@ -98,9 +98,15 @@ test('STAB-53/54/55/61: legacy history keeps stable insertion order with an inde
   t.after(async()=>{await s.close();rmSync(dir,{recursive:true,force:true});});
   const a=await client(s.url), history=await a.request({type:'join',name:'Ana',room:'geral'});
   assert.equal(history.messages.length,200); assert.equal(history.messages[0].text,'Mensagem 9800'); assert.equal(history.messages.at(-1).text,'Mensagem 9999');
+  assert.deepEqual(history.messages.map(m=>[m.id,m.room,m.text,m.created]),Array.from({length:200},(_,i)=>[String(9800+i),'geral',`Mensagem ${9800+i}`,1]));
   assert.equal(history.messages[0].authorId,null);
   const check=new DatabaseSync(dbPath), plan=check.prepare('EXPLAIN QUERY PLAN SELECT * FROM messages WHERE room=? ORDER BY sequence DESC LIMIT 200').all('geral');
   assert.equal(plan.some(row=>/TEMP B-TREE/.test(row.detail)),false); assert.equal(check.prepare('SELECT count(*) AS count FROM messages').get().count,10000); check.close();
+  await a.request({type:'join',name:'Ana',room:'cafe'});
+  const foreign=await a.request({type:'message',operationId:'foreign-room',text:'Mensagem em outra sala'});
+  assert.equal(foreign.message.room,'cafe');
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'cafe'})).messages,[foreign.message]);
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'geral'})).messages,history.messages);
 });
 
 test('STAB-49/55: incompatible stored data is refused without changing prior rows',t=>{
