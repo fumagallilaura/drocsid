@@ -124,6 +124,27 @@ test('STAB-42/43: stalled peers terminate at 15s; candidates are bounded and exp
   f.call.retryPeer('b'); assert.equal(f.call.peers.has('b'),true); f.call.close();
 });
 
+test('STAB-43: each queued candidate expires by its own age without closing the ready peer',async()=>{
+  const f=fixture();await f.call.join();f.call.sync(members(f.call));await drain();
+  const peer=f.call.peers.get('b'),mic=f.call.microphone;
+  peer.pc.connectionState='connected';peer.stream.addTrack(stream().getTracks()[0]);f.call.publishStreams();
+  const first={candidate:'candidate-first',sdpMLineIndex:43567},second={candidate:'candidate-second'},fresh={candidate:'candidate-fresh'};
+  try{
+    f.clock.tick(4321);await f.call.signal('b',{candidate:first},'remote-call');
+    f.clock.tick(5000);await f.call.signal('b',{candidate:second},'remote-call');
+    f.clock.tick(9999);assert.deepEqual(peer.candidates.map(item=>item.candidate),[first,second]);
+    f.clock.tick(1);assert.deepEqual(peer.candidates.map(item=>item.candidate),[second]);
+    f.clock.tick(4999);assert.deepEqual(peer.candidates.map(item=>item.candidate),[second]);
+    f.clock.tick(1);assert.equal(peer.candidates.length,0);
+    assert.equal(f.call.peers.get('b'),peer);assert.equal(peer.pc.connectionState,'connected');
+    await f.call.signal('b',{candidate:fresh},'remote-call');
+    await f.call.signal('b',{description:{type:'answer',sdp:'remote-answer'}},'remote-call');
+    assert.deepEqual(peer.pc.received,[fresh]);assert.equal(f.call.admitted,true);
+    assert.equal(mic.getAudioTracks()[0].readyState,'live');assert.deepEqual(f.errors,[]);
+  }finally{f.call.close();}
+  assert.equal(f.clock.jobs.size,0);
+});
+
 test('MEDIA-05/21/28: cancellation keeps the original context while admission and leave replies are delayed', async () => {
   for (const lateFailure of [false, true]) {
     const admission=deferred(), departure=deferred(), events=[];

@@ -83,6 +83,8 @@ T5 -> T6 -> T7 -> T8
 **Tests**: unit em tests/rtc.test.js, incluindo promises de permissão/sender controladas.
 **Gate**: quick
 
+**Fix F3 / T2:** prova própria de idade dos candidatos, recebidos em instantes distintos: preservados14999/removidos15000 cada um, peer mantido e só candidato fresco entregue à descrição posterior. RTC/Full94/94 + Vite PASS em `test-results/stab-f3`; sem mudança de produto.
+
 ### T3: Estabilizar o componente createService
 
 **What**: Serviço confirma operações, deduplica mensagens e encerra recursos com prazo.
@@ -388,6 +390,7 @@ Proof: node --test --test-name-pattern="STAB\-42/43:" tests/rtc.test.js
 
 **C43** - WHILE candidatos aguardarem descrição remota o Conversa SHALL limitar sua pendência e validade conforme A7, sem reutilizá-los em outra tentativa. (STAB-43)
 Proof: node --test --test-name-pattern="STAB\-42/43:" tests/rtc.test.js
+Proof: node --test --test-name-pattern="STAB-43: each queued" tests/rtc.test.js
 
 **C44** - WHILE não houver mídia remota pronta o Conversa SHALL distinguir presença/admissão de mídia conectada, oferecendo entrada para assistir quando o usuário estiver fora da chamada em vez de apresentar vídeo inexistente como AO VIVO. (STAB-44)
 Proof: node scripts/desktop-smoke.mjs
