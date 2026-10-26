@@ -308,3 +308,18 @@ test('STAB-33/63/R07: an unknown Upgrade returns 404 and closes within 1s',async
   await new Promise(resolve=>setTimeout(resolve,1000));
   assert.match(bytes,/^HTTP\/1\.1 404/);assert.equal(typeof closedAt,'number');assert.ok(closedAt-started<=1000);assert.equal(socket.destroyed,true);
 });
+
+test('STAB-67: validation and state refusals log correlated metadata without payloads',async t=>{
+  const s=await start(t),a=await client(s.url),b=await client(s.url,'Bia');
+  await a.request({type:'call-join'});await b.request({type:'call-join'});
+  const warnings=[];t.mock.method(console,'warn',value=>warnings.push(JSON.parse(value)));
+  const invalid=a.send({type:'signal',to:b.id,toCallId:b.callId,signal:{candidate:{candidate:'STAB_PRIVATE_MEDIA',sdpMid:'STAB_PRIVATE_TOKEN',sdpMLineIndex:7.25}}});
+  const refused=await a.next('error',event=>event.requestId===invalid);
+  assert.equal(refused.code,'INVALID_EVENT');assert.equal(refused.phase,'protocol');
+  assert.equal(warnings.length,1);
+  const stale=a.send({type:'signal',callId:'other-call',to:b.id,toCallId:b.callId,signal:{candidate:{candidate:'STAB_PRIVATE_SDP'}}});
+  const terminal=await a.next('error',event=>event.requestId===stale);
+  assert.equal(terminal.code,'INVALID_EVENT');assert.equal(terminal.phase,'signal');
+  assert.deepEqual(warnings,[['protocol',invalid],['signal',stale]].map(([phase,requestId])=>({phase,code:'INVALID_EVENT',requestId,version:'0.1.1',runtime:process.versions.node,cause:'Error',causeCode:null,sqliteCode:null})));
+  assert.equal(JSON.stringify(warnings).includes('STAB_PRIVATE_'),false);
+});

@@ -102,6 +102,8 @@ T5 -> T6 -> T7 -> T8
 
 **Retomada T3 / R6 (bootstrap):** erro ao abrir banco retorna BOOTSTRAP_FAILED com causa SQLite, não deixa handlers e permite nova inicialização/fechamento. Build PASS, 91/91 + Vite + smoke source, logs `test-results/stab-r6`.
 
+**Fix F2 / T3:** toda recusa terminal do serviço registra metadados no proprietário error antes de responder, com causa disponível; catch de persistência/handler não duplica o diagnóstico. Wire phase/códigos preservados. Novo teste reproduziu warnings0 versus1 antes do fix;93/93 + build/co-localizado PASS em `test-results/stab-f2`.
+
 ### T4: Validar o ciclo de bootstrap do servidor separado
 
 **What**: Inicialização e sinais usam configuração validada e limpeza comum.
@@ -477,6 +479,7 @@ Proof: node --test tests/harness.test.js
 **C67** - WHEN ocorrer erro de captura, reprodução, protocolo, persistência ou encerramento THEN o sistema SHALL registrar localmente fase, código, correlação e versão/ambiente suficientes para identificar a operação, excluindo texto de mensagens, credenciais, tokens, thumbnails e mídia capturada. (STAB-67)
 Proof: node --test --test-name-pattern="STAB\-37/67:" tests/service.test.js
 Proof: node scripts/desktop-smoke.mjs
+Proof: node --test --test-name-pattern="STAB-67: validation" tests/service.test.js
 
 **C68** - WHEN o compartilhamento terminar com transporte saudável THEN o Conversa SHALL confirmar aos participantes da sala o estado sem compartilhamento em até 8 s, inclusive após erro parcial ou cota esgotada. (STAB-68)
 Proof: node --test --test-name-pattern="STAB\-12/13/15/16/68:" tests/rtc.test.js

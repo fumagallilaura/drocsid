@@ -75,7 +75,10 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers, clo
   const members=room=>[...clients.values()].filter(c=>c.room===room).map(({id,name,inCall,muted,sharing,callId,generation})=>({id,name,inCall,muted,sharing,callId,generation}));
   const revisions=new Map();
   const presence=room=>{if(room){const revision=(revisions.get(room)||0)+1;revisions.set(room,revision);broadcast(room,{type:'presence',room,revision,members:members(room)});}};
-  const error=(c,code,requestId,phase='protocol')=>send(c,{type:'error',code,message:messages[code]||'Não foi possível processar esta ação.',requestId:requestId||null,phase});
+  const error=(c,code,requestId,phase='protocol',cause)=>{
+    logFailure(phase,code,requestId,cause||new ProtocolError(code));
+    return send(c,{type:'error',code,message:messages[code]||'Não foi possível processar esta ação.',requestId:requestId||null,phase});
+  };
   const ack=(c,e,state=c)=>send(c,{type:'ack',requestId:e.requestId,action:e.type,callId:e.callId,generation:e.generation,inCall:state.inCall,muted:state.muted,sharing:state.sharing});
   const endCall=c=>Object.assign(c,{inCall:false,muted:true,sharing:false,callId:null,callState:'terminal'});
   function expire(c) {
@@ -111,7 +114,7 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers, clo
     ws.on('message',raw=>{
       let e,requestId;
       try { const rawValue=JSON.parse(raw.toString()); if(typeof rawValue?.requestId==='string'&&rawValue.requestId.length<=128)requestId=rawValue.requestId; e=parseClientEvent(raw.toString()); }
-      catch(cause){error(c,cause.code||'INVALID_EVENT',requestId);return;}
+      catch(cause){error(c,cause.code||'INVALID_EVENT',requestId,'protocol',cause);return;}
       if(closing)return error(c,'INVALID_EVENT',requestId,e.type);
       try {
         if(['call-join','call-leave','media','signal'].includes(e.type)){
@@ -142,7 +145,7 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers, clo
           if(e.room!==c.room)return error(c,'ROOM_MISMATCH',requestId,e.type);
           let message;
           try {message=insert.get(randomUUID(),e.room,c.name,text,Date.now(),c.id,e.operationId);}
-          catch(cause){logFailure('persistence','PERSISTENCE_FAILED',requestId,cause);return error(c,'PERSISTENCE_FAILED',requestId,e.type);}
+          catch(cause){return error(c,'PERSISTENCE_FAILED',requestId,e.type,cause);}
           send(c,{type:'message-accepted',requestId,message});broadcast(c.room,{type:'message',message});
         }else if(e.type==='create-room'){
           if(roomsQuery.all().length>=LIMITS.rooms)return error(c,'INVALID_INPUT',requestId,e.type);
@@ -169,7 +172,7 @@ export function createService({ dbPath = 'data/conversa.sqlite', iceServers, clo
           if(!c.inCall||c.callId!==e.callId||!target?.inCall||target.room!==c.room||target.callId!==e.toCallId)return error(c,'PARTICIPANT_UNAVAILABLE',requestId,e.type);
           send(target,{type:'signal',from:c.id,fromCallId:c.callId,callId:target.callId,signal:e.signal});
         }
-      }catch(cause){logFailure(e.type,'INVALID_EVENT',requestId,cause);error(c,'INVALID_EVENT',requestId,e.type);}
+      }catch(cause){error(c,'INVALID_EVENT',requestId,e.type,cause);}
     });
     ws.on('close',()=>{clock.clearTimeout(c.expiryTimer);clients.delete(c.id);if(!closing)presence(c.room);});
   });
