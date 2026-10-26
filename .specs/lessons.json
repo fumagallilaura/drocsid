@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 13,
+  "next_id": 14,
   "lessons": [
     {
       "id": "L-001",
@@ -223,6 +223,24 @@
       ],
       "created": "2026-10-25T21:09:54Z",
       "last_seen": "2026-10-25T21:09:54Z"
+    },
+    {
+      "id": "L-013",
+      "key": "ac_gap::exercise leave while screen stop is still pending and assert every acquired track and peer reaches the same terminal deadline",
+      "text": "Exercise leave while screen stop is still pending and assert every acquired track and peer reaches the same terminal deadline.",
+      "signal": "ac_gap",
+      "scope": "rtc/lifecycle",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "validation.md: Edge Cases stop+leave; MEDIA-16/17/21/24; tests/rtc.test.js:241 (rtc/lifecycle)"
+      ],
+      "created": "2026-10-26T03:19:07Z",
+      "last_seen": "2026-10-26T03:19:07Z"
     }
   ]
 }

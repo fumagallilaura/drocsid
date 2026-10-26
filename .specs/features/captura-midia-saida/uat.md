@@ -1,6 +1,6 @@
 # Aceitação física MEDIA: não executada
 
-**T9 incompleta; MEDIA-33/34 sem Verified.** Nenhuma etapa física foi executada nesta sessão. A disponibilidade de dois PCs Windows, dois operadores, fones e microfones reais não foi confirmada. Este roteiro preparado não é evidência de ensaio nem aprovação de ruído, eco, fala ou loopback.
+**T9 incompleta; MEDIA-33/34 sem Verified.** Nenhuma etapa física foi executada. Em 26/10/2026, o usuário confirmou: “Não estão disponíveis agora; manter T9 pendente”. Este roteiro preparado não é evidência de ensaio nem aprovação de ruído, eco, fala ou loopback.
 
 Usar a candidata identificada em [evidence.md](evidence.md), depois de conferida pelo [Verifier](validation.md). Se houver nova correção de produto, reconstruir/revalidar a candidata antes do ensaio. O mesmo SHA-256 deve estar nos dois PCs; registrar o hash efetivamente usado, sem herdar resultados de outro build.
 

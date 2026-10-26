@@ -86,6 +86,12 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: MEDIA-33 (media/hardware) (+1 more)
 - last seen: 2026-10-25T21:09:54Z
 
+### L-013 - Exercise leave while screen stop is still pending and assert every acquired track and peer reaches the same terminal deadline.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `rtc/lifecycle` · harmful: 0
+- features: captura-midia-saida
+- evidence: validation.md: Edge Cases stop+leave; MEDIA-16/17/21/24; tests/rtc.test.js:241 (rtc/lifecycle)
+- last seen: 2026-10-26T03:19:07Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

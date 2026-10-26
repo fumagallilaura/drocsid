@@ -1,15 +1,15 @@
 # Evidência atual MEDIA, após correções da rodada 1
 
-**80/80 testes Node e todos os gates source passaram. Build integral não aprovado:** o lançamento win-unpacked foi bloqueado pelo Device Guard, embora o checker do wrapper portátil real tenha passado. Na matriz atual de 16 gates: **11 PASS, 1 FAIL, 4 não executados**. Verifier independente ainda deve confirmar cobertura/sensor. T8 permanece incompleta e T9 não foi executada; nenhum MEDIA recebe Verified pelo autor.
+**Rodada independente 2: 80/80 Node, 16/16 gates e sensor 6/6 por asserção aprovados.** A candidata anterior teve bloqueio de Device Guard; ele não se repetiu no Build independente, sem mudança de política/launcher. A [rodada 2](validation-round2.md) preserva FAIL global: 28 ACs automáticos integrais, quatro parciais pela conjunção parar+sair e dois físicos não executados. O autor acrescentou R6 para essa conjunção, pendente de reverificação; com os cinco novos testes STAB, Quick atual é 86/86. T9 está pendente por indisponibilidade explícita do usuário; nenhum MEDIA recebe Verified pelo autor.
 
-Código de produto corrigido em `01f3e1c`; testes/harness consolidados em `e4c9efe`. Data: 2026-10-25, versão 0.1.1, protocolo 2, Node 24.21.0, Electron 45.0.0. A [evidência inicial](evidence-initial.md) é histórica, vinculada a `018019c`/`f44d268`: sua alegação de cobertura integral foi corrigida pelo [Verifier da rodada 1](validation-round1.md). Ela não identifica a candidata atual.
+Código de produto corrigido em `01f3e1c`; testes/harness consolidados em `e4c9efe`. Gates em 25/10 e rodada independente encerrada em 26/10/2026, versão 0.1.1, protocolo 2, Node 24.21.0, Electron 45.0.0. A [evidência inicial](evidence-initial.md) é histórica, vinculada a `018019c`/`f44d268`: sua alegação de cobertura integral foi corrigida pelo [Verifier da rodada 1](validation-round1.md). Ela não identifica a candidata atual.
 
 ## Candidata e resultado dos gates
 
 - Portátil atual: `C:/Code/conversa/release-windows/Conversa-0.1.1-Windows.exe`.
-- SHA-256: `fc7c344e52717757f02700a5a3050164bc087433ff977ae66256fb64f330f993`.
-- Win-unpacked: `C:/Code/conversa/.packaging/builds/1792963319936-0975ac0d-0bab-4f59-a638-603e36273fef/win-unpacked/Conversa.exe`.
-- Manifesto/logs/ledger: `test-results/media-t8-revised/build.json`, `gates.json` e logs por gate. Resultados locais ignorados pelo Git. Hash, módulos do ASAR e dist comparados aos bytes atuais pelo checker de pacote.
+- SHA-256: `efa7fb4e86d0b8d09a2744fba41908fd86b915decafc121e0ec14f17edf9092e`.
+- Win-unpacked: `C:/Code/conversa/.packaging/builds/1792964005781-63e531a1-a8f2-4e41-b51a-db408c9c0184/win-unpacked/Conversa.exe`.
+- Manifesto/logs/ledger: `test-results/media-verifier-round2/build.json`, `gates.json` e logs por gate. Resultados locais ignorados pelo Git. Hash, módulos do ASAR e dist comparados aos bytes atuais pelo checker de pacote. Nenhuma mudança de produto em STAB R1 ou MEDIA R6.
 
 | Gate | Resultado atual |
 | --- | --- |
@@ -19,11 +19,11 @@ Código de produto corrigido em `01f3e1c`; testes/harness consolidados em `e4c9e
 | Source ciclo da janela | PASS, inventário adquirido de mic+vídeo+áudio encerrado em <=1 s em reload/disconnect/Root.unmount/fechamento nativo |
 | Source startup sem manifesto | PASS, oito amostras na abertura e oito após reload, contadores pré-App zero; não equivale a A7 |
 | Dist Windows / checker do pacote | PASS, bytes e hash acima |
-| Win-unpacked perfil | FAIL ao iniciar, antes das asserções do aplicativo; diagnóstico com `DEBUG=pw:browser` registrou Device Guard bloqueando o executável acima |
-| Win-unpacked ciclo / smoke interno / smoke externo / startup | NÃO EXECUTADOS nesta rodada, por bloqueio de lançamento do mesmo executável |
+| Win-unpacked perfil | PASS no Build independente; ocorrência anterior de Device Guard preservada nos logs do autor |
+| Win-unpacked ciclo / smoke interno / smoke externo / startup | PASS no Build independente, com asserções e snapshots conferidos |
 | Wrapper portátil real | PASS, renderer/preload/serviço abertos, uma mensagem persistida e zero mídia inicial; execução separada do gate após a falha unpacked |
 
-O diagnóstico não demonstra a regra exata da política. Não houve mudança de launcher, cópia alternativa do binário, desativação de política ou tentativa de contorno. O PASS do wrapper não aprova os quatro gates unpacked não executados. Logs da falha: `packaged-profile.log` e `packaged-profile-diagnostic.log`. Para fechar esse gate, é necessária execução permitida pela política vigente, a ser avaliada por quem a administra, ou nova evidência independente do lançamento normal; não se presume autorização de publicação/assinatura.
+Os logs históricos `test-results/media-t8-revised/packaged-profile*.log` registram o bloqueio da candidata `fc7c344e...f993`; o diagnóstico não estabelece a regra da política. A nova execução independente usou o launcher normal e passou os quatro gates unpacked antes não executados, além de perfil e wrapper separado. Não houve alteração de política nem contorno, e não se afirma que uma política foi corrigida. Builds locais geram portáteis de hashes distintos; isso não transfere evidência física entre candidatas nem aprova publicação/assinatura.
 
 ## Rastreabilidade e adequação do autor
 
@@ -61,6 +61,6 @@ Comparação AST com `38062db`: **50 testes históricos preservados, 30 novos**,
 
 ## Limites e próximo gate
 
-Revisão independente final pendente em [validation.md](validation.md), com seis mutações semânticas em scratch, mortes por asserção, comparação porcelain e validate_state. O Build integral e [T9 física](uat.md) continuam pendentes; não há PASS global ou Verified integral. Dois PCs Windows, dois operadores, fones/mics reais, LAN confiável e servidor v2 alcançável ainda não foram confirmados. A causa do ruído permanece desconhecida.
+Revisão independente 2 preservada em [validation-round2.md](validation-round2.md): Build e seis mutações válidas concluídos, scratch removido e porcelain real antes/depois idêntico. Falta reverificar R6 em [validation.md](validation.md); o gate global validate_state permanece fechado por FAIL. [T9 física](uat.md) segue pendente: em 26/10 o usuário confirmou que os recursos não estão disponíveis agora. A causa do ruído permanece desconhecida.
 
 STAB de mensagens/encerramento continua separado e sem certificação integral. D6–D11 são estáticos/cache histórico; U1 somente UI/processo; cache sem vínculo ao renderer ativo e quatro dúvidas de runtime abertas. Nenhuma investigação Discord, chamada ou convite foi repetido. Texto encerra chamada; Silenciar áudio só reprodução; câmera negada, SFU não aprovado, sem TypeScript. Contas/grupos privados/TURN autenticado permanecem bloqueadores de publicação futura.
