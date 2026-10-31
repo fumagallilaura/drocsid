@@ -136,8 +136,8 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12
 
 **Done when**:
 
-- [ ] Call em TS com dependências tipadas e todas as asserções de aquisição, inventário, compensação e prazos preservadas.
-- [ ] Gate build aprovado, contagem94 + delta, zero falha/skip/cancelled/todo; evidência e commit da tarefa registrados.
+- [x] Call em TS com portas das operações consumidas e adaptação de browser verificada pelo compilador, sem casts/supressões; APIs reais e doubles mantêm aquisição, inventário, compensação e prazos. Testes existentes intactos (`git diff HEAD -- tests` vazio nesta tarefa); migração do harness JS para TS permanece em T11, sem adiamento de execução dos testes.
+- [x] 113/113, zero fail/skip/cancelled/todo; strict Node/browser, Vite, desktop-smoke, capture e lifecycle PASS. Três sensores por AssertionError (mic tardio, tela tardia, idade de candidate), bytes originais intactos. Evidências `test-results/drocsid-merge-t5-*`/`merge-t5-sensors.json`. Commit desta tarefa `refactor(media): type call ownership and browser dependencies`. Hardware físico não certificado.
 
 **Tests**: unit/integration, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
@@ -352,4 +352,4 @@ Proof: run integration | ✔ MERGE-21: database credentials stay in the server w
 
 **Walked:** pendente da implementação; checkers atuais seguem como regressão, não aprovação automática da nova interface.
 
-**Current:** T1 em41afbae/T2 em8d78b1f preservadas. Escolha PostgreSQL em AD-003/a3f3367; T3 em1965746. T4 concluída: importador readOnly explícito,113/113 + strict/Vite/desktop e sensores3/3; T3 tem sensores4/4 e audit produção0. Próxima T5: Call em TS, preservando asserts e captura atuais. A aplicação atual ainda usa SQLite até T8 integrar o novo proprietário; sem alegação de migração completa, contas prontas ou aprovação física. Recursos PostgreSQL reais locais disponíveis em TEMP/conversa-postgresql-17.11-5/pgsql/bin; wrapper encerra cada cluster e mantém logs, nenhum processo PostgreSQL restante na conferência.
+**Current:** T1 em41afbae/T2 em8d78b1f; PostgreSQL em AD-003/a3f3367, T3 em1965746, T4 em1c18786. T5 Call em TS concluída:113/113 + strict Node/browser, Vite, desktop/capture/lifecycle, sensores3/3 e testes existentes intactos. Próxima T6: Session em TS. T3/T4 somam sensores7/7, audit produção0; audit completo exit1 com15 moderadas de desenvolvimento e0 altas/críticas, pendentes da limpeza T12. A aplicação ainda usa SQLite até T8 integrar o novo proprietário; sem alegação de migração completa, contas prontas ou aprovação física. PostgreSQL real local: TEMP/conversa-postgresql-17.11-5/pgsql/bin; wrapper encerra cada cluster e mantém logs.

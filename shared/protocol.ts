@@ -14,14 +14,14 @@ export type IceServer = { urls: string | string[]; username?: string; credential
 type Envelope = Record<string, unknown> & { v: typeof PROTOCOL_VERSION; type: string };
 type Request = { requestId: string };
 export type CallContext = { callId: string; generation: number };
+export type CallAction = { type: 'call-join'; muted: boolean } | { type: 'call-leave' } |
+  { type: 'media'; muted?: boolean; sharing?: boolean } |
+  { type: 'signal'; to: string; toCallId: string; signal: Signal };
 export type ClientEvent = Envelope & Request & (
   { type: 'join'; room: string; name: string } |
   { type: 'message'; room: string; operationId: string; text: string } |
   { type: 'create-room'; name: string } |
-  ({ type: 'call-join'; muted: boolean } & CallContext) |
-  ({ type: 'call-leave' } & CallContext) |
-  ({ type: 'media'; muted?: boolean; sharing?: boolean } & CallContext) |
-  ({ type: 'signal'; to: string; toCallId: string; signal: Signal } & CallContext)
+  (CallAction & CallContext)
 );
 export type ServerEvent = Envelope & (
   { type: 'hello'; id: string; rooms: Room[] } |

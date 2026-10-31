@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AudioLines, ArrowRight, Check, ChevronDown, Clipboard, Coffee, Hash, Headphones, LogOut, MessageCircle, Mic, MicOff, Monitor, MonitorUp, MoreHorizontal, Phone, PhoneOff, Plus, Radio, Settings2, Signal, Sparkles, Users, Volume2, VolumeX, X } from 'lucide-react';
 import { version } from '../package.json';
-import { Call } from './rtc';
+import { createBrowserCall } from './rtc.js';
 import { Session } from './session';
 import './style.css';
 
@@ -170,7 +170,7 @@ function App() {
     let call = callRef.current;
     if (!call || call.closed) {
       const epoch = sessionRef.current.epoch;
-      call = new Call({ id: session.id, iceServers: sessionRef.current.state.config.iceServers, send: event => sessionRef.current.request(event),
+      call = createBrowserCall({ id: session.id, iceServers: sessionRef.current.state.config.iceServers, send: event => sessionRef.current.request(event),
         nextCallGeneration: () => sessionRef.current.nextCallGeneration(epoch),
         captureDisplay, cancelDisplay,
         onStreams: value => { if (callRef.current === call) setStreams(value); },

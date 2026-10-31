@@ -11,7 +11,7 @@ function stream(id, kind = 'audio') {
 Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { mediaDevices: {} } });
 function makeCall() {
   const events = [], updates = [], errors = [];
-  const call = new Call({ id: 'a', iceServers: [], send: e => events.push(e), onStreams: () => {}, onMedia: m => updates.push({ ...m }), onError: e => errors.push(e) });
+  const call = new Call({ id: 'a', iceServers: [], mediaDevices:navigator.mediaDevices, PeerConnection:globalThis.RTCPeerConnection, Stream:globalThis.MediaStream, send: e => events.push(e), onStreams: () => {}, onMedia: m => updates.push({ ...m }), onError: e => errors.push(e) });
   return { call, events, updates, errors };
 }
 

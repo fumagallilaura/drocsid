@@ -136,7 +136,7 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 | MERGE-11 | US3 | Tasks | In Tasks |
 | MERGE-12 | US3 | Tasks | In Tasks |
 | MERGE-13 | US4 | Tasks | In Tasks |
-| MERGE-14 | US4 | Tasks | In Tasks |
+| MERGE-14 | US4 | Execute/T5 + Tasks/T6/T9/T10/T12 | Partial: typed Call passes existing regression, desktop/capture/lifecycle; full integration pending |
 | MERGE-15 | US4 | Tasks | In Tasks |
 | MERGE-16 | US4 | Tasks | In Tasks |
 | MERGE-17 | US4 | Tasks | In Tasks |

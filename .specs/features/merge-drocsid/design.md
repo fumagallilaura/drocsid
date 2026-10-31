@@ -46,7 +46,7 @@ A interface mantém o layout e os controles do Conversa. Recebe controles de cad
 
 ## TypeScript and runtime
 
-Converter fontes próprias a ts/tsx/mts/cts, mantendo bundles e relatórios históricos. Configurações separam DOM, Node, Electron/preload e instrumentação de testes. Strict é obrigatório; entradas externas são unknown com validação de runtime. Injeções de mídia usam contratos das operações realmente consumidas, alcançáveis pelos doubles atuais, sem casts amplos para browser APIs.
+Converter fontes próprias a ts/tsx/mts/cts, mantendo bundles e relatórios históricos. Configurações separam DOM, Node, Electron/preload e instrumentação de testes. Strict é obrigatório; entradas externas são unknown com validação de runtime. Injeções de mídia usam contratos das operações realmente consumidas, alcançáveis pelos doubles atuais, sem casts amplos para browser APIs. `createBrowserCall` fornece as dependências nativas à mesma Call e verifica sua compatibilidade em strict; o construtor de domínio recebe injeções explícitas. Tokens de timer são opacos ao controlador e voltam ao mesmo relógio que os criou.
 
 O compilador emite JS nos caminhos de runtime já usados pelos checkers, ignorados pelo Git depois da conversão. Isso mantém imports, raiz do app, serviço e preload estáveis sem uma segunda implementação. Vite constrói TSX; build e test incluem emissão e typecheck. Os scripts/testes próprios também recebem fontes TS e emissão correspondente. O checker continua comparando bytes dos arquivos emitidos, nunca fonte TS com JS de ASAR. A marca Drocsid não muda o diretório userData legado por acidente; perfis de teste explícitos continuam isolados.
 

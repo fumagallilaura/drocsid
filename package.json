@@ -8,8 +8,8 @@
   "author": "Conversa",
   "scripts": {
     "dev": "npm run build:runtime && node server/index.js",
-    "build:runtime": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build:runtime": "tsc -p tsconfig.json && tsc -p tsconfig.browser.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.browser.json --noEmit",
     "build": "npm run build:runtime && vite build",
     "start": "npm run build:runtime && node server/index.js --production",
     "test": "npm run build:runtime && node scripts/with-test-postgres.mjs -- node --test tests/*.test.js",

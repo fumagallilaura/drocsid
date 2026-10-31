@@ -20,3 +20,4 @@ scripts/with-test-postgres.mjs
 tests/postgres-runtime.test.js
 scripts/import-sqlite.mjs
 tests/import-sqlite.test.js
+src/rtc.js
