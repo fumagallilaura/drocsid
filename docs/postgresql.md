@@ -4,7 +4,7 @@ A decisão AD-003 substitui SQLite como destino da integração Drocsid. O servi
 
 ## Integration status
 
-T3 entrega a camada de persistência tipada e seus testes reais. A aplicação ainda usa o serviço SQLite anterior até T8 trocar esse proprietário. T4 implementará o importador somente leitura. Não foi feita migração de dados do usuário nem deploy AWS.
+T3 entrega a camada de persistência tipada e seus testes reais; T4 entrega o importador somente leitura. A aplicação ainda usa o serviço SQLite anterior até T8 trocar esse proprietário. Não foi feita migração de dados do usuário nem deploy AWS.
 
 ## Server configuration
 
@@ -28,7 +28,19 @@ O cache foi obtido do [distribuidor EDB indicado pelo PostgreSQL](https://www.po
 
 ## Legacy migration
 
-O importador será explícito e transacional. SQLite será aberto somente em leitura; IDs, ordem, datas, nomes e recibos serão preservados e comparados. Repetição não duplicará dados; conflito interromperá a importação sem dados parciais. Contas não serão inferidas a partir de convidados. O original será preservado.
+O importador é explícito e transacional. Configure `DATABASE_URL` no ambiente do servidor e execute:
+
+```powershell
+npm run import:sqlite -- --source "C:\caminho\conversa.sqlite"
+```
+
+Use uma cópia consistente com o serviço legado encerrado. Experimente primeiro em um destino de teste dedicado. Nenhum banco é descoberto ou importado automaticamente; este trabalho só ensaiou fixtures temporárias, sem autorização de migração de produção.
+
+SQLite é aberto somente em leitura. O importador aceita os formatos0/1 conhecidos e recusa versão futura, dados inválidos, autores inválidos, inteiros fora do limite seguro e tabelas desconhecidas. IDs, ordem, datas, nomes e recibos são comparados no destino; nomes de convidados não criam contas. O original e preferências não são alterados.
+
+A transação bloqueia escritores do destino durante a comparação/importação. Repetição idêntica não duplica; o fingerprint anterior não dispensa conferir conflitos atuais. IDs, posições, sequências ou recibos com dados diferentes provocam recusa sem sobrescrever o destino. Uma falha de banco depois da inserção das salas reverte toda a importação. Contadores PostgreSQL só avançam e podem ter lacunas, como em transações normais; as sequências importadas são preservadas.
+
+O comando devolve contagens de salas/mensagens da origem e `reused` indicando snapshot já importado. Falha gera código de erro e exit1, sem URL, senha, SQL ou conteúdo de mensagem. O arquivo original é mantido para reversão explícita; não há dual-write.
 
 ## References
 

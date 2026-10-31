@@ -120,8 +120,8 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12
 
 **Done when**:
 
-- [ ] Schema antigo/atual são importados com todos os campos/ordem e origem byte-idêntica; repetição não duplica e conflito/versão futura revertem a transação.
-- [ ] Baseline95 + delta preservada, strict/build/desktop aprovados; nenhuma preferência ou banco original removido, sem certificação física.
+- [x] Schema antigo/atual são importados com todos os campos/ordem e origem/preferências byte-idênticas; repetição/concorrência não duplicam, conflito não sobrescreve e versão futura/inteiro inseguro/corrupção são recusados. Falha SQL após salas inseridas reverte tudo; um contador externo confirma que o ponto de falha foi atingido.
+- [x] 113/113 (106+7), zero fail/skip/cancelled/todo; strict/Vite/desktop PASS. Sensores3/3 por AssertionError (autoria perdida, ausência de BEGIN e fingerprint encobrindo conflito), bytes originais intactos; suite pós-sensor113/113. Evidências `test-results/drocsid-postgres-t4-*`/`postgres-t4-sensors.json`. Commit desta tarefa `feat(migration): import legacy sqlite into postgresql atomically`. Nenhum dado do usuário tocado; sem certificação física.
 
 **Tests**: integration — `tests/import-sqlite.test.ts`, PostgreSQL real e SQLite somente como fixture de entrada; repetição, concorrência, falha e hashes da origem.
 **Gate**: build
@@ -352,4 +352,4 @@ Proof: run integration | ✔ MERGE-21: database credentials stay in the server w
 
 **Walked:** pendente da implementação; checkers atuais seguem como regressão, não aprovação automática da nova interface.
 
-**Current:** T1 em41afbae/T2 em8d78b1f preservadas. Escolha PostgreSQL registrada em AD-003 e a3f3367. T3 concluída com PostgreSQL17.11 real,106/106 + strict/Vite/desktop/audit0 e sensores4/4. Próxima T4: importador readOnly com fixtures antigas/atuais. A aplicação atual ainda usa SQLite até T8 integrar o novo proprietário; sem alegação de migração completa, contas prontas ou aprovação física.
+**Current:** T1 em41afbae/T2 em8d78b1f preservadas. Escolha PostgreSQL em AD-003/a3f3367; T3 em1965746. T4 concluída: importador readOnly explícito,113/113 + strict/Vite/desktop e sensores3/3; T3 tem sensores4/4 e audit produção0. Próxima T5: Call em TS, preservando asserts e captura atuais. A aplicação atual ainda usa SQLite até T8 integrar o novo proprietário; sem alegação de migração completa, contas prontas ou aprovação física. Recursos PostgreSQL reais locais disponíveis em TEMP/conversa-postgresql-17.11-5/pgsql/bin; wrapper encerra cada cluster e mantém logs, nenhum processo PostgreSQL restante na conferência.

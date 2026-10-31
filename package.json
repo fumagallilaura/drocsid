@@ -13,6 +13,7 @@
     "build": "npm run build:runtime && vite build",
     "start": "npm run build:runtime && node server/index.js --production",
     "test": "npm run build:runtime && node scripts/with-test-postgres.mjs -- node --test tests/*.test.js",
+    "import:sqlite": "npm run build:runtime && node scripts/import-sqlite.mjs",
     "desktop": "npm run build && electron .",
     "dist:win": "npm run build && node scripts/prepare-electron.mjs && node scripts/build-windows.mjs"
   },

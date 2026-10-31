@@ -126,7 +126,7 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 | MERGE-01 | US1 | Execute/T1 | Implemented; final proofs pending |
 | MERGE-02 | US1 | Tasks | In Tasks |
 | MERGE-03 | US1 | Execute/T2–T11 | Partial: strict infrastructure and protocol; remaining owners pending |
-| MERGE-04 | US1 | Tasks | In Tasks |
+| MERGE-04 | US1 | Execute/T4 + Tasks/T9 | Partial: legacy import data/preferences fixture bytes preserved; host profile pending |
 | MERGE-05 | US2 | Tasks | In Tasks |
 | MERGE-06 | US2 | Tasks | In Tasks |
 | MERGE-07 | US2 | Tasks | In Tasks |
@@ -142,7 +142,7 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 | MERGE-17 | US4 | Tasks | In Tasks |
 | MERGE-18 | US4 | Tasks | In Tasks |
 | MERGE-19 | US5 | Execute/T3 | Implemented; final proofs pending |
-| MERGE-20 | US5 | Tasks/T4 | In Tasks |
+| MERGE-20 | US5 | Execute/T4 | Implemented; final proofs pending |
 | MERGE-21 | US5 | Execute/T3 + Tasks/T8/T9/T12 | Partial: configuration and real no-fallback test; client/artifact checks pending |
 
 ## Sources

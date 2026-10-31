@@ -18,3 +18,5 @@ tests/database.test.js
 tests/helpers/postgres.js
 scripts/with-test-postgres.mjs
 tests/postgres-runtime.test.js
+scripts/import-sqlite.mjs
+tests/import-sqlite.test.js
