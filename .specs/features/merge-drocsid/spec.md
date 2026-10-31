@@ -109,7 +109,7 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 | --- | --- | --- | --- |
 | MERGE-01 | US1 | Execute/T1 | Implemented; final proofs pending |
 | MERGE-02 | US1 | Tasks | In Tasks |
-| MERGE-03 | US1 | Tasks | In Tasks |
+| MERGE-03 | US1 | Execute/T2–T9 | Partial: strict infrastructure and protocol; remaining owners pending |
 | MERGE-04 | US1 | Tasks | In Tasks |
 | MERGE-05 | US2 | Tasks | In Tasks |
 | MERGE-06 | US2 | Tasks | In Tasks |

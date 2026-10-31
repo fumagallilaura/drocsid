@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseClientEvent, parseServerEvent, readIceServers, parsePort, LIMITS, PROTOCOL_VERSION } from '../shared/protocol.js';
+import { parseClientEvent, parseServerEvent, readIceServers, parsePort, LIMITS, PROTOCOL_VERSION, ProtocolError } from '../shared/protocol.js';
 
-const event = (type, fields = {}) => ({ v: PROTOCOL_VERSION, type, requestId: 'request-1', ...fields });
-const decode = value => parseClientEvent(JSON.stringify(value));
-const rejects = (fn, code) => assert.throws(fn, e => e.code === code);
+const event = (type: string, fields: Record<string, unknown> = {}) => ({ v: PROTOCOL_VERSION, type, requestId: 'request-1', ...fields });
+const decode = (value: unknown) => parseClientEvent(JSON.stringify(value));
+const rejects = (fn: () => unknown, code: string) => assert.throws(fn, e => e instanceof ProtocolError && e.code === code);
 
 test('STAB-40/41: version and malformed client events have stable distinct outcomes', () => {
   for (const value of [null, [], 12, {}, { type: 'join' }, event('unknown')]) {
-    rejects(() => decode(value), value && typeof value === 'object' && !Array.isArray(value) && value.v !== PROTOCOL_VERSION ? 'INCOMPATIBLE_PROTOCOL' : 'INVALID_EVENT');
+    rejects(() => decode(value), value && typeof value === 'object' && !Array.isArray(value) && (!('v' in value) || value.v !== PROTOCOL_VERSION) ? 'INCOMPATIBLE_PROTOCOL' : 'INVALID_EVENT');
   }
   rejects(() => parseClientEvent('{'), 'INVALID_EVENT');
   rejects(() => decode({ ...event('join'), v: 1 }), 'INCOMPATIBLE_PROTOCOL');
@@ -39,7 +39,7 @@ test('STAB-40: server data is validated before rendering or signaling', () => {
 });
 
 test('STAB-40: received display and room names have 1 to 32 UTF-16 units after trim',()=>{
-  const received=name=>[
+  const received=(name: unknown)=>[
     {v:2,type:'hello',id:'client',rooms:[{id:'geral',name,description:''}]},
     {v:2,type:'presence',room:'geral',context:'context',revision:1,members:[{id:'guest',name,inCall:false,muted:true,sharing:false,callId:null,generation:0}]},
     {v:2,type:'message',context:'context',message:{id:'message',room:'geral',author:name,text:'oi',created:1,sequence:1,authorId:null,operationId:null}},
@@ -80,7 +80,7 @@ test('MEDIA-05/24/25/28: v2 requires bounded positive generations in every call 
 });
 
 test('MEDIA-26/28: v2 requires positive ack generations and presence revisions',()=>{
-  const decodeServer=value=>parseServerEvent(JSON.stringify(value));
+  const decodeServer=(value: unknown)=>parseServerEvent(JSON.stringify(value));
   const ack=event('ack',{action:'call-leave',callId:'call',generation:1,inCall:false,muted:true,sharing:false});
   const presence=event('presence',{room:'geral',context:'room-context',revision:1,members:[]});
   assert.equal(decodeServer(ack).generation,1);assert.equal(decodeServer(presence).revision,1);

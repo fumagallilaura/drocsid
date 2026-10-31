@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "strict": true,
+    "noEmitOnError": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["ES2023"],
+    "types": ["node"]
+  },
+  "include": ["shared/**/*.ts", "server/**/*.ts", "tests/**/*.ts", "scripts/**/*.mts", "review/*.mts", "electron/**/*.ts", "electron/**/*.cts"],
+  "exclude": ["node_modules", "apps", "dist", "release", "release-windows", ".packaging"]
+}

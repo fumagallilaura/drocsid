@@ -85,8 +85,8 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10
 
 **Done when**:
 
-- [ ] Emissão/types por ambiente e contrato de protocolo tipado, com validação externa preservada e testes de protocolo verdes.
-- [ ] Gate build aprovado, contagem94 + delta, zero falha/skip/cancelled/todo; evidência e commit da tarefa registrados.
+- [x] Emissão/types Node e contrato de protocolo tipado, com validação externa preservada e sete testes de protocolo verdes. `tsconfig.json` strict/noEmitOnError; configs DOM/host acompanham seus proprietários. Fontes ainda não convertidas permanecem explicitamente pendentes em T3–T9.
+- [x] Gate build aprovado:95/95, zero falha/skip/cancelled/todo; tsc, Vite e desktop-smoke PASS. Evidências `test-results/drocsid-merge-t2-*`. Commit desta tarefa: `feat(types): compile the protocol with strict runtime validation`.
 
 **Tests**: unit/integration, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
@@ -306,4 +306,4 @@ Proof: run integration | ✔ MERGE-18: the unified product has no parallel unuse
 
 **Walked:** pendente da implementação; checkers atuais seguem como regressão, não aprovação automática da nova interface.
 
-**Current:** T1 concluída: merge real, três add/add resolvidos, nenhum unmerged,95/95 Node + build + desktop-smoke. Main e backup em a2ae03c, segundo pai94d9b9a, branchintegration/drocsid. Próxima T2: infraestrutura strict e protocolo; contas/grupos e marca de UI ainda não integrados.
+**Current:** T1 em41afbae; T2 concluída com strict/emissão e protocolo,95/95 + Vite + desktop-smoke. Main e backup em a2ae03c, segundo pai94d9b9a, branchintegration/drocsid. Próxima T3: Call e testes; contas/grupos e marca de UI ainda não integrados.
