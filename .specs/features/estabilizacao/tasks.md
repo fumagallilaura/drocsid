@@ -522,7 +522,7 @@ Proof: run node | ✔ STAB-28/29/30/68: leave and stop-screen bypass exhausted a
 
 **Dispatched:** 2026-10-26, primeiro despacho /root/stab_verifier invalidado e interrompido antes de parecer/sensor por leitura acidental do Handoff; confirmou nenhum arquivo/processo/scratch criado. Substituição fresca /root/stab_independent_verifier, HEAD573491e, range63810f4..573491e, após proofs87/87 PASS; recortes de matriz/Checks preparados sem Handoff. Retornado em `573491e`: verification.md FAIL, quatro achados F1–F4 e sensor7/7 por asserção. Provas sem alternância134pass; ferramenta mutate.py incompatível comSIGHUP Windows, fechamento sem aprovação. Author ≠ verifier.
 
-**Report continuation, 2026-10-31:** o mesmo `/root/stab_independent_verifier` confirmou seu contexto de `573491e`. Retomado somente para indexar C1–C68 no formato `## Checks` da revisão MCP 0.17.18, a partir do parecer já emitido. Sem novo Verifier, rodada, julgamento dos fixes ou mudança de código/testes. Retorno pendente.
+**Report continuation, 2026-10-31:** o mesmo `/root/stab_independent_verifier` confirmou seu contexto de `573491e`. Retornado: 68 linhas C1–C68 em `verification.md`, com 64 yes no alcance original e quatro no históricos F1–F4, citando Closed do autor sem reavaliar os fixes. Somente indexação no formato `## Checks` da revisão MCP 0.17.18, sem novo Verifier, rodada ou julgamento do HEAD atual. Todo o conteúdo fora da tabela preservado byte a byte; nenhum produto/teste alterado.
 
 **Fix pass do Verifier:** F1 `1c1bdbd`, F2 `0345015`, F3 `070dd2f`, F4 `9048e70`;94/94, sem Verified. Repetir matriz/provas e sete mutantes independentes, mais quatro sondas específicas dos fixes. Gate de fechamento da ferramenta continua pendente; T9 física ausente.
 
