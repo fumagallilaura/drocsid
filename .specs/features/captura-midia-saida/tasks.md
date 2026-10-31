@@ -579,6 +579,6 @@ Proof: node -e "process.stderr.write('T9 NAO EXECUTADA: PCs Windows, hardware re
 
 **Dispatched:** MEDIA rodada1 e rodada2 retornadas, preservadas em validation-round1.md e validation-round2.md. Revisão atual da skill: reexecutar provas e mutantes desses pareceres; não despachar terceiro Verifier.
 
-**Report continuation, 2026-10-31:** o mesmo `/root/media_final_verifier` confirmou seu contexto da rodada2. Retomado somente para indexar C1–C34 no formato `## Checks` da revisão MCP 0.17.18, a partir de seu parecer já emitido em `2c9d60e`. Sem novo Verifier, rodada, julgamento dos fixes ou mudança de código/testes. Retorno pendente.
+**Report continuation, 2026-10-31:** o mesmo `/root/media_final_verifier` confirmou seu contexto da rodada2. Retornado: 34 linhas C1–C34 em `verification.md`, com 28 yes e seis no do parecer original de `2c9d60e`; os quatro no automáticos conservam o finding fechado pelo autor em `7978124`, os dois físicos continuam não executados. Somente indexação no formato `## Checks` da revisão MCP 0.17.18, sem novo Verifier, rodada ou julgamento dos fixes/provas atuais. Históricos round1/round2 e restante do relatório preservados.
 
 **Fechamento em `699d4ed`:**32 critérios automatizáveis com provas funcionais verdes,85pass/2 fail físicos. Sensor próprio6/6 por asserção;94/94 antes/após e fonte/porcelain preservados. O mutate.py atual falha por SIGHUP e não emite linhas; T8 formal não está fechada, T9 permanece pendente e nenhum MEDIA Verified. Ver verification.md.
