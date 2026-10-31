@@ -13,3 +13,8 @@ apps/server/uploads/
 shared/protocol.js
 tests/protocol.test.js
 tests/merge.test.js
+server/database.js
+tests/database.test.js
+tests/helpers/postgres.js
+scripts/with-test-postgres.mjs
+tests/postgres-runtime.test.js

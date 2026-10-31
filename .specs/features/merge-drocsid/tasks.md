@@ -104,8 +104,8 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12
 
 **Done when**:
 
-- [ ] PostgreSQL real preserva todos os campos de salas/mensagens, sequência após reabrir, recibo idempotente por dono, rollback integral, migrações concorrentes e encerramento do pool.
-- [ ] Configuração exige credenciais explícitas e TLS verificado remoto; teste sem PostgreSQL falha sem skip ou fallback; baseline95 + delta, strict, build e desktop passam.
+- [x] PostgreSQL17.11 real preserva todos os campos de salas/mensagens, sequência após reabrir, recibo idempotente por dono, rollback de dados/DDL, migrações concorrentes e encerramento confirmado das próprias sessões; outro pool permanece intacto.
+- [x] Credenciais explícitas/TLS verificado, recusa de fallback plaintext e falta de binários com erro:106/106 (95+11), zero fail/skip/cancelled/todo; strict, Vite, desktop-smoke PASS, audit produção0. Sensores4/4 por AssertionError (dono, BEGIN, TLS e shutdown), bytes originais intactos. Evidências `test-results/drocsid-postgres-t3-*` e `postgres-t3-sensors.json`; commit desta tarefa `feat(database): add transactional postgresql persistence`.
 
 **Tests**: integration — `tests/database.test.ts` e fixture isolada com PostgreSQL real; negativo de configuração/migração/dono e disputa de escritores, conforme matriz.
 **Gate**: build
@@ -352,4 +352,4 @@ Proof: run integration | ✔ MERGE-21: database credentials stay in the server w
 
 **Walked:** pendente da implementação; checkers atuais seguem como regressão, não aprovação automática da nova interface.
 
-**Current:** T1 em41afbae e T2 em8d78b1f preservadas:95/95 + strict + Vite + desktop-smoke. Resposta "Prefiro postgresql" registrada em AD-003. T3 PostgreSQL é a primeira incompleta; runtime real local em preparação. A aplicação atual ainda usa SQLite até T8 integrar o novo proprietário; sem alegação de migração concluída.
+**Current:** T1 em41afbae/T2 em8d78b1f preservadas. Escolha PostgreSQL registrada em AD-003 e a3f3367. T3 concluída com PostgreSQL17.11 real,106/106 + strict/Vite/desktop/audit0 e sensores4/4. Próxima T4: importador readOnly com fixtures antigas/atuais. A aplicação atual ainda usa SQLite até T8 integrar o novo proprietário; sem alegação de migração completa, contas prontas ou aprovação física.

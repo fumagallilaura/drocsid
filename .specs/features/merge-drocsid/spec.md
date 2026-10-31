@@ -141,9 +141,9 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 | MERGE-16 | US4 | Tasks | In Tasks |
 | MERGE-17 | US4 | Tasks | In Tasks |
 | MERGE-18 | US4 | Tasks | In Tasks |
-| MERGE-19 | US5 | Tasks/T3 | In Tasks |
+| MERGE-19 | US5 | Execute/T3 | Implemented; final proofs pending |
 | MERGE-20 | US5 | Tasks/T4 | In Tasks |
-| MERGE-21 | US5 | Tasks/T3/T8/T9/T12 | In Tasks |
+| MERGE-21 | US5 | Execute/T3 + Tasks/T8/T9/T12 | Partial: configuration and real no-fallback test; client/artifact checks pending |
 
 ## Sources
 

@@ -12,7 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "npm run build:runtime && vite build",
     "start": "npm run build:runtime && node server/index.js --production",
-    "test": "npm run build:runtime && node --test tests/*.test.js",
+    "test": "npm run build:runtime && node scripts/with-test-postgres.mjs -- node --test tests/*.test.js",
     "desktop": "npm run build && electron .",
     "dist:win": "npm run build && node scripts/prepare-electron.mjs && node scripts/build-windows.mjs"
   },
@@ -22,6 +22,7 @@
   "dependencies": {
     "express": "^5.1.0",
     "lucide-react": "^0.468.0",
+    "pg": "8.23.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "ws": "^8.18.0"
@@ -30,6 +31,7 @@
     "@playwright/test": "^1.56.0",
     "@types/express": "5.0.6",
     "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@types/ws": "8.18.2",
