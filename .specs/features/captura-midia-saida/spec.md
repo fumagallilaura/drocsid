@@ -3,7 +3,7 @@
 **Approved**: 2026-10-26 - user: "Prossiga autonomamente pelas tarefas autorizadas, com testes de resultado e gates antes de marcar conclusão."
 
 
-**Data:** 2026-10-25. **Escopo:** Large/Complex. **Fase atual:** Execute, T1–T7 executadas; T8 com Build atual16/16 e provas/sensor de fechamento pendentes. T9 física não executada por recurso indisponível. Dois pareceres independentes preservados; nenhum Verified/PASS integral. Ver [evidência atual](evidence.md). Planejamento histórico em cd53044, sem repetir sua limitação documental como bloqueio da autorização atual.
+**Data:** 2026-10-25. **Escopo:** Large/Complex. **Fase atual em 2026-10-31:** Execute, T1–T8 automatizadas executadas; T9 física não executada por recurso indisponível. Provas93pass/2fail físicos e sensor próprio6/6 na candidata documental `ec874ec`, sem mudança de produto/testes desde `699d4ed`; Build16/16 e mesmo hash preservados. Dois pareceres independentes preservados; nenhum Verified/PASS integral. Ver [evidência atual](evidence.md). Planejamento histórico em cd53044, sem repetir sua limitação documental como bloqueio da autorização atual.
 
 **Cronologia atualizada em 2026-10-25:** as restrições C3/C4/C6 delimitam as respectivas entregas históricas de spec, planejamento e investigação. Depois delas, C7 autorizou revisão/correção documental e continuidade da estabilização em sequência. A revisão atual não executa tarefas; os nove itens continuam Draft. A sessão nova retoma após o término comprovado da revisão, conferindo código, gates e propostas técnicas. Ver [relatório de coerência](../../../docs/revisao-coerencia-documental.md) e [Handoff](../../STATE.md).
 

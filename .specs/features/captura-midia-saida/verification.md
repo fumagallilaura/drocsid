@@ -1,10 +1,13 @@
 # MEDIA: fechamento após os pareceres independentes
 
-**Verdict**: FAIL. A automação funcional passou; T9 não foi executada e o utilitário atual de mutação não funciona neste Python Windows.
-**HEAD**:699d4ed, candidata0.1.1/protocolo2, SHA-256 `16caffca2bf5b129e48b8d79438baa0e5b23fd4ca225b1e3aca24e81b2646135`.
+**Verdict**: FAIL integral por T9 não executada. A automação e a compatibilidade do fluxo atual passaram; o bloqueio histórico de SIGHUP foi encerrado pela atualização oficial da skill.
+**Current closure, 2026-10-31**: candidata documental `ec874ec`, sem mudança de produto/testes desde `699d4ed`, mesmo portátil/hash. MCP 0.17.18, revisão `eec8e8fe8151`. `check_proofs.py`:93pass/2fail, somente C33/C34 físicos; árvore limpa ao iniciar cada proofer. Sensor isolado17/17 por asserção (6 MEDIA,7 STAB,4 fixes), baselines94/94 antes/depois, porcelain real0 bytes idêntico e scratch/junction removidos. Logs test-results/closure-20261031. T8 automatizada concluída; T9 não executada e nenhum MEDIA Verified.
+
+Os dados de `699d4ed` abaixo preservam o fechamento anterior. O mesmo Verifier da rodada2 apenas acrescentou o índice `## Checks` do seu parecer original; não houve terceira rodada ou novo julgamento.
+**Historical HEAD**:699d4ed, candidata0.1.1/protocolo2, SHA-256 `16caffca2bf5b129e48b8d79438baa0e5b23fd4ca225b1e3aca24e81b2646135`.
 **Verifier**: fontes independentes preservadas em validation-round1.md e validation-round2.md. Este fechamento é reexecução do autor depois dos fixes, sem terceiro Verifier, conforme a revisão atual da skill.
-**Proofs**:85pass/2 fail em `699d4ed`, somente C33/C34 físicos vermelhos.
-**Mutations**:6 categorias independentes repetidas,6/6 por asserção no sensor próprio;0 linhas do mutate.py, cuja execução falhou por SIGHUP.
+**Historical proofs**:85pass/2 fail em `699d4ed`, somente C33/C34 físicos vermelhos.
+**Historical mutations**:6 categorias independentes repetidas,6/6 por asserção no sensor próprio;0 linhas do mutate.py, cuja execução falhou por SIGHUP.
 
 ## Findings
 
@@ -12,7 +15,7 @@
 | --- | --- | --- | --- |
 | Edge stop+leave da rodada2, MEDIA-16/17/21/24 | Ausência de conjunção relatada em validation-round2.md; agora rtc.test.js:315 exige inventário ended/PC fechado, duas ordens,999+1sem renovar prazo e reentrada preservada após replies antigas | Teste permanente R6 e reexecução das provas/mutantes em `699d4ed` | `7978124`, prova MEDIA-16/17/21/24 |
 | T9 física ausente, MEDIA-33/34 | Usuário confirmou indisponibilidade; uat.md inteiro NÃO EXECUTADO. Zero evidência física | Dois PCs Windows/LAN confiável, fones/microfones reais e dois operadores, mesmo portátil validado; ciclos30s e sessão10min integral | |
-| Gate formal da ferramenta atual indisponível | mutate.py f465b52756b8:214 falha AttributeError/SIGHUP antes de aplicar mutações; proofs.md tem0 linhas de sensor da ferramenta | Revisão compatível com Windows, depois repetir provas/mutações e validate_verification; não alterar relatório para fabricar aprovação | |
+| Gate formal da ferramenta anterior indisponível | mutate.py f465b52756b8:214 falhava AttributeError/SIGHUP antes de aplicar mutações; o fechamento anterior tinha0 linhas da ferramenta | Atualização oficial MCP 0.17.18/eec8e8fe8151, que não fornece nem exige mutate.py; provas nomeadas93pass/2fail físicos e sensor próprio6/6 reexecutados em ec874ec. Sem modificar a skill ou fabricar resultados da ferramenta antiga | `fffe1f9`, migração das provas; `af81870`, índice do mesmo parecer independente; reexecução em `ec874ec` |
 
 ## Reexecução e limites
 
@@ -25,6 +28,8 @@ O proofer devolve85pass/2 fail; o subutilitário que falhou não produziu linhas
 ## Gate
 
 `validate_verification.py captura-midia-saida` em699d4ed retornou exit1, cinco erros/zero avisos: C33/C34 vermelhos,0linhas de mutação e os dois findings físicos/ferramenta abertos. Saída integral em test-results/postfix-sensors/media-gate-final.log.
+
+**Current gate, 2026-10-31:** `validate_verification.py captura-midia-saida` em `ec874ec` retornou exit1, três erros e zero avisos: C33/C34 não executados e o finding T9 aberto. Nenhum erro de ferramenta, tabela de juízos ou teste automático. Log test-results/closure-20261031/media-gate.log. O gate continua vermelho porque a aceitação física falta; não foi contornado.
 
 ## Checks
 

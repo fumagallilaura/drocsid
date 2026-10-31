@@ -9,7 +9,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 
 **If the skill cannot be activated, STOP and tell the user - do not proceed without it.**
 
-**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress sob a autorização atual. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T7 executadas; T8 em revisão após a rodada independente 2 (16 gates e sensor 6/6 aprovados, uma conjunção automática a reverificar). T9 física não executada por indisponibilidade explícita de recursos. Ver [execução](execution.md) e [evidência](evidence.md).
+**Design**: [design.md](design.md). **Spec**: [spec.md](spec.md). **Status**: In Progress, somente aceitação física T9 pendente. **Base histórica**: `cd53044`; execução iniciada em `38062db`. T1–T8 automatizadas executadas; R6 e os fixes posteriores têm provas atuais, Build16/16 preservado e sensor próprio6/6 repetido em `ec874ec`. T9 não executada por indisponibilidade explícita de recursos. Nenhum Verified/PASS integral. Ver [execução](execution.md) e [evidência](evidence.md).
 
 O usuário solicitou design e tarefas juntos. Este plano concretiza a abordagem A recomendada; a geração do documento não marca essa arquitetura ou Execute como aprovados. Os padrões A1–A8 permanecem explícitos na spec.
 
@@ -580,5 +580,7 @@ Proof: node -e "process.stderr.write('T9 NAO EXECUTADA: PCs Windows, hardware re
 **Dispatched:** MEDIA rodada1 e rodada2 retornadas, preservadas em validation-round1.md e validation-round2.md. Revisão atual da skill: reexecutar provas e mutantes desses pareceres; não despachar terceiro Verifier.
 
 **Report continuation, 2026-10-31:** o mesmo `/root/media_final_verifier` confirmou seu contexto da rodada2. Retornado: 34 linhas C1–C34 em `verification.md`, com 28 yes e seis no do parecer original de `2c9d60e`; os quatro no automáticos conservam o finding fechado pelo autor em `7978124`, os dois físicos continuam não executados. Somente indexação no formato `## Checks` da revisão MCP 0.17.18, sem novo Verifier, rodada ou julgamento dos fixes/provas atuais. Históricos round1/round2 e restante do relatório preservados.
+
+**Automated closure, 2026-10-31:** `check_proofs.py` em `ec874ec`:93pass/2fail (C33/C34 físicos). Node94/94 e Build da feature verdes; sensor próprio6/6 MEDIA e17/17 no total, baselines94/94, restauração em bytes e porcelain real0 bytes idêntico; scratch/junction removidos. MCP0.17.18 elimina o utilitário incompatível, sem dispensar os sensores do plano. Pacote reconferido por bytes/hash, sem novo build nem mudança de produto; evidência16/16 anterior continua vinculada ao mesmo hash. T8 está concluída em seu escopo automatizado; o gate integral da feature permanece FAIL por T9. Logs test-results/closure-20261031; nenhum Verified.
 
 **Fechamento em `699d4ed`:**32 critérios automatizáveis com provas funcionais verdes,85pass/2 fail físicos. Sensor próprio6/6 por asserção;94/94 antes/após e fonte/porcelain preservados. O mutate.py atual falha por SIGHUP e não emite linhas; T8 formal não está fechada, T9 permanece pendente e nenhum MEDIA Verified. Ver verification.md.
