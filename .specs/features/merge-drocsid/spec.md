@@ -2,6 +2,8 @@
 
 **Approved**: 2026-10-31 - user: "Manter o conversa como principal, mas o nome deve ser Drocsid. Voce deve tomar as melhores decisões, baseado em boas práticas de mercado, mantenha o padrão em typescript, a segurança também é uma validação importante"
 
+**Amended**: 2026-10-31 - user: "Prefiro postgresql". AD-003 substitui SQLite como backend; T1/T2 preservadas, MERGE-18 esclarecida e MERGE-19–21 acrescentadas por esta escolha.
+
 ## Problem Statement
 
 Conversa e Drocsid têm históricos independentes, interfaces, contratos e persistências distintos. O usuário autorizou uma integração funcional local: manter a base estabilizada do Conversa, usar o nome Drocsid, incorporar contas e grupos e validar TypeScript e segurança. Juntar diretórios sem ligar esses comportamentos não atende ao pedido.
@@ -26,7 +28,7 @@ Conversa e Drocsid têm históricos independentes, interfaces, contratos e persi
 | Assumption / decision | Chosen default | Rationale | Confirmed? |
 | --- | --- | --- | --- |
 | Produto | Conversa como base, nome Drocsid, contas/grupos integrados | Resposta literal no context.md | y |
-| Tecnologia | TypeScript estrito, SQLite único e emissão JS para os runtimes | Decisões técnicas delegadas; mantém dados e transações existentes | user delegated |
+| Tecnologia | TypeScript estrito, PostgreSQL único no servidor e emissão JS para os runtimes | PostgreSQL escolhido diretamente; integração preserva os contratos do Conversa | y + user delegated |
 | Contas | Usuário 2–32 caracteres a-z0-9_., senha15–128, scrypt N131072/r8/p1 e sal aleatório16bytes | Sem MFA; orientação OWASP e base upstream | user delegated |
 | Sessão | Token aleatório32bytes, hash SHA256; expiração absoluta24h e inatividade30min; logout revoga conexões | Identidade revogável, sem segredo persistente no renderer | user delegated |
 | Convite | Código aleatório32bytes, hash no banco, prazo24h, uso único e revogação pelo dono | Evita convites permanentes ou enumeráveis | user delegated |
@@ -87,9 +89,21 @@ Conversa e Drocsid têm históricos independentes, interfaces, contratos e persi
 3. WHEN construir o pacote THEN o build SHALL emitir host/preload/serviço atuais e o checker SHALL comparar os bytes alcançáveis ao ASAR e conferir SHA256 do portátil. (**MERGE-15**)
 4. WHEN validar a integração THEN os gates SHALL executar testes negativos de autorização e sessões, checagem de dependências e Verifier independente, registrando qualquer vulnerabilidade alta/crítica não resolvida como bloqueador. (**MERGE-16**)
 5. WHILE o ensaio físico T9 não for executado o relatório SHALL manter ruído, eco, loopback e aceitação física sem aprovação e identificar a nova candidata por hash. (**MERGE-17**)
-6. WHEN concluir o produto unificado THEN os comandos de execução e pacote SHALL usar um único aplicativo, sem dependência ou backend PostgreSQL paralelo sem uso. (**MERGE-18**)
+6. WHEN concluir o produto unificado THEN os comandos de execução e pacote SHALL usar um único aplicativo e backend PostgreSQL, sem servidor SQLite paralelo. (**MERGE-18**)
 
 **Independent Test**: Gestos nos controles reais, dois usuários/grupos, mídia sintética e matriz source/packaged/portátil. O ensaio físico é separado e permanece pendente.
+
+### P1: US5 — Persistência PostgreSQL e migração conservadora
+
+**User Story**: Como operador, quero PostgreSQL no servidor e uma importação verificável dos dados legados.
+
+**Acceptance Criteria**:
+
+1. WHEN iniciar a persistência PostgreSQL THEN o componente SHALL aplicar migrações versionadas atomicamente, manter ordem e recibos de mensagens após reconexão, reverter operações incompletas e encerrar o pool sem sessões pendentes. (**MERGE-19**)
+2. WHEN importar um SQLite legado THEN o importador SHALL preservar IDs, nomes, texto, datas, ordem, autoria e recibos em uma transação repetível sem duplicação, recusar destinos conflitantes e manter o arquivo de origem inalterado. (**MERGE-20**)
+3. IF configurar acesso ao banco THEN o servidor SHALL exigir credenciais explícitas, recusar TLS sem verificação em conexões remotas e manter a URL/senha fora de logs, renderer, preferências e pacote do cliente. (**MERGE-21**)
+
+**Independent Test**: PostgreSQL real isolado; reinício, rollback e dois escritores concorrentes. Importar fixtures SQLite antigas e atuais duas vezes e comparar todos os campos e bytes da origem; provocar conflito. Verificar configuração local/remota/TLS e artefato desktop.
 
 ## Edge Cases
 
@@ -98,6 +112,8 @@ Conversa e Drocsid têm históricos independentes, interfaces, contratos e persi
 - Repetir convite ou operação alheia não concede acesso nem duplica associação.
 - Shutdown durante hash pendente não acessa banco fechado nem mantém listener.
 - Salas legadas não viram públicas por causa do cadastro de uma conta.
+- Migração concorrente usa lock transacional; schema futuro/desconhecido é recusado, nunca sobrescrito.
+- PostgreSQL não disponível faz o teste falhar com instrução concreta; nenhum skip, banco emulado ou fallback SQLite o aprova.
 
 ## Implicit Requirement Dimensions
 
@@ -109,7 +125,7 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 | --- | --- | --- | --- |
 | MERGE-01 | US1 | Execute/T1 | Implemented; final proofs pending |
 | MERGE-02 | US1 | Tasks | In Tasks |
-| MERGE-03 | US1 | Execute/T2–T9 | Partial: strict infrastructure and protocol; remaining owners pending |
+| MERGE-03 | US1 | Execute/T2–T11 | Partial: strict infrastructure and protocol; remaining owners pending |
 | MERGE-04 | US1 | Tasks | In Tasks |
 | MERGE-05 | US2 | Tasks | In Tasks |
 | MERGE-06 | US2 | Tasks | In Tasks |
@@ -125,15 +141,19 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 | MERGE-16 | US4 | Tasks | In Tasks |
 | MERGE-17 | US4 | Tasks | In Tasks |
 | MERGE-18 | US4 | Tasks | In Tasks |
+| MERGE-19 | US5 | Tasks/T3 | In Tasks |
+| MERGE-20 | US5 | Tasks/T4 | In Tasks |
+| MERGE-21 | US5 | Tasks/T3/T8/T9/T12 | In Tasks |
 
 ## Sources
 
 - [Contexto e autorização](context.md), commits a2ae03c e94d9b9a e os113 ACs históricos, preservados.
 - [OWASP Password Storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html), [Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) e [Electron Security](https://www.electronjs.org/docs/latest/tutorial/security), consultados em2026-10-31.
 - Nenhuma captura visual vinculante foi fornecida; a base visual é a interface do Conversa.
+- AD-003, resposta "Prefiro postgresql", [node-postgres Transactions](https://node-postgres.com/features/transactions), [SSL](https://node-postgres.com/features/ssl) e [PostgreSQL Windows](https://www.postgresql.org/download/windows/), consultados em2026-10-31.
 
 ## Success Criteria
 
-- [ ] MERGE-01–18 têm provas de resultado e parecer independente, sem enfraquecer a regressão.
+- [ ] MERGE-01–21 têm provas de resultado e parecer independente, sem enfraquecer a regressão.
 - [ ] Pacote Drocsid abre e funciona; nenhum dado legado excluído.
 - [ ] T9 física permanece pendente com recursos necessários explícitos, sem publicação implícita.

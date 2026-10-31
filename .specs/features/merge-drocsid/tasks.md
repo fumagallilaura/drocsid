@@ -5,10 +5,13 @@
 Usar tlc-spec-driven carregada pelo MCP. Execução local e decisões técnicas foram autorizadas diretamente no pedido e na resposta registrada em context.md; não são autorização de publicação.
 
 **Approved**: 2026-10-31 - user: "Manter o conversa como principal, mas o nome deve ser Drocsid. Voce deve tomar as melhores decisões, baseado em boas práticas de mercado, mantenha o padrão em typescript, a segurança também é uma validação importante"
+**Amended**: 2026-10-31 - user: "Prefiro postgresql". AD-003 substitui a escolha SQLite. Somente as tarefas futuras foram renumeradas: antigasT3–T10 tornam-seT5–T12; T1/T2 não são refeitas.
 **Design**: [design.md](design.md)
 **Status**: In Progress
 **Build**: npm.cmd test; npm.cmd run build
-**Run integration**: node --test --test-reporter=spec tests/merge.test.js
+**Run integration**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/merge.test.js
+**Run postgres**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/database.test.js
+**Run migration**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/import-sqlite.test.js
 
 O Build usa os comandos próprios existentes e passará a incluir strict/emissão conforme T2 os habilitar. A configuração não excluirá fontes migradas para contornar erro. A aprovação é o mandato de execução com decisões delegadas, não uma palavra inventada em nome do usuário.
 
@@ -20,7 +23,7 @@ Guidelines: README/Verificação, package.json e matrizes STAB/MEDIA; nenhum AGE
 | --- | --- | --- | --- | --- |
 | Protocolo, RTC e Session | unit/integration | Todos os ACs correspondentes e fronteiras históricas, sem supressões | tests/*.test.ts | npm.cmd test |
 | Identidade e autorização | integration | Entrada válida, limites, negativo entre contas/grupos, expiração, revogação e concorrência | tests/identity.test.ts e tests/merge.test.ts | npm.cmd test |
-| Banco e serviço | integration | Dados legados, transação, idempotência por dono e shutdown | tests/service.test.ts | npm.cmd test |
+| Banco e serviço | integration | PostgreSQL real: rollback, dois escritores, migração concorrente, recibos, ordem e shutdown; importação SQLite readOnly preserva bytes | tests/database.test.ts, tests/import-sqlite.test.ts e tests/service.test.ts | npm.cmd test |
 | React e Electron | e2e | Controles reais, origem/frame, fluxo de conta/grupo e mídia | scripts/desktop-*.mts | npm.cmd run build; node scripts/desktop-smoke.mjs |
 | Tipos/emissão/pacote | build/integration | Inventário completo, strict, bytes/ASAR e hash | tsconfig*.json, tests/packaging.test.ts | npm.cmd run build; npm.cmd run dist:win |
 | Áudio físico | manual | Não executado por recurso indisponível; não é gate substituível por mocks | MEDIA/uat.md | Protocolo A7/T9 quando disponível |
@@ -32,29 +35,29 @@ Guidelines: README/Verificação, package.json e matrizes STAB/MEDIA; nenhum AGE
 | Quick | Contrato/domínio | npm.cmd test |
 | Full | Identidade e serviço | npm.cmd test; npm.cmd run build |
 | Build | Componente/fase/desktop | npm.cmd test; npm.cmd run build; node scripts/desktop-smoke.mjs; checkers específicos de cada proprietário |
-| Release | T10 | Build + npm.cmd run dist:win; node scripts/check-package.mjs; checkers source/packaged e portátil; npm.cmd audit --omit=dev |
+| Release | T12 | Build + npm.cmd run dist:win; node scripts/check-package.mjs; checkers source/packaged e portátil; npm.cmd audit --omit=dev |
 
 Não instalar CI/linter novo para preencher campo. Typecheck será parte obrigatória do build. Gates Electron rodam sequencialmente, em perfis isolados. Não repetir sondagens históricas como testes de saúde.
 
 ## Execution Plan
 
-### Phase 1: History and typed core
+### Phase 1: History, PostgreSQL and typed core
 ```text
-T1 -> T2 -> T3 -> T4
+T1 -> T2 -> T3 -> T4 -> T5 -> T6
 ```
 ### Phase 2: Identity and product
 ```text
-T5 -> T6 -> T7 -> T8
+T7 -> T8 -> T9 -> T10
 ```
 ### Phase 3: Tooling and release
 ```text
-T9 -> T10
+T11 -> T12
 ```
 
 ## Phase Execution Map
 
 ```text
-T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10
+T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12
 ```
 
 ## Task Breakdown
@@ -85,17 +88,49 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10
 
 **Done when**:
 
-- [x] Emissão/types Node e contrato de protocolo tipado, com validação externa preservada e sete testes de protocolo verdes. `tsconfig.json` strict/noEmitOnError; configs DOM/host acompanham seus proprietários. Fontes ainda não convertidas permanecem explicitamente pendentes em T3–T9.
+- [x] Emissão/types Node e contrato de protocolo tipado, com validação externa preservada e sete testes de protocolo verdes. `tsconfig.json` strict/noEmitOnError; configs DOM/host acompanham seus proprietários. Fontes ainda não convertidas permanecem explicitamente pendentes em T5–T11.
 - [x] Gate build aprovado:95/95, zero falha/skip/cancelled/todo; tsc, Vite e desktop-smoke PASS. Evidências `test-results/drocsid-merge-t2-*`. Commit desta tarefa: `feat(types): compile the protocol with strict runtime validation`.
 
 **Tests**: unit/integration, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
 
-### T3: Converter o controlador de mídia
+### T3: Implementar persistência PostgreSQL transacional
+
+**What**: Pool tipado, configuração segura, migrações versionadas e persistência de salas/mensagens/recibos com concorrência e rollback reais; runtime PostgreSQL isolado de testes.
+**Where**: `server/database.ts`
+**Depends on**: T2
+**Reuses**: SQL/contrato do serviço Conversa, driver pg do upstream e testes Node existentes; não reutilizar senha padrão nem schema público incompatível.
+**Requirement**: MERGE-19, MERGE-21
+
+**Done when**:
+
+- [ ] PostgreSQL real preserva todos os campos de salas/mensagens, sequência após reabrir, recibo idempotente por dono, rollback integral, migrações concorrentes e encerramento do pool.
+- [ ] Configuração exige credenciais explícitas e TLS verificado remoto; teste sem PostgreSQL falha sem skip ou fallback; baseline95 + delta, strict, build e desktop passam.
+
+**Tests**: integration — `tests/database.test.ts` e fixture isolada com PostgreSQL real; negativo de configuração/migração/dono e disputa de escritores, conforme matriz.
+**Gate**: build
+
+### T4: Importar SQLite legado sem alterar a origem
+
+**What**: Importação explícita e transacional para PostgreSQL, preservando dados e recibos, repetível e com conflitos recusados.
+**Where**: `scripts/import-sqlite.mts`
+**Depends on**: T3
+**Reuses**: Fixtures/schema SQLite históricos, DatabaseSync readOnly e transação PostgreSQL de T3; nenhuma inferência de conta por nome.
+**Requirement**: MERGE-04, MERGE-20
+
+**Done when**:
+
+- [ ] Schema antigo/atual são importados com todos os campos/ordem e origem byte-idêntica; repetição não duplica e conflito/versão futura revertem a transação.
+- [ ] Baseline95 + delta preservada, strict/build/desktop aprovados; nenhuma preferência ou banco original removido, sem certificação física.
+
+**Tests**: integration — `tests/import-sqlite.test.ts`, PostgreSQL real e SQLite somente como fixture de entrada; repetição, concorrência, falha e hashes da origem.
+**Gate**: build
+
+### T5: Converter o controlador de mídia
 
 **What**: Call em TS com dependências tipadas e todas as asserções de aquisição, inventário, compensação e prazos preservadas.
 **Where**: `src/rtc.ts`
-**Depends on**: T2
+**Depends on**: T4
 **Reuses**: Proprietário atual do Conversa e contratos citados em design.md; testes e fixtures acompanham o proprietário, sem testes adiados.
 **Requirement**: MERGE-03, MERGE-14
 
@@ -107,11 +142,11 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10
 **Tests**: unit/integration, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
 
-### T4: Converter o controlador de sessão
+### T6: Converter o controlador de sessão
 
 **What**: Session em TS mantém handshake, correlação, drafts, outbox e deadlines, com seus testes co-localizados.
 **Where**: `src/session.ts`
-**Depends on**: T3
+**Depends on**: T5
 **Reuses**: Proprietário atual do Conversa e contratos citados em design.md; testes e fixtures acompanham o proprietário, sem testes adiados.
 **Requirement**: MERGE-03, MERGE-12, MERGE-14
 
@@ -123,11 +158,11 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10
 **Tests**: unit/integration, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
 
-### T5: Implementar identidade e grupos transacionais
+### T7: Implementar identidade e grupos transacionais
 
-**What**: Cadastro, login, limites, sessões, tickets e grupos/convites cumprem os valores da spec com testes negativos, expiração e concorrência.
+**What**: Cadastro, login, limites, sessões, tickets e grupos/convites no pool PostgreSQL cumprem os valores da spec com testes negativos, expiração e concorrência reais.
 **Where**: `server/identity.ts`
-**Depends on**: T4
+**Depends on**: T6
 **Reuses**: Proprietário atual do Conversa e contratos citados em design.md; testes e fixtures acompanham o proprietário, sem testes adiados.
 **Requirement**: MERGE-05–11
 
@@ -139,11 +174,11 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10
 **Tests**: unit/integration, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: full
 
-### T6: Autorizar o serviço e preservar dados
+### T8: Autorizar o serviço e preservar dados
 
-**What**: Bootstrap/serviço em TS exigem autenticação na rede, bloqueiam acesso cruzado antes de consultar dados e preservam dados/shutdown.
+**What**: Bootstrap/serviço em TS usam PostgreSQL, exigem autenticação na rede, bloqueiam acesso cruzado antes de consultar dados e preservam ordenação/contexto após awaits e shutdown.
 **Where**: `server/service.ts`
-**Depends on**: T5
+**Depends on**: T7
 **Reuses**: Proprietário atual do Conversa e contratos citados em design.md; testes e fixtures acompanham o proprietário, sem testes adiados.
 **Requirement**: MERGE-04, MERGE-07–12, MERGE-18
 
@@ -155,11 +190,11 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10
 **Tests**: unit/integration, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
 
-### T7: Converter e renomear o host Electron
+### T9: Converter e renomear o host Electron
 
-**What**: Host, política e preload tipados; Drocsid visível, userData legado preservado, isolamento/frame/câmera/seletor continuam verificados.
+**What**: Host, política e preload tipados; Drocsid visível, userData legado preservado, cliente API sem segredo PostgreSQL nem banco instalado no PC; isolamento/frame/câmera/seletor continuam verificados.
 **Where**: `electron/main.ts`
-**Depends on**: T6
+**Depends on**: T8
 **Reuses**: Proprietário atual do Conversa e contratos citados em design.md; testes e fixtures acompanham o proprietário, sem testes adiados.
 **Requirement**: MERGE-02–04, MERGE-14–15
 
@@ -171,11 +206,11 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10
 **Tests**: integration/e2e, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
 
-### T8: Integrar contas e grupos na interface principal
+### T10: Integrar contas e grupos na interface principal
 
 **What**: React em TS com cadastro/login/logout e criação/convite de grupos por gestos; token/senha só em memória, autorização sempre no serviço.
 **Where**: `src/main.tsx`
-**Depends on**: T7
+**Depends on**: T9
 **Reuses**: Proprietário atual do Conversa e contratos citados em design.md; testes e fixtures acompanham o proprietário, sem testes adiados.
 **Requirement**: MERGE-02, MERGE-09–14
 
@@ -187,11 +222,11 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10
 **Tests**: integration/e2e, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
 
-### T9: Converter ferramentas e testes próprios
+### T11: Converter ferramentas e testes próprios
 
 **What**: Inventário de fontes inclui scripts, testes, helpers, fixtures e sete ferramentas históricas; strict e asserções sem supressões, hardware não inferido.
 **Where**: `scripts/test-runtime.mts`
-**Depends on**: T8
+**Depends on**: T10
 **Reuses**: Proprietário atual do Conversa e contratos citados em design.md; testes e fixtures acompanham o proprietário, sem testes adiados.
 **Requirement**: MERGE-03, MERGE-14–16
 
@@ -203,11 +238,11 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10
 **Tests**: unit/integration, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
 
-### T10: Fechar distribuição do produto unificado
+### T12: Fechar distribuição do produto unificado
 
 **What**: Somente um aplicativo/runtime, dependências sem uso removidas, matriz source/packaged/portátil, hash e auditoria registrados; sem aprovação física.
 **Where**: `scripts/build-windows.mts`
-**Depends on**: T9
+**Depends on**: T11
 **Reuses**: Proprietário atual do Conversa e contratos citados em design.md; testes e fixtures acompanham o proprietário, sem testes adiados.
 **Requirement**: MERGE-01–04, MERGE-15–18
 
@@ -221,7 +256,7 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10
 
 ## Task Granularity Check
 
-Cada item entrega um proprietário ou a infraestrutura de compilação consumida por ele. Emissão e testes acompanham a conversão; identidade/grupos constituem um único componente transacional. T9 converte o harness e seus consumidores, preservando artefatos históricos.
+Cada item entrega um proprietário ou a infraestrutura de compilação consumida por ele. Emissão e testes acompanham a conversão; identidade/grupos constituem um único componente transacional. T11 converte o harness e seus consumidores, preservando artefatos históricos.
 
 ## Diagram-Definition Cross-Check
 
@@ -237,6 +272,8 @@ Cada item entrega um proprietário ou a infraestrutura de compilação consumida
 | T8 | T7 | T7 | Match |
 | T9 | T8 | T8 | Match |
 | T10 | T9 | T9 | Match |
+| T11 | T10 | T10 | Match |
+| T12 | T11 | T11 | Match |
 
 ## Test Co-location Validation
 
@@ -298,12 +335,21 @@ Proof: run integration | ✔ MERGE-17: physical acceptance remains explicitly pe
 **C18** - O produto SHALL cumprir MERGE-18, conforme valor e condição da spec.
 Proof: run integration | ✔ MERGE-18: the unified product has no parallel unused backend
 
+**C19** - O PostgreSQL SHALL persistir dados, ordem e recibos após reconexão, reverter operações incompletas e fechar o pool (MERGE-19).
+Proof: run postgres | ✔ MERGE-19: PostgreSQL commits, survives reconnect and rolls back incomplete work
+
+**C20** - A importação SHALL preservar todos os campos/bytes da origem, ser repetível e recusar conflito sem importação parcial (MERGE-20).
+Proof: run migration | ✔ MERGE-20: legacy SQLite imports preserve data and source bytes atomically
+
+**C21** - A configuração SHALL manter credenciais só no servidor e verificar TLS remoto, sem segredos no renderer/pacote (MERGE-21).
+Proof: run integration | ✔ MERGE-21: database credentials stay in the server with verified TLS
+
 ## Handoff
 
-**Settled mid-build:** user: "Manter o conversa como principal, mas o nome deve ser Drocsid. Voce deve tomar as melhores decisões, baseado em boas práticas de mercado, mantenha o padrão em typescript, a segurança também é uma validação importante". Preferência persistente: "Executar nesta sessão; Verifier independente no fechamento". Recursos T9: "Não estão disponíveis agora; manter T9 pendente".
+**Settled mid-build:** user: "Prefiro postgresql" (AD-003, substitui AD-002); user: "Manter o conversa como principal, mas o nome deve ser Drocsid. Voce deve tomar as melhores decisões, baseado em boas práticas de mercado, mantenha o padrão em typescript, a segurança também é uma validação importante". Preferência persistente: "Executar nesta sessão; Verifier independente no fechamento". Recursos T9: "Não estão disponíveis agora; manter T9 pendente".
 
-**Dispatched:** nenhum. Plano10tarefas; manter execução inline conforme escolha persistente desta sessão, sem nova pergunta repetida. Após T10, Verifier fresco da feature MERGE, sem herdar Handoff; sem captura vinculante e sem screens sub-agent. Pareceres MEDIA/STAB não são parecer desta integração.
+**Dispatched:** nenhum. Plano12tarefas; manter execução inline conforme escolha persistente desta sessão, sem nova pergunta repetida. Após T12, Verifier fresco da feature MERGE, sem herdar Handoff; sem captura vinculante e sem screens sub-agent. Pareceres MEDIA/STAB não são parecer desta integração.
 
 **Walked:** pendente da implementação; checkers atuais seguem como regressão, não aprovação automática da nova interface.
 
-**Current:** T1 em41afbae; T2 concluída com strict/emissão e protocolo,95/95 + Vite + desktop-smoke. Main e backup em a2ae03c, segundo pai94d9b9a, branchintegration/drocsid. Próxima T3: Call e testes; contas/grupos e marca de UI ainda não integrados.
+**Current:** T1 em41afbae e T2 em8d78b1f preservadas:95/95 + strict + Vite + desktop-smoke. Resposta "Prefiro postgresql" registrada em AD-003. T3 PostgreSQL é a primeira incompleta; runtime real local em preparação. A aplicação atual ainda usa SQLite até T8 integrar o novo proprietário; sem alegação de migração concluída.
