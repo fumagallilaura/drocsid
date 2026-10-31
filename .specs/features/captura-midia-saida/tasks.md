@@ -403,55 +403,55 @@ Depois do último commit de tarefa, o Verifier fresco obrigatório avalia os 34 
 
 ## Checks
 
-Uma claim por AC, sem alterar seu texto. Provas Node selecionam testes nomeados; checkers desktop exercitam controles e resultados da integração. Mais de uma camada pode ser necessária. Node não possui adapter agrupado nesta revisão; cada comando roda diretamente.
+Uma claim por AC, sem alterar seu texto. As provas Node compartilham uma execução e exigem a linha de aprovação de cada teste selecionado. Os checkers desktop exercitam controles e resultados da integração. Mais de uma camada pode ser necessária.
 
 **Build**: npm.cmd test; npm.cmd run build; node scripts/desktop-smoke.mjs
-**Mutations**: 5
-
-MCP 0.17.14 (`f465b52756b8`) limita o campo Mutations a cinco. Os sensores adicionais do plano continuam obrigatórios: seis categorias MEDIA e sete regressões STAB R01–R07, sem reduzir os mínimos anteriores. MEDIA preserva os dois pareceres independentes; R6 retorna às provas e aos mutantes existentes, sem terceiro Verifier na revisão atual. STAB recebe seu primeiro Verifier depois das provas. Sem captura visual vinculante; UI exercitada pelos checkers. Não há lint/typecheck no repositório e TypeScript não começa agora.
+**Run node**: node --test --test-reporter=spec tests/*.test.js
+**Discrimination sensor**: seis categorias MEDIA e sete regressões STAB R01–R07 continuam obrigatórias. A revisão MCP 0.17.18 (`eec8e8fe8151`) substituiu o utilitário mutate.py por julgamento das provas; isso não reduz o sensor exigido por este plano. Os resultados isolados permanecem evidência separada, sem fabricar linhas da ferramenta antiga. Os dois pareceres MEDIA e o parecer STAB já retornaram; não há novo despacho. Sem captura visual vinculante; UI exercitada pelos checkers. Não há lint/typecheck no repositório e TypeScript não começa agora.
 
 **C1** - WHEN abrir ou recarregar fora de uma chamada THEN o Conversa SHALL permanecer sem iniciar captura de microfone, tela ou áudio do sistema. (MEDIA-01)
 Proof: node scripts/startup-audio-check.mjs
 
 **C2** - WHILE uma aquisição de um tipo estiver pendente na mesma tentativa o Conversa SHALL reutilizar ou recusar pedidos concorrentes desse tipo sem iniciar outra aquisição. (MEDIA-02)
-Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-02/05/08/30/31: allocated context covers all sends, listen-only needs an explicit mic action and mute preserves capture
+Proof: run node | ✔ MEDIA-02/09/10/28: one selection per operation, audio requires consent and old display cannot replace a newer one
 
 **C3** - IF uma aquisição resolver após o terminal de sua tentativa THEN o Conversa SHALL liberar todas as tracks retornadas dentro de A1, sem incorporá-las à tentativa nova. (MEDIA-03)
-Proof: node --test --test-name-pattern="MEDIA\-03/28:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-03/28: permissions resolved in either order release every old track and preserve the new attempt
 
 **C4** - WHILE o controlador estiver definitivamente fechado o Conversa SHALL recusar ações de captura antes de invocar a API de mídia. (MEDIA-04)
-Proof: node --test --test-name-pattern="MEDIA\-04/28:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-04/28: a stale generation allocator fails before any capture and close rejects capture actions
 
 **C5** - WHILE não houver admissão confirmada da tentativa vigente o Conversa SHALL impedir publicação de sua captura provisória aos outros participantes. (MEDIA-05)
-Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-05/06/28:" tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-05/21/28:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:" tests/protocol.test.js
-Proof: node --test --test-name-pattern="MEDIA\-05/24/28:" tests/service.test.js tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-05/28:" tests/session.test.js
+Proof: run node | ✔ MEDIA-02/05/08/30/31: allocated context covers all sends, listen-only needs an explicit mic action and mute preserves capture
+Proof: run node | ✔ MEDIA-05/06/28: v2 client rejects v1 config before opening WS or acquiring media
+Proof: run node | ✔ MEDIA-05/21/28: cancellation keeps the original context while admission and leave replies are delayed
+Proof: run node | ✔ MEDIA-05/24/25/28: v2 requires bounded positive generations in every call event and rejects v1
+Proof: run node | ✔ MEDIA-05/24/28: v1 requests cannot enter a v2 service or occupy its call
+Proof: run node | ✔ MEDIA-05/24/28: successive Call owners share a Session generation and stale epochs fail before acquisition
+Proof: run node | ✔ MEDIA-05/28: ack action, callId and generation must match the pending operation
 
 **C6** - IF a admissão for recusada ou exceder os 8 s de A2 THEN o Conversa SHALL encerrar a tentativa e liberar sua captura provisória dentro de A1, qualquer que seja o código ou idioma do erro. (MEDIA-06)
-Proof: node --test --test-name-pattern="MEDIA\-05/06/28:" tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-06/31:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-05/06/28: v2 client rejects v1 config before opening WS or acquiring media
+Proof: run node | ✔ MEDIA-06/31: the actual 8s admission deadline releases the provisional stream and identifies the attempt
 
 **C7** - WHILE aquisição ou admissão estiver pendente o Conversa SHALL oferecer cancelamento por teclado que torne a tentativa terminal dentro de A1 sem aguardar a permissão nativa. (MEDIA-07)
 Proof: node scripts/desktop-smoke.mjs
 
 **C8** - IF o microfone for negado ou indisponível THEN o Conversa SHALL permitir entrada em escuta e compartilhamento após admissão válida, sem track de microfone nem novas solicitações de microfone sem ação explícita. (MEDIA-08)
-Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-02/05/08/30/31: allocated context covers all sends, listen-only needs an explicit mic action and mute preserves capture
 
 **C9** - WHEN iniciar cada compartilhamento THEN o Conversa SHALL exigir escolha explícita de uma fonte pertencente à lista daquele pedido, sem reutilizar seleção antiga. (MEDIA-09)
-Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-09/11/28:" tests/desktop-policy.test.js
+Proof: run node | ✔ MEDIA-02/09/10/28: one selection per operation, audio requires consent and old display cannot replace a newer one
+Proof: run node | ✔ MEDIA-09/11/28: capture keys are bounded and identify exactly one call operation
 Proof: node scripts/desktop-capture-check.mjs
 
 **C10** - WHEN obter mídia de tela THEN o Conversa SHALL incluir áudio do sistema somente conforme o consentimento de A6, informando que o áudio pode abranger aplicativos além da janela selecionada. (MEDIA-10)
-Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-02/09/10/28: one selection per operation, audio requires consent and old display cannot replace a newer one
 Proof: node scripts/desktop-capture-check.mjs
 
 **C11** - IF câmera, frame secundário, origem alheia ou remetente IPC não autorizado pedir uma capacidade de mídia privilegiada THEN o desktop SHALL negá-la, mantendo essas capacidades restritas ao frame principal local confiável. (MEDIA-11)
-Proof: node --test --test-name-pattern="MEDIA\-09/11/28:" tests/desktop-policy.test.js
+Proof: run node | ✔ MEDIA-09/11/28: capture keys are bounded and identify exactly one call operation
 Proof: node scripts/desktop-capture-check.mjs
 
 **C12** - WHEN um pedido nativo de seleção for concluído por escolha, cancelamento, timeout, recarga ou fechamento THEN o host SHALL resolvê-lo exatamente uma vez, com a fonte válida ou cancelamento. (MEDIA-12)
@@ -461,39 +461,40 @@ Proof: node scripts/desktop-capture-check.mjs
 Proof: node scripts/desktop-capture-check.mjs
 
 **C14** - IF qualquer publicação falhar ou não concluir nos 8 s de A2 THEN o Conversa SHALL abortar o novo compartilhamento e liberar todas as suas tracks dentro de A1. (MEDIA-14)
-Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-14/17/18:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-14/15/19/20: provisional screen, late peer and stalled sender all roll back without disturbing healthy voice
+Proof: run node | ✔ MEDIA-14/17/18: publication and acknowledgement share an absolute 8s budget
 
 **C15** - WHEN abortar uma publicação parcial THEN o Conversa SHALL cessar o envio dessa captura por todos os peers locais dentro de A1, inclusive com remoção rejeitada ou publicação que resolva depois do aborto. (MEDIA-15)
-Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-14/15/19/20: provisional screen, late peer and stalled sender all roll back without disturbing healthy voice
 
 **C16** - WHEN o usuário parar a tela ou o sistema encerrar sua fonte THEN o Conversa SHALL encerrar todas as tracks de tela e áudio do sistema dessa operação dentro de A1. (MEDIA-16)
-Proof: node --test --test-name-pattern="MEDIA\-16/17/19:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-16/17/21/24:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-16/17/19: repeated stop shares its original cleanup deadline and preserves mute
+Proof: run node | ✔ MEDIA-16/17/21/24: stop and leave overlap without losing tracks, extending cleanup or changing reentry
 
 **C17** - WHEN a tela terminar, inclusive por parada repetida ou falha de sender/notificação THEN o Conversa SHALL convergir dentro de A1 para estado local sem compartilhamento e controles utilizáveis. (MEDIA-17)
-Proof: node --test --test-name-pattern="MEDIA\-14/17/18:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-16/17/19:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-16/17/21/24:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-17/19/31:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-17/26:" tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-17/28:" tests/rtc.test.js tests/session.test.js
+Proof: run node | ✔ MEDIA-14/17/18: publication and acknowledgement share an absolute 8s budget
+Proof: run node | ✔ MEDIA-16/17/19: repeated stop shares its original cleanup deadline and preserves mute
+Proof: run node | ✔ MEDIA-16/17/21/24: stop and leave overlap without losing tracks, extending cleanup or changing reentry
+Proof: run node | ✔ MEDIA-17/19/31: failed terminal notification preserves local cleanup and identifies the screen operation
+Proof: run node | ✔ MEDIA-17/26: the current screen-stop deadline still terminates an unresponsive transport after unrelated mute
+Proof: run node | ✔ MEDIA-17/28: local stop settles within 1s without its ack and an old failure cannot affect the next screen
+Proof: run node | ✔ MEDIA-17/28: an old screen-stop deadline cannot disconnect a newer confirmed share in the same call
 
 **C18** - WHEN o compartilhamento terminar com transporte saudável THEN o Conversa SHALL confirmar aos participantes o estado sem compartilhamento em até 8 s de A2. (MEDIA-18)
-Proof: node --test --test-name-pattern="MEDIA\-14/17/18:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-14/17/18: publication and acknowledgement share an absolute 8s budget
 
 **C19** - IF iniciar ou parar tela falhar THEN o Conversa SHALL preservar a voz anterior nos peers saudáveis conforme o vocabulário, sem encerrar a chamada inteira. (MEDIA-19)
-Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-16/17/19:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-17/19/31:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-14/15/19/20: provisional screen, late peer and stalled sender all roll back without disturbing healthy voice
+Proof: run node | ✔ MEDIA-16/17/19: repeated stop shares its original cleanup deadline and preserves mute
+Proof: run node | ✔ MEDIA-17/19/31: failed terminal notification preserves local cleanup and identifies the screen operation
 
 **C20** - WHILE a seleção ou publicação estiver pendente o Conversa SHALL apresentar esse estado sem indicar publicação concluída ou mídia remota pronta apenas por presença de participantes. (MEDIA-20)
-Proof: node --test --test-name-pattern="MEDIA\-14/15/19/20:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-14/15/19/20: provisional screen, late peer and stalled sender all roll back without disturbing healthy voice
 
 **C21** - WHEN sair ou cancelar a chamada THEN o Conversa SHALL liberar todas as capturas já adquiridas e fechar os peers dessa tentativa dentro de A1, independentemente da confirmação da rede. (MEDIA-21)
-Proof: node --test --test-name-pattern="MEDIA\-05/21/28:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-16/17/21/24:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-21/26/31:" tests/session.test.js
+Proof: run node | ✔ MEDIA-05/21/28: cancellation keeps the original context while admission and leave replies are delayed
+Proof: run node | ✔ MEDIA-16/17/21/24: stop and leave overlap without losing tracks, extending cleanup or changing reentry
+Proof: run node | ✔ MEDIA-21/26/31: terminal timeout closes transport after local resources have already ended
 Proof: node scripts/desktop-lifecycle-check.mjs
 
 **C22** - WHEN solicitar troca de sala de texto THEN o Conversa SHALL tornar a chamada anterior terminal sem aguardar a confirmação da nova sala. (MEDIA-22)
@@ -503,57 +504,63 @@ Proof: node scripts/desktop-lifecycle-check.mjs
 Proof: node scripts/desktop-lifecycle-check.mjs
 
 **C24** - WHEN repetir saída da mesma tentativa THEN o serviço SHALL devolver seu estado terminal sem erro de recurso já encerrado nem efeito sobre uma tentativa posterior. (MEDIA-24)
-Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:" tests/protocol.test.js
-Proof: node --test --test-name-pattern="MEDIA\-05/24/28:" tests/service.test.js tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-16/17/21/24:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-24/28/31:" tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-24/28:" tests/service.test.js
+Proof: run node | ✔ MEDIA-05/24/25/28: v2 requires bounded positive generations in every call event and rejects v1
+Proof: run node | ✔ MEDIA-05/24/28: v1 requests cannot enter a v2 service or occupy its call
+Proof: run node | ✔ MEDIA-05/24/28: successive Call owners share a Session generation and stale epochs fail before acquisition
+Proof: run node | ✔ MEDIA-16/17/21/24: stop and leave overlap without losing tracks, extending cleanup or changing reentry
+Proof: run node | ✔ MEDIA-24/28/31: cancelling a pending call rejects it immediately and consumes late ack/error without touching the new one
+Proof: run node | ✔ MEDIA-24/28: leave delivered before a held join makes that generation terminal without touching a newer call
 
 **C25** - WHEN receber saída válida ou parada válida de tela da tentativa vigente THEN o serviço SHALL processá-la mesmo com a cota de mensagens ou sinalização esgotada. (MEDIA-25)
-Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:" tests/protocol.test.js
-Proof: node --test --test-name-pattern="MEDIA\-25/26:" tests/service.test.js
+Proof: run node | ✔ MEDIA-05/24/25/28: v2 requires bounded positive generations in every call event and rejects v1
+Proof: run node | ✔ MEDIA-25/26: saturated message, media and signaling budgets still allow stop and replacement at capacity
 
 **C26** - WHEN receber saída válida THEN o serviço SHALL liberar a vaga e representar o participante fora da chamada e sem compartilhamento em até 1 s de A4, com confirmação correlacionada. (MEDIA-26)
-Proof: node --test --test-name-pattern="MEDIA\-17/26:" tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-21/26/31:" tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-25/26:" tests/service.test.js
-Proof: node --test --test-name-pattern="MEDIA\-26/28:" tests/protocol.test.js
+Proof: run node | ✔ MEDIA-17/26: the current screen-stop deadline still terminates an unresponsive transport after unrelated mute
+Proof: run node | ✔ MEDIA-21/26/31: terminal timeout closes transport after local resources have already ended
+Proof: run node | ✔ MEDIA-25/26: saturated message, media and signaling budgets still allow stop and replacement at capacity
+Proof: run node | ✔ MEDIA-26/28: v2 requires positive ack generations and presence revisions
 
 **C27** - IF perder o transporte sem saída confirmada THEN o serviço SHALL liberar a participação em até 60 s de A4 sem exigir reconexão do cliente. (MEDIA-27)
-Proof: node --test --test-name-pattern="MEDIA\-27:" tests/service.test.js
+Proof: run node | ✔ MEDIA-27: heartbeat deadline follows an off-tick pong and clears timers on close
 
 **C28** - IF confirmação, pedido de admissão, inventário de fontes, sinalização ou presença de uma tentativa terminal chegar atrasado THEN o receptor SHALL descartá-lo sem reativar captura, seletor, reprodução ou ocupação e sem alterar a tentativa nova. (MEDIA-28)
-Proof: node --test --test-name-pattern="MEDIA\-02/09/10/28:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-03/28:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-04/28:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-05/06/28:" tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-05/21/28:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-05/24/25/28:" tests/protocol.test.js
-Proof: node --test --test-name-pattern="MEDIA\-05/24/28:" tests/service.test.js tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-05/28:" tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-09/11/28:" tests/desktop-policy.test.js
-Proof: node --test --test-name-pattern="MEDIA\-17/28:" tests/rtc.test.js tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-24/28/31:" tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-24/28:" tests/service.test.js
-Proof: node --test --test-name-pattern="MEDIA\-26/28:" tests/protocol.test.js
-Proof: node --test --test-name-pattern="MEDIA\-28:" tests/rtc.test.js tests/session.test.js
+Proof: run node | ✔ MEDIA-02/09/10/28: one selection per operation, audio requires consent and old display cannot replace a newer one
+Proof: run node | ✔ MEDIA-03/28: permissions resolved in either order release every old track and preserve the new attempt
+Proof: run node | ✔ MEDIA-04/28: a stale generation allocator fails before any capture and close rejects capture actions
+Proof: run node | ✔ MEDIA-05/06/28: v2 client rejects v1 config before opening WS or acquiring media
+Proof: run node | ✔ MEDIA-05/21/28: cancellation keeps the original context while admission and leave replies are delayed
+Proof: run node | ✔ MEDIA-05/24/25/28: v2 requires bounded positive generations in every call event and rejects v1
+Proof: run node | ✔ MEDIA-05/24/28: v1 requests cannot enter a v2 service or occupy its call
+Proof: run node | ✔ MEDIA-05/24/28: successive Call owners share a Session generation and stale epochs fail before acquisition
+Proof: run node | ✔ MEDIA-05/28: ack action, callId and generation must match the pending operation
+Proof: run node | ✔ MEDIA-09/11/28: capture keys are bounded and identify exactly one call operation
+Proof: run node | ✔ MEDIA-17/28: local stop settles within 1s without its ack and an old failure cannot affect the next screen
+Proof: run node | ✔ MEDIA-17/28: an old screen-stop deadline cannot disconnect a newer confirmed share in the same call
+Proof: run node | ✔ MEDIA-24/28/31: cancelling a pending call rejects it immediately and consumes late ack/error without touching the new one
+Proof: run node | ✔ MEDIA-24/28: leave delivered before a held join makes that generation terminal without touching a newer call
+Proof: run node | ✔ MEDIA-26/28: v2 requires positive ack generations and presence revisions
+Proof: run node | ✔ MEDIA-28: signaling from a terminal remote call cannot mutate the new peer or its microphone
+Proof: run node | ✔ MEDIA-28: presence applies only increasing revisions in the current room context
+Proof: run node | ✔ MEDIA-28: an old terminal deadline cannot disconnect a newer admitted attempt
+Proof: run node | ✔ MEDIA-28: signaling addressed to a terminal local attempt never reaches the new Call owner
 
 **C29** - WHILE estiver fora de chamada admitida ou com “Silenciar áudio” ativo o desktop SHALL bloquear a reprodução de mídia, inclusive depois de recarga e eventos tardios. (MEDIA-29)
 Proof: node scripts/desktop-smoke.mjs
 
 **C30** - WHILE o microfone estiver silenciado o Conversa SHALL impedir a transmissão de fala pela track de microfone, permitindo mantê-la capturada conforme A5 sem apresentar mute como liberação do dispositivo. (MEDIA-30)
-Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
+Proof: run node | ✔ MEDIA-02/05/08/30/31: allocated context covers all sends, listen-only needs an explicit mic action and mute preserves capture
 
 **C31** - WHEN uma operação de admissão, captura, publicação ou saída falhar THEN o Conversa SHALL expor categoria estável, fase e identificação da operação disponível, distinguindo cancelamento voluntário sem depender do texto traduzido. (MEDIA-31)
-Proof: node --test --test-name-pattern="MEDIA\-02/05/08/30/31:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-06/31:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-17/19/31:" tests/rtc.test.js
-Proof: node --test --test-name-pattern="MEDIA\-21/26/31:" tests/session.test.js
-Proof: node --test --test-name-pattern="MEDIA\-24/28/31:" tests/session.test.js
+Proof: run node | ✔ MEDIA-02/05/08/30/31: allocated context covers all sends, listen-only needs an explicit mic action and mute preserves capture
+Proof: run node | ✔ MEDIA-06/31: the actual 8s admission deadline releases the provisional stream and identifies the attempt
+Proof: run node | ✔ MEDIA-17/19/31: failed terminal notification preserves local cleanup and identifies the screen operation
+Proof: run node | ✔ MEDIA-21/26/31: terminal timeout closes transport after local resources have already ended
+Proof: run node | ✔ MEDIA-24/28/31: cancelling a pending call rejects it immediately and consumes late ack/error without touching the new one
 Proof: node scripts/desktop-smoke.mjs
 
 **C32** - WHEN registrar diagnóstico de mídia THEN o Conversa SHALL omitir áudio/vídeo, thumbnails, títulos de fontes, SDP, candidatos ICE, credenciais e conteúdo de mensagens, mantendo apenas metadados técnicos de correlação e versão. (MEDIA-32)
-Proof: node --test --test-name-pattern="MEDIA\-32:" tests/service.test.js
+Proof: run node | ✔ MEDIA-32: media diagnostics exclude sensitive error properties and untrusted cause names
 Proof: node scripts/desktop-smoke.mjs
 
 **C33** - WHEN executar os três ciclos físicos de abertura/recarga fora de chamada definidos em A7 THEN o Conversa SHALL permanecer sem captura ou reprodução de mídia não solicitada durante os 30 s de cada ciclo, com resultado de ruído registrado por ciclo. (MEDIA-33)
@@ -566,8 +573,12 @@ Proof: node -e "process.stderr.write('T9 NAO EXECUTADA: PCs Windows, hardware re
 
 **Settled mid-build:** user: "Executar nesta sessão; Verifier independente no fechamento" e "Não estão disponíveis agora; manter T9 pendente".
 
+**Resume, 2026-10-31:** user: "Então pode continuar trabalhando". Git reconciliado em `8b8e233`, sem alteração de produto/testes desde `699d4ed`; portátil reconferido com SHA-256 `16caffca2bf5b129e48b8d79438baa0e5b23fd4ca225b1e3aca24e81b2646135`. MCP 0.17.18, revisão `eec8e8fe8151`. Gate de entrada `validate_tasks --execute` PASS. Os 69 filtros Node anteriores foram expandidos sem perda para 77 linhas de testes nomeados, copiadas da execução real 94/94, zero falhas/skips/cancelled/todo. Auditoria reproduzível em test-results/closure-20261031/captura-midia-saida-proof-migration.json. Nenhum AC ou teste alterado; T9 continua não executada.
+
 **Walked:** US1 entrada/escuta/mute/cancelamento por teclado, US2 seletor e consentimento/stop/rollback, US3 troca de sala/desconexão/unmount/close e reentrada manual, US4 fronteiras de protocolo/cota/presença por testes e checkers, US5 startup sem manifesto e diagnóstico. Matriz 16 final em `699d4ed`, perfis/bancos de teste isolados, controles acionados na UI. Ensaio físico T9 ausente, sem captura de design vinculante.
 
 **Dispatched:** MEDIA rodada1 e rodada2 retornadas, preservadas em validation-round1.md e validation-round2.md. Revisão atual da skill: reexecutar provas e mutantes desses pareceres; não despachar terceiro Verifier.
+
+**Report continuation, 2026-10-31:** o mesmo `/root/media_final_verifier` confirmou seu contexto da rodada2. Retomado somente para indexar C1–C34 no formato `## Checks` da revisão MCP 0.17.18, a partir de seu parecer já emitido em `2c9d60e`. Sem novo Verifier, rodada, julgamento dos fixes ou mudança de código/testes. Retorno pendente.
 
 **Fechamento em `699d4ed`:**32 critérios automatizáveis com provas funcionais verdes,85pass/2 fail físicos. Sensor próprio6/6 por asserção;94/94 antes/após e fonte/porcelain preservados. O mutate.py atual falha por SIGHUP e não emite linhas; T8 formal não está fechada, T9 permanece pendente e nenhum MEDIA Verified. Ver verification.md.
