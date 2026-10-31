@@ -4,7 +4,7 @@
 > Canonical state lives in `.specs/lessons.json`. Edit lessons only via the script.
 > promote_threshold=2 distinct features · window_days=45 · quarantine_threshold=2
 
-## Confirmed (load these at Specify/Design)
+## Confirmed (load these at Plan/Checks)
 
 Corroborated across multiple features. Safe to apply as guidance.
 
@@ -15,7 +15,7 @@ _none_
 Seen once or not yet corroborated. Tracked, not trusted.
 
 ### L-001 - Assert callback cardinality and pending-state removal when Electron capture is cancelled before inventory resolves.
-- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `electron/capture` · harmful: 0
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `electron/capture` · harmful: 0
 - features: build-confiavel
 - evidence: validation.md M8; electron/main.js:53 (electron/capture)
 - last seen: 2026-10-25T02:45:07Z
@@ -91,6 +91,30 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - features: captura-midia-saida
 - evidence: validation.md: Edge Cases stop+leave; MEDIA-16/17/21/24; tests/rtc.test.js:241 (rtc/lifecycle)
 - last seen: 2026-10-26T03:19:07Z
+
+### L-014 - Valide e teste limites de nomes depois da normalização exigida pelo contrato.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `shared/protocol.js` · harmful: 0
+- features: estabilizacao
+- evidence: verification.md:F1/C40 (shared/protocol.js)
+- last seen: 2026-10-31T21:43:30Z
+
+### L-015 - Registre recusas de protocolo no proprietário da resposta, com correlação e sem conteúdo recebido.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `server/service.js` · harmful: 0
+- features: estabilizacao
+- evidence: verification.md:F2/C67 (server/service.js)
+- last seen: 2026-10-31T21:43:31Z
+
+### L-016 - Teste a expiração por item mantendo o contêiner ativo, antes e exatamente no limite de idade.
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `src/rtc.js` · harmful: 0
+- features: estabilizacao
+- evidence: verification.md:F3/C43 (src/rtc.js)
+- last seen: 2026-10-31T21:43:32Z
+
+### L-017 - Compare toda a sequência da página ordenada e seu isolamento por sala, incluindo elementos intermediários.
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `server/service.js` · harmful: 0
+- features: estabilizacao
+- evidence: verification.md:F4/C53 (server/service.js)
+- last seen: 2026-10-31T21:43:32Z
 
 ## Quarantined (failed when applied - ignore)
 

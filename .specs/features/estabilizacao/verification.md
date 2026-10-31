@@ -1,6 +1,8 @@
 # Estabilizacao verification
 
-**Estado atual após a passada do autor em `699d4ed`:** F1–F4 corrigidos pelos commits da coluna Closed.94/94,16 gates,136 provas funcionais e7+4 sensores STAB por asserção. Gate formal FAIL: mutate.py/SIGHUP Windows não executa e proofs tem0 linhas de mutação. O parecer original do snapshot573491e abaixo permanece histórico, sem novo Verifier. Ver evidence-current.md para a candidata atual e limites.
+**Current automated closure, 2026-10-31:** gate STAB PASS em `ec874ec`, zero erros/avisos,158 provas pass/0fail;94/94 Node e Build incluídos. Sensor próprio7/7 R01–R07 e4/4 fixes por asserção,17/17 com MEDIA, baselines94/94 e porcelain real0 bytes idêntico. MCP0.17.18/eec8e8fe8151 não contém mutate.py; não houve patch da skill nem fabricação de linhas de mutação. Produto/testes e portátil/hash inalterados desde `699d4ed`; matriz16/16 anterior preservada, pacote reconferido. T8 automatizada concluída. Aceitação física da estabilização/T9 pendente; nenhum Verified/PASS integral. Ver evidence-current.md e test-results/closure-20261031.
+
+**Historical independent report:** o Verdict FAIL abaixo pertence ao snapshot `573491e`; seus quatro findings estão fechados nos commits da coluna Closed. O mesmo Verifier apenas indexou esse julgamento em `## Checks`, sem nova rodada nem reavaliação do HEAD atual. O fechamento automático atual vem das provas e sensores reexecutados após os fixes, conforme o fluxo da skill.
 
 **Verdict**: FAIL. C40 aceita nome de sala fora do limite normalizado e C67 não registra a recusa de protocolo. Duas provas deixam valores exigidos sem asserção suficiente.
 

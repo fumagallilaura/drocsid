@@ -11,6 +11,8 @@
 
 **Retomada em 2026-10-26:** a continuidade autorizada reutiliza a implementação existente e completa evidência nos proprietários. Estados Execute/Implementing na rastreabilidade registram essa execução atual, sem alterar os textos dos 68 ACs ou promover aprovação MEDIA/BUILD a Verified STAB. Ver [execução atual](execution.md).
 
+**Fechamento automático em 2026-10-31:** T1–T8 automatizadas concluídas,158provas pass/0fail e gate formal exit0 em `ec874ec`, com produto/testes inalterados desde `699d4ed`. Os achados independentes F1–F4 têm commits de correção e sensores próprios repetidos. O mesmo Verifier apenas indexou seu parecer original, sem nova rodada. Estados de AC permanecem Implementing; sucesso físico da estabilização e MEDIA/T9 continuam pendentes, sem Verified/PASS integral. Ver [evidência atual](evidence-current.md).
+
 O Conversa oferece texto, voz e tela em um protótipo desktop Windows. A revisão dessa referência registrou 26 achados, incluindo capturas sem controle, mensagens enviadas à sala errada, perda de texto e recursos que impedem o servidor de terminar. Esta especificação define a estabilização para testes com pessoas de confiança. Alterações locais posteriores à revisão ainda precisam de verificação contra estes requisitos.
 
 ## Goals

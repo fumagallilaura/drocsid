@@ -1,6 +1,6 @@
 # Evidência atual de estabilização
 
-**Automação funcional aprovada; quatro achados independentes corrigidos, gate formal ainda FAIL.** Escopo STAB separado de MEDIA. 68 claims em [tasks.md](tasks.md#checks), uma por AC, com comandos que selecionam suas provas. O relatório histórico [evidence.md](evidence.md) permanece intacto; [execution.md](execution.md) registra cada nova conjunção e seu proprietário. Nenhum STAB Verified pelo autor.
+**Automação STAB e gate formal aprovados em `ec874ec`; aceitação física pendente.** Reexecução de 2026-10-31:158provas pass/0fail, validate_verification exit0/zero erros/avisos e sensor próprio7+4 por asserção. Quatro achados independentes corrigidos. Escopo STAB separado de MEDIA. 68 claims em [tasks.md](tasks.md#checks), uma por AC, com testes nomeados. O relatório histórico [evidence.md](evidence.md) permanece intacto; [execution.md](execution.md) registra cada nova conjunção e seu proprietário. Nenhum STAB Verified pelo autor.
 
 Candidata avaliada em **699d4ed**, versão 0.1.1, protocolo2, Node24.21.0, Electron45.0.0. Produto corrigido em `8955755` (playback), `1c1bdbd` (limite nominal) e `0345015` (diagnóstico de recusas); os demais fixes ampliam evidência. Portátil `release-windows/Conversa-0.1.1-Windows.exe`, SHA-256 `16caffca2bf5b129e48b8d79438baa0e5b23fd4ca225b1e3aca24e81b2646135`. Manifesto, ledger e logs `test-results/stabilizacao-postfix/`.
 
@@ -23,9 +23,9 @@ O externo inicial de R7 retornou exit1 no teardown depois das asserções; não 
 
 Hardware real, causa do ruído, inteligibilidade/eco/loopback e redes distintas não demonstrados. T9 MEDIA segue pendente por indisponibilidade explícita dos dois PCs Windows/LAN confiável, fones/mics e dois operadores. Isso também mantém pendente o sucesso físico da estabilização. Contas/grupos privados/TURN autenticado bloqueiam publicação; câmera/SFU/TS continuam fora da execução atual. Nenhuma investigação/call/convite Discord repetida.
 
-Skill MCP atual0.17.14, revisão preparada `f465b52756b8`. Execute/validate/memory/coding-principles/sub-agents/lessons lidas integralmente; nenhuma lesson confirmed. Os scripts Python são chamados do caminho real com um launcher TEMP que apenas inclui a pasta do script em sys.path, necessária ao Python portátil isolado. Provas e gate de fechamento registrados abaixo.
+Skill do fechamento anterior: MCP0.17.14, revisão preparada `f465b52756b8`. Execute/validate/memory/coding-principles/sub-agents/lessons lidas integralmente; nenhuma lesson confirmed. Os scripts Python são chamados do caminho real com um launcher TEMP que apenas inclui a pasta do script em sys.path, necessária ao Python portátil isolado. Provas e gate históricos registrados abaixo; a atualização de31/10 usa MCP0.17.18/eec8e8fe8151.
 
-## Fechamento da passada de correção
+## Fechamento histórico em 699d4ed
 
 Verifier STAB válido em `573491e` retornou F1–F4, todos fechados por commits em [verification.md](verification.md). Não houve segunda rodada de julgamento. `check_proofs.py --mutations` em `699d4ed` executou **136 provas funcionais,0 fail**, Build incluso. A ferramenta filha mutate.py não aplicou mutações: AttributeError/SIGHUP ausente no Python Windows. A saída136pass/0mutants e exit0 do proofer **não aprovam o sensor da ferramenta**. `validate_verification.py` retornou **exit1**, um erro:0 linhas de mutação diante de5 mínimas. Nenhuma linha foi fabricada para mudar esse resultado.
 
@@ -33,4 +33,18 @@ Sensor isolado próprio após fixes: **7/7 R01–R07** definidos pelo Verifier, 
 
 O driver TEMP inicial duplicou --test-reporter na primeira baseline; falhou antes de qualquer mutação e não foi contado como sensor. Argumento corrigido, log preservado, sem mudar teste/produto. A matriz 16 após todos os fixes passou integralmente, incluindo teardown externo; o incidente R7 anterior continua histórico sem causa estabelecida.
 
-A skill atual exige literalmente “Done means every finding is closed by a commit and `validate_verification.py` exits 0.” [Cópia exata do SKILL carregado pelo MCP](C:/Users/welli/AppData/Local/Temp/conversa-tlc-spec-driven-current/SKILL.md). O gate não passou; T8 formal, o sucesso físico STAB e T9 MEDIA continuam abertos. Não foi alterada a skill, ignorado teste ou usado sensor próprio como se fossem linhas emitidas pelo utilitário. Ferramenta compatível com Windows e recursos físicos são pendências distintas.
+A skill daquela execução exigia literalmente “Done means every finding is closed by a commit and `validate_verification.py` exits 0.” [Cópia exata do SKILL carregado pelo MCP naquela data](C:/Users/welli/AppData/Local/Temp/conversa-tlc-spec-driven-current/SKILL.md). O gate histórico não passou. Não foi alterada a skill, ignorado teste ou usado sensor próprio como se fossem linhas emitidas pelo utilitário.
+
+## Fechamento automático em 2026-10-31
+
+MCP Agent Skills0.17.18, revisão checksum `eec8e8fe8151`, SKILL/Execute/Validate/Memory/Coding Principles/Sub-agents/Tasks/Lessons lidas. O fluxo oficial não fornece mutate.py; exige provas nomeadas e juízo por critério. Os112 comandos Node anteriores foram expandidos sem perder seleção para134 linhas reais de aprovação, copiadas de Node94/94. `check_proofs.py` em `ec874ec` retornou158pass/0fail, Build incluso. `validate_verification.py estabilizacao` retornouexit0, zero erros/avisos. Logs stab-execute.log, stab-proofs.log e stab-gate.log em test-results/closure-20261031.
+
+O MESMO `/root/stab_independent_verifier` retomou apenas a forma de seu parecer original de `573491e`, completando68 linhas em `## Checks`,64yes e4no históricos F1–F4. O corpo do parecer e os Closed foram preservados; não houve novo julgamento do HEAD atual ou aprovação física. A rodada2 prevista pela skill é a reexecução do script e dos sensores sobre os fixes já commitados. Sem segundo Verifier.
+
+Sensor isolado repetido em `ec874ec`:7/7 R01–R07 e4/4 fixes STAB, mais6/6 MEDIA, todos por falha de asserção de valor. Cada seleção estreita passou antes da mutação; baselines94/94 antes/depois. Fontes restauradas byte a byte, porcelain real0 bytes idêntico, scratch e junction removidos com caminhos conferidos. JSONs e logs por caso em test-results/closure-20261031/sensors. Nada contado por sintaxe/import/timeout. Os dois proofers começaram com árvore limpa no mesmo HEAD; o relatório MEDIA gerado foi preservado fora de .specs entre execuções e reposto depois, sem mudar entradas de produto/testes.
+
+Pacote reconferido por `check-package.mjs` e SHA-256; código, testes e binário iguais aos de `699d4ed`. A matriz16/16 continua a execução anterior do mesmo produto/hash, não uma nova matriz rodada hoje. Integridade AST reexecutada:50nomes originais presentes,216asserções com as quatro alterações exclusivas v1→v2 já justificadas;75nomes e388asserções de f44d268 preservados. Os113 textos de AC e prefixo Decisions conferem byte a byte com38062db. Logs e drivers reproduzíveis em test-results/closure-20261031.
+
+Após o gate foram registradas pelo script quatro lições candidatas dos findings F1–F4: L-014 normalização de nomes, L-015 diagnóstico de protocolo, L-016 idade por candidato e L-017 sequência completa/isolamento do histórico. Recorrência1; nenhuma promovida a confirmed ou usada como orientação desta execução.
+
+T8 automatizada concluída. O sucesso físico STAB e MEDIA/T9 continuam pendentes. Ruído, eco, inteligibilidade e loopback físicos desconhecidos; sem Verified/PASS integral, publicação ou migração TypeScript.

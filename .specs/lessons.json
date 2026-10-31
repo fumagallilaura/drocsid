@@ -3,13 +3,13 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 14,
+  "next_id": 18,
   "lessons": [
     {
       "id": "L-001",
-      "key": "surviving_mutant::assert callback cardinality and pending state removal when electron capture is cancelled before inventory resolves",
+      "key": "weak_test::assert callback cardinality and pending state removal when electron capture is cancelled before inventory resolves",
       "text": "Assert callback cardinality and pending-state removal when Electron capture is cancelled before inventory resolves.",
-      "signal": "surviving_mutant",
+      "signal": "weak_test",
       "scope": "electron/capture",
       "status": "candidate",
       "features": [
@@ -241,6 +241,78 @@
       ],
       "created": "2026-10-26T03:19:07Z",
       "last_seen": "2026-10-26T03:19:07Z"
+    },
+    {
+      "id": "L-014",
+      "key": "ac_gap::valide e teste limites de nomes depois da normalizacao exigida pelo contrato",
+      "text": "Valide e teste limites de nomes depois da normalização exigida pelo contrato.",
+      "signal": "ac_gap",
+      "scope": "shared/protocol.js",
+      "status": "candidate",
+      "features": [
+        "estabilizacao"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md:F1/C40 (shared/protocol.js)"
+      ],
+      "created": "2026-10-31T21:43:30Z",
+      "last_seen": "2026-10-31T21:43:30Z"
+    },
+    {
+      "id": "L-015",
+      "key": "ac_gap::registre recusas de protocolo no proprietario da resposta com correlacao e sem conteudo recebido",
+      "text": "Registre recusas de protocolo no proprietário da resposta, com correlação e sem conteúdo recebido.",
+      "signal": "ac_gap",
+      "scope": "server/service.js",
+      "status": "candidate",
+      "features": [
+        "estabilizacao"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md:F2/C67 (server/service.js)"
+      ],
+      "created": "2026-10-31T21:43:31Z",
+      "last_seen": "2026-10-31T21:43:31Z"
+    },
+    {
+      "id": "L-016",
+      "key": "weak_test::teste a expiracao por item mantendo o conteiner ativo antes e exatamente no limite de idade",
+      "text": "Teste a expiração por item mantendo o contêiner ativo, antes e exatamente no limite de idade.",
+      "signal": "weak_test",
+      "scope": "src/rtc.js",
+      "status": "candidate",
+      "features": [
+        "estabilizacao"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md:F3/C43 (src/rtc.js)"
+      ],
+      "created": "2026-10-31T21:43:32Z",
+      "last_seen": "2026-10-31T21:43:32Z"
+    },
+    {
+      "id": "L-017",
+      "key": "weak_test::compare toda a sequencia da pagina ordenada e seu isolamento por sala incluindo elementos intermediarios",
+      "text": "Compare toda a sequência da página ordenada e seu isolamento por sala, incluindo elementos intermediários.",
+      "signal": "weak_test",
+      "scope": "server/service.js",
+      "status": "candidate",
+      "features": [
+        "estabilizacao"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md:F4/C53 (server/service.js)"
+      ],
+      "created": "2026-10-31T21:43:32Z",
+      "last_seen": "2026-10-31T21:43:32Z"
     }
   ]
 }

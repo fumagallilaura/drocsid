@@ -7,7 +7,7 @@
 
 Usar tlc-spec-driven pelo MCP Agent Skills e seu ciclo de Execute: teste derivado da spec, implementação mínima, gate, revisão de adequação e commit atômico. Este protocolo pertence ao plano histórico de oito entregáveis; não é prova de autorização daquela execução nem de atendimento integral da spec. Verificador independente obrigatório para o fechamento funcional.
 
-**Design:** [design.md](design.md). **Status:** In Progress, retomada autorizada em 2026-10-26, sem certificação integral STAB. Oito entregáveis, execução inline; preservar os resultados históricos e validar o que falta, sem reimplementar capacidades já presentes.
+**Design:** [design.md](design.md). **Status:** T1–T8 automatizadas concluídas em 2026-10-31; sucesso físico da estabilização ainda pendente de MEDIA/T9, sem certificação integral STAB. Oito entregáveis, execução inline; preservar os resultados históricos sem reimplementar capacidades já presentes.
 
 **Reconciliação em 2026-10-25:** T1–T6 abaixo preservam as marcas e gates relatados pelo autor, nos commits `5c1a05a`, `ae07a55`, `7d24f4b`, `5626a06`, `d456168` e `dc8d7a1`, respectivamente. A spec corrigiu a atribuição original de autorização; nenhuma marca equivale a Verified dos 68 STAB. T7/T8 continuam incompletas neste plano: BUILD verificou parte de seus resultados em escopo próprio, sem fechar automaticamente seus requisitos transversais. Não refazer integrações já verificadas nem marcar esses itens completos apenas por essa sobreposição.
 
@@ -179,7 +179,7 @@ T5 -> T6 -> T7 -> T8
 **Tools**: MCP Agent Skills; tlc-spec-driven; shell/Playwright; Verifier independente.
 **Done when**:
 - [x] Source funciona sem manifesto; launch/close/WS falhando não deixam recursos de teste e flags 0/1 são corretas. Harness e matriz 16 atuais aprovados, ver [evidência atual](evidence-current.md).
-- [ ] Todos os gates automatizáveis passam; relatório independente registra hardware real como não demonstrado, sem inventar aprovação.
+- [x] Todos os gates automatizáveis passam; relatório independente registra hardware real como não demonstrado, sem inventar aprovação. Fechamento em `ec874ec`:158 provas pass/0fail, validate_verification exit0/zero erros/avisos, sensor próprio7+4 por asserção e mesmo pacote/Build16 preservados; ver evidence-current.md. Nenhum Verified ou aprovação física.
 **Tests**: integration em tests/harness.test.js e scripts/desktop-smoke.mjs.
 **Gate**: build
 
@@ -523,6 +523,8 @@ Proof: run node | ✔ STAB-28/29/30/68: leave and stop-screen bypass exhausted a
 **Dispatched:** 2026-10-26, primeiro despacho /root/stab_verifier invalidado e interrompido antes de parecer/sensor por leitura acidental do Handoff; confirmou nenhum arquivo/processo/scratch criado. Substituição fresca /root/stab_independent_verifier, HEAD573491e, range63810f4..573491e, após proofs87/87 PASS; recortes de matriz/Checks preparados sem Handoff. Retornado em `573491e`: verification.md FAIL, quatro achados F1–F4 e sensor7/7 por asserção. Provas sem alternância134pass; ferramenta mutate.py incompatível comSIGHUP Windows, fechamento sem aprovação. Author ≠ verifier.
 
 **Report continuation, 2026-10-31:** o mesmo `/root/stab_independent_verifier` confirmou seu contexto de `573491e`. Retornado: 68 linhas C1–C68 em `verification.md`, com 64 yes no alcance original e quatro no históricos F1–F4, citando Closed do autor sem reavaliar os fixes. Somente indexação no formato `## Checks` da revisão MCP 0.17.18, sem novo Verifier, rodada ou julgamento do HEAD atual. Todo o conteúdo fora da tabela preservado byte a byte; nenhum produto/teste alterado.
+
+**Automated closure, 2026-10-31:** `check_proofs.py` em `ec874ec`:158pass/0fail; `validate_verification.py`:exit0, zero erros/avisos. Node94/94, Build incluído; sensor próprio7/7 STAB e4/4 fixes por asserção,17/17 com MEDIA; baselines94/94, restauração por bytes, porcelain real0 bytes idêntico e scratch/junction removidos. Pacote reconferido sem novo build, mesmo SHA-256 e matriz16/16 anterior preservados. F1–F4 permanecem fechados nos commits já indicados, sem novo Verifier. T8 automatizada concluída; sucesso físico/T9 não executado e nenhum Verified. Quatro lições candidatas L-014–L-017 registradas pelo script após o gate, sem promoção a orientação confirmada. Logs test-results/closure-20261031.
 
 **Fix pass do Verifier:** F1 `1c1bdbd`, F2 `0345015`, F3 `070dd2f`, F4 `9048e70`;94/94, sem Verified. Repetir matriz/provas e sete mutantes independentes, mais quatro sondas específicas dos fixes. Gate de fechamento da ferramenta continua pendente; T9 física ausente.
 
