@@ -2,13 +2,30 @@
 
 ## Decisions
 
+### AD-001
+- **Decision**: O produto unificado mantém a base do Conversa, chama-se Drocsid e adota TypeScript nesta integração.
+- **Reason**: Em2026-10-31 o usuário respondeu: “Manter o conversa como principal, mas o nome deve ser Drocsid. Voce deve tomar as melhores decisões, baseado em boas práticas de mercado, mantenha o padrão em typescript, a segurança também é uma validação importante”. O novo escopo substitui o adiamento da migração até depois da aceitação física.
+- **Trade-off**: A integração exige nova candidata e regressão automática; não herda certificação física do protótipo anterior.
+- **Scope**: Produto, fontes próprias, tooling e distribuição; T9 continua pendente, sem push/deploy.
+- **Date**: 2026-10-31
+- **Status**: active
+
+### AD-002
+- **Decision**: Contas e grupos são adaptados ao serviço e banco SQLite do Conversa, sem backend PostgreSQL paralelo.
+- **Reason**: Decisão técnica delegada pelo usuário. Preserva histórico, transações, idempotência, shutdown e isolamento de mídia já testados; evita operar dois bancos e dois produtos para o protótipo de um processo.
+- **Trade-off**: Escala horizontal e mudança de banco pertencem à futura infraestrutura AWS; o merge não certifica produção pública.
+- **Scope**: Identidade, autorização, grupos e persistência do Drocsid unificado.
+- **Date**: 2026-10-31
+- **Status**: active
+
 ## Handoff
 
-- **Feature**: [MEDIA](features/captura-midia-saida/verification.md) e [STAB](features/estabilizacao/verification.md). Execução inline autorizada; último lote automático encerrado em 2026-10-31.
-- **Phase / Task**: Execute. MEDIA T1–T8 automatizadas concluídas, T9 não executada. STAB T1–T8 automatizadas concluídas. Sucesso físico pendente; nenhum MEDIA/STAB Verified ou PASS integral.
-- **Completed**: `e15ecd4` fecha T8 MEDIA automática; `d8b9d9b` registra gate STAB aprovado. F1–F4 já corrigidos em `1c1bdbd`, `0345015`, `070dd2f`, `9048e70`. Mensagens/shutdown possuem provas próprias. Mesmos Verifiers retornaram apenas para indexar seus pareceres originais por critério; nenhuma nova rodada. MCP0.17.18 retirou mutate.py do fluxo oficial; bloqueio histórico SIGHUP encerrado, sem patch ou resultados fabricados.
-- **In-progress** (file:line): Provas/gates em `ec874ec`: STAB158pass/0fail e gate exit0; MEDIA93pass/2fail e gate exit1 somente por C33/C34/T9 físicos. Sensor próprio17/17 por asserção, baselines94/94 e porcelain real0 bytes idêntico; scratch/junction removidos. Logs/JSONs/drivers em test-results/closure-20261031. Produto/testes inalterados desde `699d4ed`, versão0.1.1/protocolo2. Portátil SHA-256 `16caffca2bf5b129e48b8d79438baa0e5b23fd4ca225b1e3aca24e81b2646135`, bytes reconferidos; matriz16/16 anterior preservada, sem nova build. 113 ACs/Decisions intactos,216 asserções históricas com quatro somentev1→v2,388 de f44d268 preservadas. L-014–L-017 candidatas, nenhuma confirmed.
-- **Next step**: Com recursos disponíveis, executar T9/A7 integral de uat.md no mesmo hash. Conferir código/binário antes; mudança de produto invalida a candidata. Provas e gates estão ancorados em `ec874ec`; commits posteriores são documentais. Para gate estrito no HEAD de uma retomada, regenerar provas e validar novamente, sem reabrir pareceres ou transferir evidência entre hashes.
-- **Blockers**: T9 indisponível por resposta do usuário em26/10: dois PCs Windows na mesma LAN confiável com servidor v2 acessível, fones/microfones reais e dois operadores. UAT inteiro NÃO EXECUTADO; ruído/eco/inteligibilidade/loopback desconhecidos. Teardown externo histórico não repetido, causa não estabelecida. Discord: D6–D11 estático/cache, U1 UI e quatro unknowns, sem nova operação. Câmera negada; texto encerra chamada; Silenciar áudio só reprodução; sem SFU. Destino AWS informado, infraestrutura fora deste lote; contas/grupos privados/TURN autenticado bloqueiam publicação. TypeScript só após estabilização.
-- **Uncommitted files**: Nenhum após este fechamento; confirmar porcelain. Perfil TEMP conversa-test-y4t7mS permanece após rejeição automática histórica de remoção (blocked by policy), sem processo associado; não foi tocado neste lote.
-- **Branch**: main, sem remoto. MCP catálogo0.17.18, revisão preparada `eec8e8fe8151`; Python TEMP/conversa-spec-python-3.14.0/python.exe. Somente commits locais; sem push/deploy/terceiros.
+- **Feature**: [MERGE](features/merge-drocsid/tasks.md). Novo pedido: um produto baseado no Conversa, nome Drocsid, contas/grupos, TypeScript e segurança. Decisões técnicas delegadas. Execução inline e Verifier independente no fechamento.
+- **Phase / Task**: Execute. T1 concluída neste merge; T2 próxima. Contas/grupos e UI ainda não adaptados; nenhum PASS integral da integração.
+- **Completed**: Fetch drocsid/main94d9b9a, backup/main a2ae03c preservados; merge real de históricos independentes, conflitos de manifests/ignore resolvidos.95/95 Node (94 regressões+1), Vite e desktop-smoke aprovados; audit produção0 vulnerabilidades. Evidências test-results/drocsid-merge-t1-*.
+- **In-progress**: tasks.md registra estado por tarefa. apps/* upstream é material temporário de adaptação, não resultado final de dois aplicativos. Lock regenerado por npm, não mesclado manualmente. T1 commit será o merge de dois pais contendo este Handoff.
+- **Next step**: T2 strict/emissão e protocolo; depois RTC/Session, identidade, autorização, host/UI, ferramentas e release conforme plano. Cada gate antes do commit. Novo Verifier MERGE após T10; não reutilizar parecer STAB/MEDIA.
+- **Blockers**: T9 física MEDIA segue indisponível: dois PCs Windows na mesma LAN confiável, fones/microfones reais e dois operadores. Ruído/eco/loopback não certificados. Integração exige nova candidata/hash; portátil anterior não aprova o merge. AWS/TLS/TURN/publicação não entregues neste lote.
+- **Historical evidence**: STAB158pass/0fail, MEDIA93pass/2fail físicos, sensores17/17 e94/94 em ec874ec; produto anterior699d4ed. SHA portátil anterior16caffca2bf5b129e48b8d79438baa0e5b23fd4ca225b1e3aca24e81b2646135. Ver specs históricas;113 ACs preservados. Não repetir investigação Discord nem adotar sua câmera; câmera negada, texto encerra chamada e mute só reprodução.
+- **Uncommitted files**: conferir porcelain antes/depois do commit T1; merge aberto até seu commit. Perfil TEMP conversa-test-y4t7mS permanece intocado após rejeição automática histórica de remoção.
+- **Branch**: integration/drocsid; remoto drocsid somente fetch. main e backup intactos em a2ae03c. MCP0.17.18/revisãoeec8e8fe8151. Python TEMP/conversa-spec-python-3.14.0/python.exe. Somente commits locais, sem push/deploy/terceiros.

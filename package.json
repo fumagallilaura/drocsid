@@ -1,5 +1,5 @@
 {
-  "name": "conversa",
+  "name": "drocsid",
   "version": "0.1.1",
   "private": true,
   "type": "module",
@@ -10,11 +10,13 @@
     "dev": "node server/index.js",
     "build": "vite build",
     "start": "node server/index.js --production",
-    "test": "node --test tests/*.test.js",
+    "test": "node --test tests/*.test.js tests/*.test.ts",
     "desktop": "npm run build && electron .",
     "dist:win": "npm run build && node scripts/prepare-electron.mjs && node scripts/build-windows.mjs"
   },
-  "engines": { "node": ">=24.15.0" },
+  "engines": {
+    "node": ">=24.15.0"
+  },
   "dependencies": {
     "express": "^5.1.0",
     "lucide-react": "^0.468.0",
@@ -33,9 +35,25 @@
     "appId": "app.conversa.desktop",
     "productName": "Conversa",
     "electronDist": ".packaging/electron",
-    "directories": { "output": "release-windows" },
-    "files": ["dist/**/*", "electron/**/*", "server/service.js", "shared/**/*", "package.json"],
-    "win": { "target": "portable", "signAndEditExecutable": false },
-    "portable": { "artifactName": "Conversa-${version}-Windows.exe" }
-  }
+    "directories": {
+      "output": "release-windows"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "server/service.js",
+      "shared/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "Conversa-${version}-Windows.exe"
+    }
+  },
+  "workspaces": [
+    "apps/*"
+  ]
 }
