@@ -17,12 +17,13 @@ export type CallContext = { callId: string; generation: number };
 export type CallAction = { type: 'call-join'; muted: boolean } | { type: 'call-leave' } |
   { type: 'media'; muted?: boolean; sharing?: boolean } |
   { type: 'signal'; to: string; toCallId: string; signal: Signal };
-export type ClientEvent = Envelope & Request & (
+export type ClientAction = (
   { type: 'join'; room: string; name: string } |
   { type: 'message'; room: string; operationId: string; text: string } |
   { type: 'create-room'; name: string } |
   (CallAction & CallContext)
 );
+export type ClientEvent = Envelope & Request & ClientAction;
 export type ServerEvent = Envelope & (
   { type: 'hello'; id: string; rooms: Room[] } |
   ({ type: 'joined'; room: Room; messages: Message[] } & Request) |

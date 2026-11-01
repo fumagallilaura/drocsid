@@ -125,7 +125,7 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 | --- | --- | --- | --- |
 | MERGE-01 | US1 | Execute/T1 | Implemented; final proofs pending |
 | MERGE-02 | US1 | Tasks | In Tasks |
-| MERGE-03 | US1 | Execute/T2–T11 | Partial: strict infrastructure and protocol; remaining owners pending |
+| MERGE-03 | US1 | Execute/T2–T6 + Tasks/T7–T11 | Partial: strict protocol, persistence/importer, Call and Session; remaining owners pending |
 | MERGE-04 | US1 | Execute/T4 + Tasks/T9 | Partial: legacy import data/preferences fixture bytes preserved; host profile pending |
 | MERGE-05 | US2 | Tasks | In Tasks |
 | MERGE-06 | US2 | Tasks | In Tasks |
@@ -136,7 +136,7 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 | MERGE-11 | US3 | Tasks | In Tasks |
 | MERGE-12 | US3 | Tasks | In Tasks |
 | MERGE-13 | US4 | Tasks | In Tasks |
-| MERGE-14 | US4 | Execute/T5 + Tasks/T6/T9/T10/T12 | Partial: typed Call passes existing regression, desktop/capture/lifecycle; full integration pending |
+| MERGE-14 | US4 | Execute/T5/T6 + Tasks/T9/T10/T12 | Partial: typed Call/Session pass regression and desktop/capture/lifecycle; full integration pending |
 | MERGE-15 | US4 | Tasks | In Tasks |
 | MERGE-16 | US4 | Tasks | In Tasks |
 | MERGE-17 | US4 | Tasks | In Tasks |

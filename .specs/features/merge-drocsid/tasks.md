@@ -152,8 +152,8 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12
 
 **Done when**:
 
-- [ ] Session em TS mantém handshake, correlação, drafts, outbox e deadlines, com seus testes co-localizados.
-- [ ] Gate build aprovado, contagem94 + delta, zero falha/skip/cancelled/todo; evidência e commit da tarefa registrados.
+- [x] Session em TS mantém handshake, correlação, drafts, outbox e deadlines; respostas e dependências têm tipos validados. Asserções anteriores preservadas; STAB-39 ganhou frame inválido tardio e duas asserções de conexão saudável/sem erro porque o sensor mostrou que hello sozinho era pouco discriminante.
+- [x] 113/113, zero fail/skip/cancelled/todo; strict Node/browser, Vite, desktop-smoke e lifecycle PASS. Sensores4/4 por AssertionError (epoch, geração do ack, operação de tela e revisão de presença), bytes originais intactos; pós-sensor113/113. Evidências `test-results/drocsid-merge-t6-*`/`merge-t6-sensors.json`. Commit desta tarefa `refactor(session): type correlated requests and transport ownership`; nenhuma certificação física.
 
 **Tests**: unit/integration, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
@@ -346,10 +346,10 @@ Proof: run integration | ✔ MERGE-21: database credentials stay in the server w
 
 ## Handoff
 
-**Settled mid-build:** user: "Prefiro postgresql" (AD-003, substitui AD-002); user: "Manter o conversa como principal, mas o nome deve ser Drocsid. Voce deve tomar as melhores decisões, baseado em boas práticas de mercado, mantenha o padrão em typescript, a segurança também é uma validação importante". Preferência persistente: "Executar nesta sessão; Verifier independente no fechamento". Recursos T9: "Não estão disponíveis agora; manter T9 pendente".
+**Settled mid-build:** user: "Prefiro postgresql" (AD-003, substitui AD-002); user: "Manter o conversa como principal, mas o nome deve ser Drocsid. Voce deve tomar as melhores decisões, baseado em boas práticas de mercado, mantenha o padrão em typescript, a segurança também é uma validação importante". Preferência persistente: "Executar nesta sessão; Verifier independente no fechamento". Recursos MEDIA/T9: "Não estão disponíveis agora; manter T9 pendente".
 
 **Dispatched:** nenhum. Plano12tarefas; manter execução inline conforme escolha persistente desta sessão, sem nova pergunta repetida. Após T12, Verifier fresco da feature MERGE, sem herdar Handoff; sem captura vinculante e sem screens sub-agent. Pareceres MEDIA/STAB não são parecer desta integração.
 
 **Walked:** pendente da implementação; checkers atuais seguem como regressão, não aprovação automática da nova interface.
 
-**Current:** T1 em41afbae/T2 em8d78b1f; PostgreSQL em AD-003/a3f3367, T3 em1965746, T4 em1c18786. T5 Call em TS concluída:113/113 + strict Node/browser, Vite, desktop/capture/lifecycle, sensores3/3 e testes existentes intactos. Próxima T6: Session em TS. T3/T4 somam sensores7/7, audit produção0; audit completo exit1 com15 moderadas de desenvolvimento e0 altas/críticas, pendentes da limpeza T12. A aplicação ainda usa SQLite até T8 integrar o novo proprietário; sem alegação de migração completa, contas prontas ou aprovação física. PostgreSQL real local: TEMP/conversa-postgresql-17.11-5/pgsql/bin; wrapper encerra cada cluster e mantém logs.
+**Current:** Phase1/T1–T6 concluída. T1 em41afbae/T2 em8d78b1f; PostgreSQL em AD-003/a3f3367, T3 em1965746, T4 em1c18786, Call em8a4e2a3; T6 neste commit.113/113 + strict Node/browser, Vite, desktop/capture/lifecycle. Sensores do lote14/14 (T3:4,T4:3,T5:3,T6:4), sempre por AssertionError e sem tocar bytes originais. Próxima T7: identidade/grupos no pool PostgreSQL; T8 liga o serviço. A aplicação ainda usa SQLite até T8; nenhuma alegação de backend integrado, contas prontas, TypeScript completo, pacote atual ou aprovação física. Audit produção0; audit completo exit1 com15 moderadas de desenvolvimento e0 altas/críticas, pendentes da limpeza T12. PostgreSQL real local em TEMP/conversa-postgresql-17.11-5/pgsql/bin; wrapper encerra cada cluster e mantém logs. Nenhum Verifier MERGE disparado antes da conclusão T12.

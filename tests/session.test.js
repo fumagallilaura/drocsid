@@ -47,7 +47,9 @@ test('STAB-39: old fetch/socket callbacks cannot overwrite a newer connection',a
   assert.equal(f.sockets.length,1);assert.equal(f.session.state.session.server,'http://new.example');
   const stale=f.sockets[0].onmessage;await f.connect('http://third.example');
   stale({data:JSON.stringify({v:2,type:'hello',id:'wrong',rooms:[room('geral')]})});
-  assert.equal(f.session.state.session.server,'http://third.example');assert.equal(f.session.state.session.id,'me');f.session.disconnect();
+  stale({data:JSON.stringify({v:1,type:'hello'})});
+  assert.equal(f.session.state.session.server,'http://third.example');assert.equal(f.session.state.session.id,'me');
+  assert.equal(f.session.state.connected,true);assert.deepEqual(f.errors,[]);f.session.disconnect();
 });
 
 test('STAB-17/20/39: room transition blocks sending and preserves separate drafts',async()=>{
