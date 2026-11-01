@@ -93,9 +93,11 @@ test('MERGE-19: concurrent migrations apply once and reject unknown or altered v
   const databases = await Promise.all([fixture.open(), fixture.open()]);
   const database = databases[0];
   const versions = await database.query('SELECT version,checksum FROM drocsid.schema_migrations ORDER BY version');
-  assert.equal(versions.length, 1);
+  assert.equal(versions.length, 2);
+  assert.deepEqual(versions.map(row => row.version), [1, 2]);
   assert.equal(versions[0].version, 1);
   assert.match(String(versions[0].checksum), /^[a-f0-9]{64}$/);
+  assert.match(String(versions[1].checksum), /^[a-f0-9]{64}$/);
   await database.query('INSERT INTO drocsid.schema_migrations(version,checksum) VALUES ($1,$2)', [999, 'f'.repeat(64)]);
   await assert.rejects(createDatabase({ DATABASE_URL: fixture.url }), hasCode('INCOMPATIBLE_DATABASE'));
   assert.equal((await database.query('SELECT version FROM drocsid.schema_migrations WHERE version=999')).length, 1);

@@ -12,6 +12,7 @@ Usar tlc-spec-driven carregada pelo MCP. Execução local e decisões técnicas 
 **Run integration**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/merge.test.js
 **Run postgres**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/database.test.js
 **Run migration**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/import-sqlite.test.js
+**Run identity**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/identity.test.js
 
 O Build usa os comandos próprios existentes e passará a incluir strict/emissão conforme T2 os habilitar. A configuração não excluirá fontes migradas para contornar erro. A aprovação é o mandato de execução com decisões delegadas, não uma palavra inventada em nome do usuário.
 
@@ -168,8 +169,8 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12
 
 **Done when**:
 
-- [ ] Cadastro, login, limites, sessões, tickets e grupos/convites cumprem os valores da spec com testes negativos, expiração e concorrência.
-- [ ] Gate full aprovado, contagem94 + delta, zero falha/skip/cancelled/todo; evidência e commit da tarefa registrados.
+- [x] Identidade no pool PostgreSQL de T3, sem fechar esse proprietário. Scrypt N131072/r8/p1, sal16bytes/hash64bytes; token/ticket/convite32bytes somente por hash no banco. Limites de cinco falhas por IP e usuário/60s, mapa limitado e duas derivações nativas por processo, verificadas por async_hooks. Sessões24h/idle30min, tickets30s e convites24h de uso único; expiração/revogação, dono/membro, IDs alheios, rollback e concorrência reais. Migração2 preserva dados/recibos legados; a asserção de quantidade de migrações passou de1 para2 e ganhou ordem/checksum da nova versão, mantendo as demais asserções.
+- [x] Gate full PASS:126/126 (113+13), zero fail/skip/cancelled/todo; strict Node/browser e Vite PASS. Nove sensores por AssertionError (custo scrypt, orçamento KDF, expiração absoluta/idle, ticket, sala alheia, dono, convite repetido e rollback), fontes/emitidos intactos. Logs `test-results/drocsid-merge-t7-*` e `merge-t7-sensors.json`. Commit desta tarefa `feat(identity): secure accounts sessions and private groups`. HTTP/WS, fechamento de conexões após revogação e interface permanecem em T8/T10; não declarar MERGE-07–09 integralmente aprovados.
 
 **Tests**: unit/integration, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: full
@@ -294,10 +295,10 @@ Proof: run integration | ✔ MERGE-03: every maintained source is covered by str
 Proof: run integration | ✔ MERGE-04: legacy data and preferences remain intact
 
 **C5** - O produto SHALL cumprir MERGE-05, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-05: registration stores salted scrypt hashes and unique identities
+Proof: run identity | ✔ MERGE-05: registration stores salted scrypt hashes and unique identities
 
 **C6** - O produto SHALL cumprir MERGE-06, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-06: authentication failures and concurrency are bounded
+Proof: run identity | ✔ MERGE-06: authentication failures and concurrency are bounded
 
 **C7** - O produto SHALL cumprir MERGE-07, conforme valor e condição da spec.
 Proof: run integration | ✔ MERGE-07: expired or revoked sessions cannot be reused
@@ -309,10 +310,10 @@ Proof: run integration | ✔ MERGE-08: network access and websocket tickets requ
 Proof: run integration | ✔ MERGE-09: known foreign group identifiers never grant access
 
 **C10** - O produto SHALL cumprir MERGE-10, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-10: group creation and owner administration are atomic
+Proof: run identity | ✔ MERGE-10: group creation and owner administration are atomic
 
 **C11** - O produto SHALL cumprir MERGE-11, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-11: invites expire and are consumed once atomically
+Proof: run identity | ✔ MERGE-11: invites expire and are consumed once atomically
 
 **C12** - O produto SHALL cumprir MERGE-12, conforme valor e condição da spec.
 Proof: run integration | ✔ MERGE-12: message receipts belong to their authenticated author
@@ -352,4 +353,4 @@ Proof: run integration | ✔ MERGE-21: database credentials stay in the server w
 
 **Walked:** pendente da implementação; checkers atuais seguem como regressão, não aprovação automática da nova interface.
 
-**Current:** Phase1/T1–T6 concluída. T1 em41afbae/T2 em8d78b1f; PostgreSQL em AD-003/a3f3367, T3 em1965746, T4 em1c18786, Call em8a4e2a3; T6 neste commit.113/113 + strict Node/browser, Vite, desktop/capture/lifecycle. Sensores do lote14/14 (T3:4,T4:3,T5:3,T6:4), sempre por AssertionError e sem tocar bytes originais. Próxima T7: identidade/grupos no pool PostgreSQL; T8 liga o serviço. A aplicação ainda usa SQLite até T8; nenhuma alegação de backend integrado, contas prontas, TypeScript completo, pacote atual ou aprovação física. Audit produção0; audit completo exit1 com15 moderadas de desenvolvimento e0 altas/críticas, pendentes da limpeza T12. PostgreSQL real local em TEMP/conversa-postgresql-17.11-5/pgsql/bin; wrapper encerra cada cluster e mantém logs. Nenhum Verifier MERGE disparado antes da conclusão T12.
+**Current:** T1–T7 concluídas. T1 em41afbae/T2 em8d78b1f; PostgreSQL em AD-003/a3f3367, T3 em1965746, T4 em1c18786, Call em8a4e2a3 e Session em61c4b94. T7 neste commit: identidade/grupos transacionais,126/126 + strict Node/browser e Vite. Sensores23/23 (T3:4,T4:3,T5:3,T6:4,T7:9), por AssertionError em cópias isoladas e bytes originais intactos. Próxima T8: ligar HTTP/WS/bootstrap ao PostgreSQL e autorizar antes de dados/recibos/sinais; preservar fechamento/filas após awaits. Serviço ativo ainda SQLite até T8; login/UI, TS completo e pacote pendentes. Produção audit0; audit completo exit1 com15 moderadas de desenvolvimento e0 altas/críticas, limpeza T12 pendente. MEDIA/T9 física indisponível; nenhuma certificação transferida. PostgreSQL17.11 real local no TEMP. Verifier MERGE somente após T12.
