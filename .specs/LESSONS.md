@@ -116,6 +116,48 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: verification.md:F4/C53 (server/service.js)
 - last seen: 2026-10-31T21:43:32Z
 
+### L-018 - Exigir ambos os commits de origem como ancestrais de HEAD na prova do merge concluído.
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `git` · harmful: 0
+- features: merge-drocsid
+- evidence: C1 (git)
+- last seen: 2026-11-01T09:42:38Z
+
+### L-019 - Verificar preservação de perfis SQLite antigos e atuais com authorId, operationId e sequence preenchidos.
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `desktop` · harmful: 0
+- features: merge-drocsid
+- evidence: C4 (desktop)
+- last seen: 2026-11-01T09:42:38Z
+
+### L-020 - Exercitar revogação, expiração absoluta e inatividade com sockets ativos e recusa de reuso da sessão.
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `auth` · harmful: 0
+- features: merge-drocsid
+- evidence: C7 (auth)
+- last seen: 2026-11-01T09:42:38Z
+
+### L-021 - Ativar convidados e forjar Host e listener ao verificar a restrição real de loopback.
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `server` · harmful: 0
+- features: merge-drocsid
+- evidence: C8 (server)
+- last seen: 2026-11-01T09:42:38Z
+
+### L-022 - Injetar falha na associação ao grupo e exigir convite não consumido antes da repetição bem-sucedida.
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `identity` · harmful: 0
+- features: merge-drocsid
+- evidence: C11 (identity)
+- last seen: 2026-11-01T09:42:38Z
+
+### L-023 - Reabrir o PostgreSQL e reenviar o recibo exato ao verificar migrações, rollback e encerramento do pool.
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `database` · harmful: 0
+- features: merge-drocsid
+- evidence: C19 (database)
+- last seen: 2026-11-01T09:42:38Z
+
+### L-024 - Verificar conflitos e falha intermediária da importação com origem e destino comparados integralmente.
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `import` · harmful: 0
+- features: merge-drocsid
+- evidence: C20 (import)
+- last seen: 2026-11-01T09:42:38Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

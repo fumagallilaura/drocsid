@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 18,
+  "next_id": 25,
   "lessons": [
     {
       "id": "L-001",
@@ -313,6 +313,132 @@
       ],
       "created": "2026-10-31T21:43:32Z",
       "last_seen": "2026-10-31T21:43:32Z"
+    },
+    {
+      "id": "L-018",
+      "key": "weak_test::exigir ambos os commits de origem como ancestrais de head na prova do merge concluido",
+      "text": "Exigir ambos os commits de origem como ancestrais de HEAD na prova do merge concluído.",
+      "signal": "weak_test",
+      "scope": "git",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C1 (git)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-019",
+      "key": "weak_test::verificar preservacao de perfis sqlite antigos e atuais com authorid operationid e sequence preenchidos",
+      "text": "Verificar preservação de perfis SQLite antigos e atuais com authorId, operationId e sequence preenchidos.",
+      "signal": "weak_test",
+      "scope": "desktop",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C4 (desktop)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-020",
+      "key": "weak_test::exercitar revogacao expiracao absoluta e inatividade com sockets ativos e recusa de reuso da sessao",
+      "text": "Exercitar revogação, expiração absoluta e inatividade com sockets ativos e recusa de reuso da sessão.",
+      "signal": "weak_test",
+      "scope": "auth",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C7 (auth)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-021",
+      "key": "weak_test::ativar convidados e forjar host e listener ao verificar a restricao real de loopback",
+      "text": "Ativar convidados e forjar Host e listener ao verificar a restrição real de loopback.",
+      "signal": "weak_test",
+      "scope": "server",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C8 (server)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-022",
+      "key": "weak_test::injetar falha na associacao ao grupo e exigir convite nao consumido antes da repeticao bem sucedida",
+      "text": "Injetar falha na associação ao grupo e exigir convite não consumido antes da repetição bem-sucedida.",
+      "signal": "weak_test",
+      "scope": "identity",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C11 (identity)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-023",
+      "key": "weak_test::reabrir o postgresql e reenviar o recibo exato ao verificar migracoes rollback e encerramento do pool",
+      "text": "Reabrir o PostgreSQL e reenviar o recibo exato ao verificar migrações, rollback e encerramento do pool.",
+      "signal": "weak_test",
+      "scope": "database",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C19 (database)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-024",
+      "key": "weak_test::verificar conflitos e falha intermediaria da importacao com origem e destino comparados integralmente",
+      "text": "Verificar conflitos e falha intermediária da importação com origem e destino comparados integralmente.",
+      "signal": "weak_test",
+      "scope": "import",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C20 (import)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
     }
   ]
 }

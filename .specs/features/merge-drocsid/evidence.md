@@ -1,6 +1,6 @@
 # Drocsid candidate evidence
 
-T12 passou os gates automáticos locais. O parecer independente e as provas em HEAD são registrados separadamente em `verification.md` e `proofs.md`; este relatório não os substitui. MEDIA/T9 física continua pendente.
+MERGE aprovado pelo gate formal local após uma passagem de correções:23 provas PASS, validate_verification0 erros/0 avisos. O parecer independente e as provas são registrados separadamente em `verification.md` e `proofs.md`; este relatório não os substitui. MEDIA/T9 física continua pendente.
 
 ## Candidate
 
@@ -51,6 +51,8 @@ Três sensores adicionais por AssertionError: merge preparado sem ancestralidade
 
 A rodada final de provas em HEAD e `validate_verification.py` continuam sendo os gates formais; resultados constam dos próprios arquivos, sem inferir aprovação física.
 
+Resultado final executado: `check_proofs.py merge-drocsid` emc10f4f3,23 pass/0 fail; `validate_verification.py merge-drocsid`, exit0,0 erros/0 avisos. Todos os sete Closed citam commits existentes. O FAIL original do Verifier permanece como registro da revisão anterior às correções. Não houve outro Verifier nem terceira rodada. As lições L-018–024 foram geradas como candidatas pelo script, sem promoção automática a orientação confirmada.
+
 ## Commit trace
 
 | Task | Commit |
@@ -68,7 +70,11 @@ A rodada final de provas em HEAD e `validate_verification.py` continuam sendo os
 | T10 |3d05180|
 | T11 |4a77a51|
 | T12 |429a3d2|
-| Visible destination fix |Commit `fix(ui): submit the visible server destination` que introduz a seção Follow-up; a linha de histórico desse arquivo identifica-o.|
+| Visible destination fix |160a116|
+| Verifier V1 |7eb451a|
+| Verifier V2 |ab8c0fa|
+| Verifier V3–V7 |1529b99|
+| Independent report / Closed |c10f4f3|
 
 ## Limits
 

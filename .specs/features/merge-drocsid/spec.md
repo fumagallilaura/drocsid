@@ -10,9 +10,9 @@ Conversa e Drocsid têm históricos independentes, interfaces, contratos e persi
 
 ## Goals
 
-- [ ] Um aplicativo Drocsid, com ambos os históricos e comandos executáveis.
-- [ ] Contas e grupos isolados no serviço e na interface do Conversa.
-- [ ] TypeScript estrito, regressão preservada e revisão de segurança independente.
+- [x] Um aplicativo Drocsid, com ambos os históricos e comandos executáveis.
+- [x] Contas e grupos isolados no serviço e na interface do Conversa.
+- [x] TypeScript estrito, regressão preservada e revisão independente com os sete apontamentos fechados por commits.
 
 ## Out of Scope
 
@@ -123,27 +123,27 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| MERGE-01 | US1 | Execute/T1 | Implemented; final proofs and independent review pending |
-| MERGE-02 | US1 | Execute/T9/T10 + Tasks/T12 | Implemented; final proofs and independent review pending |
-| MERGE-03 | US1 | Execute/T2–T11 + Tasks/T12 | Implemented; final proofs and independent review pending |
-| MERGE-04 | US1 | Execute/T4/T9 | Implemented; final proofs and independent review pending |
-| MERGE-05 | US2 | Execute/T7/T8 | Implemented; final proofs and independent review pending |
-| MERGE-06 | US2 | Execute/T7/T8 | Implemented; final proofs and independent review pending |
-| MERGE-07 | US2 | Execute/T7/T8 | Implemented; final proofs and independent review pending |
-| MERGE-08 | US2 | Execute/T7–T9 | Implemented; final proofs and independent review pending |
-| MERGE-09 | US3 | Execute/T7/T8/T10 | Implemented; final proofs and independent review pending |
-| MERGE-10 | US3 | Execute/T7/T8/T10 | Implemented; final proofs and independent review pending |
-| MERGE-11 | US3 | Execute/T7/T8/T10 | Implemented; final proofs and independent review pending |
-| MERGE-12 | US3 | Execute/T3/T6/T8 | Implemented; final proofs and independent review pending |
-| MERGE-13 | US4 | Execute/T10 | Implemented; final proofs and independent review pending |
-| MERGE-14 | US4 | Execute/T5/T6/T9–T11 + Tasks/T12 | Implemented; final proofs and independent review pending |
-| MERGE-15 | US4 | Tasks | Implemented; final proofs and independent review pending |
-| MERGE-16 | US4 | Tasks | Implemented; final proofs and independent review pending |
-| MERGE-17 | US4 | Tasks | Implemented; final proofs and independent review pending |
-| MERGE-18 | US4 | Execute/T8 + Tasks/T12 | Implemented; final proofs and independent review pending |
-| MERGE-19 | US5 | Execute/T3 | Implemented; final proofs and independent review pending |
-| MERGE-20 | US5 | Execute/T4 | Implemented; final proofs and independent review pending |
-| MERGE-21 | US5 | Execute/T3 + Tasks/T8/T9/T12 | Implemented; final proofs and independent review pending |
+| MERGE-01 | US1 | Execute/T1 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-02 | US1 | Execute/T9/T10 + Tasks/T12 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-03 | US1 | Execute/T2–T11 + Tasks/T12 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-04 | US1 | Execute/T4/T9 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-05 | US2 | Execute/T7/T8 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-06 | US2 | Execute/T7/T8 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-07 | US2 | Execute/T7/T8 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-08 | US2 | Execute/T7–T9 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-09 | US3 | Execute/T7/T8/T10 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-10 | US3 | Execute/T7/T8/T10 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-11 | US3 | Execute/T7/T8/T10 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-12 | US3 | Execute/T3/T6/T8 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-13 | US4 | Execute/T10 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-14 | US4 | Execute/T5/T6/T9–T11 + Tasks/T12 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-15 | US4 | Tasks | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-16 | US4 | Tasks | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-17 | US4 | Tasks | Verified local report; physical acceptance remains pending |
+| MERGE-18 | US4 | Execute/T8 + Tasks/T12 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-19 | US5 | Execute/T3 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-20 | US5 | Execute/T4 | Verified by local proofs and closed independent findings; formal gate passed |
+| MERGE-21 | US5 | Execute/T3 + Tasks/T8/T9/T12 | Verified by local proofs and closed independent findings; formal gate passed |
 
 ## Sources
 
@@ -154,6 +154,6 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 
 ## Success Criteria
 
-- [ ] MERGE-01–21 têm provas de resultado e parecer independente, sem enfraquecer a regressão.
-- [ ] Pacote Drocsid abre e funciona; nenhum dado legado excluído.
-- [ ] T9 física permanece pendente com recursos necessários explícitos, sem publicação implícita.
+- [x] MERGE-01–21 têm provas de resultado e parecer independente, sem enfraquecer a regressão; gate formal0 erros/0 avisos após uma passagem de correções.
+- [x] Pacote Drocsid abre e funciona; nenhum dado legado real excluído ou migrado.
+- [x] T9 física permanece pendente com recursos necessários explícitos, sem publicação implícita.
