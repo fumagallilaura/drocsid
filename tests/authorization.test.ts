@@ -96,6 +96,14 @@ test('MERGE-07: observed session expiry terminates signaling and cannot be reviv
   await a.request({type:'call-join'});const closed=closesWithin([a.ws,...s.wss.clients]),started=performance.now();now+=1800000;a.ws.pong();await closed;
   assert.ok(performance.now()-started<=1000);assert.equal(s.wss.clients.size,0);
   assert.equal((await api(s.origin,'/api/config','GET',undefined,ana.token)).status,401);
+  const bia=await account(s.origin,'bia'),secondGroup=await group(s.origin,bia.token,'Absoluta'),b=await authenticated(s,bia.token,secondGroup.rooms[0].id);
+  await b.request({type:'call-join'});
+  // Keep idle activity below thirty minutes while reaching the absolute limit.
+  for(let interval=0;interval<95;interval++){now+=900000;assert.equal((await api(s.origin,'/api/config','GET',undefined,bia.token)).status,200);}
+  const absoluteClosed=closesWithin([b.ws,...s.wss.clients]),absoluteStarted=performance.now();now+=900000;b.ws.pong();await absoluteClosed;
+  assert.ok(performance.now()-absoluteStarted<=1000);assert.equal(b.ws.readyState,3);assert.equal(s.wss.clients.size,0);
+  assert.equal((await api(s.origin,'/api/config','GET',undefined,bia.token)).status,401);
+  assert.equal((await api(s.origin,'/api/ws-ticket','POST',{},bia.token)).status,401);
 });
 
 test('MERGE-09: known foreign group identifiers never grant access',async t=>{

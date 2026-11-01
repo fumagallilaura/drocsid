@@ -72,3 +72,4 @@ tests/fixtures/rtc.js
 scripts/security-check.mjs
 tests/security.test.js
 scripts/release-check.mjs
+scripts/merge-proofs.mjs

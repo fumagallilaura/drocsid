@@ -41,6 +41,8 @@ test('MERGE-19: PostgreSQL commits, survives reconnect and rolls back incomplete
   database = await fixture.open();
   assert.deepEqual(await database.rooms(), [room]);
   assert.deepEqual(await database.history(room.id), [saved]);
+  assert.deepEqual(await database.saveMessage({...message,id:'replay-after-reopen'}),saved);
+  assert.deepEqual(await database.history(room.id),[saved]);
   await assert.rejects(database.transaction(async client => {
     await client.query('INSERT INTO drocsid.rooms (id,name,description) VALUES ($1,$2,$3)', ['rolled-back', 'Parcial', '']);
     await client.query('INSERT INTO drocsid.messages (id,room,author,text,created) VALUES ($1,$2,$3,$4,$5)', ['partial', 'rolled-back', 'Ana', 'incompleta', 1]);

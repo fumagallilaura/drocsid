@@ -10,12 +10,11 @@ Usar tlc-spec-driven carregada pelo MCP. Execução local e decisões técnicas 
 **Status**: In Progress
 **Build**: npm.cmd test; npm.cmd run build
 **Run integration**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/merge.test.js tests/authorization.test.js
-**Run postgres**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/database.test.js
-**Run migration**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/import-sqlite.test.js
 **Run identity**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/identity.test.js
 **Run client**: node scripts/desktop-client-check.mjs
 **Run accounts**: node scripts/with-test-postgres.mjs -- node scripts/desktop-accounts-check.mjs
 **Run release**: node scripts/with-test-postgres.mjs -- node scripts/release-check.mjs
+**Run lifecycle**: node scripts/with-test-postgres.mjs -- node scripts/merge-proofs.mjs
 
 O Build usa os comandos próprios existentes e passará a incluir strict/emissão conforme T2 os habilitar. A configuração não excluirá fontes migradas para contornar erro. A aprovação é o mandato de execução com decisões delegadas, não uma palavra inventada em nome do usuário.
 
@@ -304,10 +303,10 @@ Proof: run identity | ✔ MERGE-05: registration stores salted scrypt hashes and
 Proof: run identity | ✔ MERGE-06: authentication failures and concurrency are bounded
 
 **C7** - O produto SHALL cumprir MERGE-07, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-07: logout closes every owned media connection while another session remains usable
+Proof: run lifecycle | PASS: MERGE-07 every required lifecycle and failure case ran and passed.
 
 **C8** - O produto SHALL cumprir MERGE-08, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-08: network access and websocket tickets require authentication
+Proof: run lifecycle | PASS: MERGE-08 every required lifecycle and failure case ran and passed.
 
 **C9** - O produto SHALL cumprir MERGE-09, conforme valor e condição da spec.
 Proof: run integration | ✔ MERGE-09: known foreign group identifiers never grant access
@@ -316,7 +315,7 @@ Proof: run integration | ✔ MERGE-09: known foreign group identifiers never gra
 Proof: run identity | ✔ MERGE-10: group creation and owner administration are atomic
 
 **C11** - O produto SHALL cumprir MERGE-11, conforme valor e condição da spec.
-Proof: run identity | ✔ MERGE-11: invites expire and are consumed once atomically
+Proof: run lifecycle | PASS: MERGE-11 every required lifecycle and failure case ran and passed.
 
 **C12** - O produto SHALL cumprir MERGE-12, conforme valor e condição da spec.
 Proof: run integration | ✔ MERGE-12: message receipts belong to their authenticated author
@@ -340,10 +339,10 @@ Proof: run release | PASS: MERGE-17 physical acceptance remains pending and the 
 Proof: run release | PASS: MERGE-18 one PostgreSQL backend serves the unified source, packaged and portable product.
 
 **C19** - O PostgreSQL SHALL persistir dados, ordem e recibos após reconexão, reverter operações incompletas e fechar o pool (MERGE-19).
-Proof: run postgres | ✔ MERGE-19: PostgreSQL commits, survives reconnect and rolls back incomplete work
+Proof: run lifecycle | PASS: MERGE-19 every required lifecycle and failure case ran and passed.
 
 **C20** - A importação SHALL preservar todos os campos/bytes da origem, ser repetível e recusar conflito sem importação parcial (MERGE-20).
-Proof: run migration | ✔ MERGE-20: legacy SQLite imports preserve data and source bytes atomically
+Proof: run lifecycle | PASS: MERGE-20 every required lifecycle and failure case ran and passed.
 
 **C21** - A configuração SHALL manter credenciais só no servidor e verificar TLS remoto, sem segredos no renderer/pacote (MERGE-21).
 Proof: run release | PASS: MERGE-21 verified database TLS and credential isolation tests passed, including the default client without PostgreSQL.
@@ -356,4 +355,4 @@ Proof: run release | PASS: MERGE-21 verified database TLS and credential isolati
 
 **Walked:** US1: source, empacotado e wrapper portátil abriram Drocsid; perfil legado e histórico importado foram confrontados por bytes/campos nos respectivos gates. US2: nas janelas nativas, cadastro ana/bia, login errado com erro recuperável, login correto e logout. US3: criar Equipe A/B, copiar/colar e aceitar convite, recusar inválido/repetido, membro sem administração e mensagem com autoria bia; grupos privados não aparecem à outra conta. US4: chamada sintética, troca de grupo e logout encerraram tracks em até1s, bloqueando reprodução; UI e screenshot inspecionados. US5: PostgreSQL real, reinício/rollback e importação somente leitura conferidos nos testes, sem tela própria. Laboratório aberto com banco isolado: `test-results/drocsid-lab.json` informa endereço/perfil/usuários de fixture; duas janelas bia, grupos Equipe A/B; Configurações → Sair e trocar de servidor → ana acessa Equipe A/Privado A. Criar `test-results/drocsid-lab-stop` encerra e limpa somente esse laboratório. Não é o ensaio físico T9.
 
-**Current:** T1–T12 implementadas; T12 429a3d2. As provas retiveram a candidata inicial por submissão de destino salvo antigo; este commit `fix(ui): submit the visible server destination` corrige o valor no gesto e acrescenta asserção direta de origem. Nova candidata,152/152 e matriz18/18 PASS; cinco sensores T12 reexecutados e um adicional de destino, controle limpo. Dois sensores UI de T10 eram falhas de preparação; substituídos por reexecução com plugin React e asserções da regra. Contagem por lote57, sem alegar reexecução conjunta; detalhes em evidence.md.149 casos/1008 assert Node anteriores e113 ACs/Decisions intactos. Audit produção0, completo15 moderadas dev/0 altas/críticas. Próximo: check_proofs em HEAD, Verifier fresco, uma passagem de correções e gate formal. Laboratório local com dados de fixture. MEDIA/T9 física indisponível; nenhum PASS integral de hardware ou deploy.
+**Current:** T1–T12 implementadas; T12 429a3d2, destino visível160a116. Verifier fresco retornou sete lacunas de prova, sem falha de runtime observada. Uma passagem de correções: V1 7eb451a, V2 ab8c0fa, V3–V7 neste commit `test(merge): bind complete lifecycle and persistence proofs`.152/152, strict/Vite, matriz18/18, cinco agregados/25 casos PASS. Três sensores de fechamento detectados por assert, fontes intactas;60 por lote com os dois sensores T10 substituídos, sem alegar reexecução conjunta.149 casos anteriores presentes,1007/1008 assert idênticos; ancestralidade foi fortalecida,113 ACs/Decisions intactos. Audit produção0, completo15 moderadas dev/0 altas/críticas. Próximo: registrar Closed com commits, provas finais em HEAD e validate_verification.py; sem segundo Verifier ou terceira rodada. Laboratório local aberto, mesma candidata cd1b3b43…; MEDIA/T9 física pendente, sem deploy.
