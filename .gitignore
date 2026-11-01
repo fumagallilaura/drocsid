@@ -73,3 +73,5 @@ scripts/security-check.mjs
 tests/security.test.js
 scripts/release-check.mjs
 scripts/merge-proofs.mjs
+# Generated for the exact current HEAD; committing it would change that HEAD.
+/.specs/features/merge-drocsid/proofs.md

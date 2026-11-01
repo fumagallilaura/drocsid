@@ -51,7 +51,9 @@ Três sensores adicionais por AssertionError: merge preparado sem ancestralidade
 
 A rodada final de provas em HEAD e `validate_verification.py` continuam sendo os gates formais; resultados constam dos próprios arquivos, sem inferir aprovação física.
 
-Resultado final executado: `check_proofs.py merge-drocsid` emc10f4f3,23 pass/0 fail; `validate_verification.py merge-drocsid`, exit0,0 erros/0 avisos. Todos os sete Closed citam commits existentes. O FAIL original do Verifier permanece como registro da revisão anterior às correções. Não houve outro Verifier nem terceira rodada. As lições L-018–024 foram geradas como candidatas pelo script, sem promoção automática a orientação confirmada.
+Primeiro fechamento formal após as correções: `check_proofs.py merge-drocsid` emc10f4f3,23 pass/0 fail; `validate_verification.py merge-drocsid`, exit0,0 erros/0 avisos. Todos os sete Closed citam commits existentes. O FAIL original do Verifier permanece como registro da revisão anterior às correções. Não houve outro Verifier nem outra passagem de implementação. As lições L-018–024 foram geradas como candidatas pelo script, sem promoção automática a orientação confirmada.
+
+`proofs.md` é agora um artefato local gerado, ignorado pelo Git, vinculado exatamente ao HEAD que o script executa. Versionar o próprio relatório muda o HEAD e invalida essa referência; os snapshots anteriores permanecem nos commits c10f4f3/dcfd635. O parecer independente, os Closed, as specs, os comandos e este registro continuam versionados. Depois do commit documental final, o script regenera as provas e o validador formal confere esse HEAD, mantendo a árvore Git limpa. Não há exclusão de teste ou relaxamento de gate.
 
 ## Commit trace
 
