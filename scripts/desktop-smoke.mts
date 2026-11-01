@@ -1,15 +1,19 @@
+import {required} from '../tests/helpers/assertions.js';
 import { _electron as electron } from 'playwright';
+import type {ElectronApplication,Page} from 'playwright';
+import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createService } from '../server/service.js';
 import { createPostgresFixture } from '../tests/helpers/postgres.js';
 import { PROTOCOL_VERSION } from '../shared/protocol.js';
-import { readFlag, createTestProfile, removeTestProfile, closeDesktop, closeResources } from './test-runtime.mjs';
+import { readFlag, createTestProfile, removeTestProfile, closeDesktop, closeResources,testEnvironment } from './test-runtime.mjs';
+import {testPort} from '../tests/helpers/service.js';
 
 const output = resolve('test-results/desktop');
 mkdirSync(output, { recursive: true });
-async function instrument(page) {
+async function instrument(page:Page) {
   await page.evaluate(protocolVersion => {
     window.__testConnections = [];
     window.__testCaptures = [];
@@ -25,11 +29,18 @@ async function instrument(page) {
       return play.apply(this,args);
     };
     const Original = window.RTCPeerConnection;
-    window.RTCPeerConnection = class extends Original { constructor(...args) { super(...args); window.__testConnections.push(this); } };
+    window.RTCPeerConnection = class extends Original { constructor(...args:ConstructorParameters<typeof Original>) { super(...args); window.__testConnections.push(this); } };
     const send = WebSocket.prototype.send;
     WebSocket.prototype.send = function (raw) {
-      const event = JSON.parse(raw);
-      if (['call-join','call-leave'].includes(event.type)) window.__testCallEvents.push(event);
+      if(typeof raw!=='string')throw new Error('Expected a JSON socket frame');const value:unknown=JSON.parse(raw);
+      if(value===null||typeof value!=='object'||!('type' in value)||typeof value.type!=='string')throw new Error('Invalid test socket frame');
+      const event=value;
+      if(!('requestId' in event)||typeof event.requestId!=='string')throw new Error('Missing request ID');
+      if(event.type==='message'&&(!('operationId' in event)||typeof event.operationId!=='string'))throw new Error('Missing operation ID');
+      if (event.type==='call-join'||event.type==='call-leave') {
+        if(!('callId' in event)||typeof event.callId!=='string'||!('generation' in event)||typeof event.generation!=='number')throw new Error('Missing call context');
+        window.__testCallEvents.push({type:event.type,requestId:event.requestId,callId:event.callId,generation:event.generation});
+      }
       if (event.type === 'join') {window.__testSocket = this;window.__testRoomContext=event.requestId;}
       if (event.type === 'call-join' && window.__rejectNextCall) {
         window.__rejectNextCall = false;
@@ -37,11 +48,11 @@ async function instrument(page) {
         return;
       }
       if (event.type === 'message' && window.__rejectNextMessage) {
-        window.__rejectNextMessage = false; window.__rejectedOperation = event.operationId;
+        window.__rejectNextMessage = false;if(!('operationId' in event)||typeof event.operationId!=='string')throw new Error('Missing operation ID');window.__rejectedOperation = event.operationId;
         queueMicrotask(() => this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ v: protocolVersion, type: 'error', code: 'RATE_LIMITED', phase: 'message', requestId: event.requestId, message: 'Falha de envio simulada.' }) })));
         return;
       }
-      if (event.type === 'message') window.__lastMessageOperation = event.operationId;
+      if (event.type === 'message'){if(!('operationId' in event)||typeof event.operationId!=='string')throw new Error('Missing operation ID');window.__lastMessageOperation = event.operationId;}
       return send.call(this, raw);
     };
     const getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
@@ -52,17 +63,17 @@ async function instrument(page) {
         track.stop = () => { stop(); window.__lastStopAt=performance.now();console.info('CONVERSA_TEST_STOP ' + JSON.stringify({id:track.id,state:track.readyState})); };
       }
       window.__testCaptures.push(stream);
-      if (window.__holdMicrophone) { window.__lateStream = stream; await new Promise(resolve => { window.__releaseMicrophone = ()=>{window.__micReleasedAt=performance.now();resolve();}; }); }
+      if (window.__holdMicrophone) { window.__lateStream = stream; await new Promise<void>(resolve => { window.__releaseMicrophone = ()=>{window.__micReleasedAt=performance.now();resolve();}; }); }
       return stream;
     };
     const getDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
     navigator.mediaDevices.getDisplayMedia = async options => { const stream = await getDisplayMedia(options); window.__testDisplays.push(stream); return stream; };
   }, PROTOCOL_VERSION);
 }
-async function cancelEntryByKeyboard(page){
+async function cancelEntryByKeyboard(page:Page){
   await page.evaluate(()=>{
     const button=[...document.querySelectorAll('button')].find(value=>value.textContent==='Cancelar entrada');
-    window.__cancelTiming={started:null,terminalAt:null};
+    if(!button)throw new Error('Missing cancel entry control');window.__cancelTiming={started:null,terminalAt:null};
     button.addEventListener('click',()=>{window.__cancelTiming.started=performance.now();},{once:true,capture:true});
     const observer=new MutationObserver(()=>{
       if(!button.isConnected){window.__cancelTiming.terminalAt=performance.now();observer.disconnect();}
@@ -71,34 +82,34 @@ async function cancelEntryByKeyboard(page){
   await page.getByRole('button',{name:'Cancelar entrada',exact:true}).focus();await page.keyboard.press('Enter');
   await expect(page.getByRole('button',{name:'Cancelar entrada',exact:true})).toHaveCount(0,{timeout:1000});
   const timing=await page.evaluate(()=>window.__cancelTiming);
-  expect(timing.started).toEqual(expect.any(Number));expect(timing.terminalAt).toEqual(expect.any(Number));expect(timing.terminalAt-timing.started).toBeLessThanOrEqual(1000);
+  assert.ok(timing.started!==null&&timing.terminalAt!==null);expect(timing.started).toEqual(expect.any(Number));expect(timing.terminalAt).toEqual(expect.any(Number));expect(timing.terminalAt-timing.started).toBeLessThanOrEqual(1000);
 }
-const errors = [];
-const diagnostics = [], stops = []; let nativeDiagnostics = '';
-const desktopEnv = { ...process.env };
+const errors:string[] = [];
+const diagnostics:Record<string,unknown>[] = [], stops:{id:string;state:string}[] = []; let nativeDiagnostics = '';
+const desktopEnv = testEnvironment();
 delete desktopEnv.ELECTRON_RUN_AS_NODE;
 const externalMode = readFlag('CONVERSA_TEST_EXTERNAL');
 const profile = createTestProfile();
-let external, desktop, postgres;
+let external:Awaited<ReturnType<typeof createService>>|null|undefined, desktop:ElectronApplication|undefined, postgres:Awaited<ReturnType<typeof createPostgresFixture>>|undefined;
 try {
 postgres=await createPostgresFixture();desktopEnv.DATABASE_URL=postgres.url;desktopEnv.DROCSID_TRUSTED_LOCAL='1';desktopEnv.DROCSID_HOST='1';
 external = externalMode ? await createService({ database:await postgres.open(),trustedLocal:true, iceServers: [] }) : null;
-if (external) await new Promise(resolveListen => external.server.listen(0, '127.0.0.1', resolveListen));
-const externalUrl = external ? `http://127.0.0.1:${external.server.address().port}` : '';
+if (external){const service=external;await new Promise<void>(resolveListen => service.server.listen(0, '127.0.0.1', resolveListen));}
+const externalUrl = external ? `http://127.0.0.1:${testPort(external.server)}` : '';
 desktop = await electron.launch({
   ...(process.env.CONVERSA_TEST_EXECUTABLE ? { executablePath: resolve(process.env.CONVERSA_TEST_EXECUTABLE) } : {}),
   args: [...(process.env.CONVERSA_TEST_EXECUTABLE ? [] : [resolve('.')]), `--user-data-dir=${profile}`, '--use-fake-device-for-media-stream', '--mute-audio'],
   env: desktopEnv,
   timeout: 30000,
 });
-  desktop.process().stderr.on('data', bytes => { nativeDiagnostics += bytes.toString(); });
-  const first = await desktop.firstWindow();
+  required(required(desktop).process().stderr).on('data', bytes => { nativeDiagnostics += bytes.toString(); });
+  const first = await required(desktop).firstWindow();
   first.on('console', message => {
     const value = message.text();
     if (value.startsWith('CONVERSA_TEST_STOP ')) stops.push(JSON.parse(value.slice(19)));
     else if (message.type() === 'warning') { try { diagnostics.push(JSON.parse(value)); } catch {} }
   });
-  const firstNativeWindow = await desktop.browserWindow(first);
+  const firstNativeWindow = await required(desktop).browserWindow(first);
   const captureTitle = `Conversa smoke ${Date.now()}`;
   const firstMuted = () => firstNativeWindow.evaluate(window => window.webContents.isAudioMuted());
   first.on('pageerror', error => errors.push(error.message));
@@ -122,7 +133,7 @@ desktop = await electron.launch({
   const settingsDialog = first.getByRole('dialog', { name: 'Do seu jeito' });
   await expect(settingsDialog).toBeVisible();
   expect(await settingsDialog.evaluate(dialog => dialog.contains(document.activeElement))).toBe(true);
-  expect(await first.locator('.app-shell').evaluate(element => element.inert)).toBe(true);
+  expect(await first.locator('.app-shell').evaluate(element => {if(!(element instanceof HTMLElement))throw new Error('Missing app shell');return element.inert;})).toBe(true);
   await first.keyboard.press('Shift+Tab');
   expect(await settingsDialog.evaluate(dialog => dialog.contains(document.activeElement))).toBe(true);
   await first.keyboard.press('Shift+Tab');
@@ -130,13 +141,13 @@ desktop = await electron.launch({
   await first.keyboard.press('Tab');
   expect(await settingsDialog.evaluate(dialog => dialog.contains(document.activeElement))).toBe(true);
   await first.keyboard.press('Escape'); await expect(settingsDialog).toHaveCount(0); await expect(settings).toBeFocused();
-  expect(await first.locator('.app-shell').evaluate(element => element.inert)).toBe(false);
+  expect(await first.locator('.app-shell').evaluate(element => {if(!(element instanceof HTMLElement))throw new Error('Missing app shell');return element.inert;})).toBe(false);
 
   const contrasts = await first.evaluate(() => {
-    const rgb = value => value.match(/[\d.]+/g).slice(0, 3).map(Number);
-    const light = color => rgb(color).map(value => value / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4).reduce((total, value, index) => total + value * [0.2126, 0.7152, 0.0722][index], 0);
+    const rgb = (value:string) => {const components=value.match(/[\d.]+/g);if(!components||components.length<3)throw new Error('Missing RGB color');return components.slice(0, 3).map(Number);};
+    const light = (color:string) => rgb(color).map(value => value / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4).reduce((total, value, index) => total + value * [0.2126, 0.7152, 0.0722][index], 0);
     return ['.composer-footer', '.app-footer', '.space-header .eyebrow'].map(selector => {
-      const element = document.querySelector(selector); let background = element;
+      const element = document.querySelector(selector);if(!element)throw new Error('Missing contrast element');let background:Element = element;
       while (background.parentElement && ['rgba(0, 0, 0, 0)', 'transparent'].includes(getComputedStyle(background).backgroundColor)) background = background.parentElement;
       const a = light(getComputedStyle(element).color), b = light(getComputedStyle(background).backgroundColor);
       return { selector, ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
@@ -147,20 +158,20 @@ desktop = await electron.launch({
   // STAB-17/20: drafts belong to the room throughout navigation.
   await first.getByLabel('Mensagem', { exact: true }).fill('Rascunho geral');
   await first.evaluate(() => {
-    const socket = window.__testSocket, receive = socket.onmessage, delayed = [];
+    const socket = window.__testSocket, receive = socket.onmessage, delayed:MessageEvent[] = [];if(!receive)throw new Error('Missing socket listener');
     let holding = false;
     socket.onmessage = event => {
       const data = JSON.parse(event.data);
       if (holding || (data.type === 'joined' && data.room.id === 'cafe')) { holding = true; delayed.push(event); }
-      else receive(event);
+      else receive.call(socket,event);
     };
-    window.__releaseRoom = () => { socket.onmessage = receive; delayed.forEach(event => receive(event)); };
+    window.__releaseRoom = () => { socket.onmessage = receive; delayed.forEach(event => receive.call(socket,event)); };
   });
   await first.locator('.channels button').filter({ hasText: 'café' }).click();
   await expect(first.getByRole('heading', { name: 'geral', exact: true })).toBeVisible();
   await expect(first.getByLabel('Mensagem', { exact: true })).toBeDisabled();
   await expect(first.getByRole('button', { name: 'Enviar mensagem', exact: true })).toBeDisabled();
-  await first.getByLabel('Mensagem', { exact: true }).evaluate(element => element.form.requestSubmit());
+  await first.getByLabel('Mensagem', { exact: true }).evaluate(element => {if(!(element instanceof HTMLTextAreaElement)||!element.form)throw new Error('Missing composer form');element.form.requestSubmit();});
   await expect(first.getByLabel('Mensagem', { exact: true })).toHaveValue('Rascunho geral');
   await first.evaluate(() => window.__releaseRoom());
   await expect(first.getByRole('heading', { name: 'café', exact: true })).toBeVisible();
@@ -189,7 +200,7 @@ desktop = await electron.launch({
   await first.getByRole('button', { name: 'Entrar na chamada', exact: true }).click();
   await expect.poll(() => first.evaluate(() => !!window.__releaseMicrophone)).toBe(true);
   await first.getByRole('button', { name: 'Cancelar entrada', exact: true }).click();
-  await first.evaluate(() => { window.__holdMicrophone = false; window.__releaseMicrophone(); });
+  await first.evaluate(() => { window.__holdMicrophone = false; const release=window.__releaseMicrophone;if(!release)throw new Error('Missing microphone release');release(); });
   await expect.poll(() => first.evaluate(() => window.__lateStream.getTracks().every(track => track.readyState === 'ended'))).toBe(true);
   expect(await firstMuted()).toBe(true);
 
@@ -198,41 +209,41 @@ desktop = await electron.launch({
   await first.getByRole('button', { name: 'Entrar na chamada', exact: true }).click();
   await expect.poll(() => first.evaluate(() => !!window.__releaseMicrophone)).toBe(true);
   await cancelEntryByKeyboard(first);
-  await first.evaluate(() => { window.__holdMicrophone = false; window.__releaseMicrophone(); });
+  await first.evaluate(() => { window.__holdMicrophone = false; const release=window.__releaseMicrophone;if(!release)throw new Error('Missing microphone release');release(); });
   await expect.poll(() => first.evaluate(() => window.__lateStream.getTracks().every(track => track.readyState === 'ended'))).toBe(true);
   expect(await first.evaluate(()=>window.__lastStopAt-window.__micReleasedAt)).toBeLessThanOrEqual(1000);
   // The permission has resolved, but the actual admission acknowledgement is withheld.
   await first.evaluate(()=>{
-    const socket=window.__testSocket,receive=socket.onmessage;window.__heldJoin=[];
-    socket.onmessage=event=>{const value=JSON.parse(event.data);if(value.type==='ack'&&value.action==='call-join')window.__heldJoin.push(event);else receive(event);};
-    window.__releaseJoin=()=>{socket.onmessage=receive;window.__heldJoin.splice(0).forEach(event=>receive(event));};
+    const socket=window.__testSocket,receive=socket.onmessage;if(!receive)throw new Error('Missing socket listener');window.__heldJoin=[];
+    socket.onmessage=event=>{const value=JSON.parse(event.data);if(value.type==='ack'&&value.action==='call-join')window.__heldJoin.push(event);else receive.call(socket,event);};
+    window.__releaseJoin=()=>{socket.onmessage=receive;window.__heldJoin.splice(0).forEach(event=>receive.call(socket,event));};
   });
   await first.getByRole('button',{name:'Entrar na chamada',exact:true}).click();
   await expect.poll(()=>first.evaluate(()=>window.__heldJoin.length)).toBe(1);
   await cancelEntryByKeyboard(first);
-  expect(await first.evaluate(()=>window.__testCaptures.at(-1).getTracks().every(track=>track.readyState==='ended'))).toBe(true);
+  expect(await first.evaluate(()=>window.__testCaptures.at(-1)?.getTracks().every(track=>track.readyState==='ended'))).toBe(true);
   await first.evaluate(()=>window.__releaseJoin());
   expect(await firstMuted()).toBe(true);await expect(first.getByText('VOCÊ ESTÁ NA CHAMADA',{exact:true})).toHaveCount(0);
   await first.getByRole('button', { name: 'Entrar na chamada', exact: true }).click();
   await expect(first.getByText('VOCÊ ESTÁ NA CHAMADA', { exact: true })).toBeVisible();
-  await desktop.evaluate(({ desktopCapturer }) => {
+  await required(desktop).evaluate(({ desktopCapturer }) => {
     globalThis.__mediaOriginalInventory = desktopCapturer.getSources;
-    desktopCapturer.getSources = async () => { const error = new Error('MEDIA_PRIVATE_MESSAGE');error.name='MEDIA_PRIVATE_TITLE';error.sdp='MEDIA_PRIVATE_SDP';error.credential='MEDIA_PRIVATE_SECRET';throw error; };
+    desktopCapturer.getSources = async () => { const error = Object.assign(new Error('MEDIA_PRIVATE_MESSAGE'),{name:'MEDIA_PRIVATE_TITLE',sdp:'MEDIA_PRIVATE_SDP',credential:'MEDIA_PRIVATE_SECRET'});throw error; };
   });
   await first.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
   await expect(first.getByText('Não foi possível listar as fontes de tela.', { exact: true })).toBeVisible();
   await expect.poll(() => diagnostics.filter(value => value.phase === 'capture-inventory').length).toBe(1);
-  const captureDiagnostic = diagnostics.find(value => value.phase === 'capture-inventory');
+  const captureDiagnostic = required(diagnostics.find(value => value.phase === 'capture-inventory'));
   expect(captureDiagnostic).toMatchObject({code:'MEDIA_FAILED',phase:'capture-inventory',version:'0.1.1'});
   for (const field of ['requestId','callId','operationId']) expect(captureDiagnostic[field]).toMatch(/^[a-f0-9-]{36}$/);
   expect(captureDiagnostic.generation).toBeGreaterThan(0);
   expect(Object.keys(captureDiagnostic).sort()).toEqual(['callId','cause','code','generation','operationId','phase','requestId','runtime','version']);
   expect(JSON.stringify(diagnostics) + nativeDiagnostics).not.toContain('MEDIA_PRIVATE_');
-  await desktop.evaluate(({ desktopCapturer }) => { desktopCapturer.getSources = globalThis.__mediaOriginalInventory; });
+  await required(desktop).evaluate(({ desktopCapturer }) => { desktopCapturer.getSources = globalThis.__mediaOriginalInventory; });
   await first.getByRole('button', { name: 'Encerrar chamada', exact: true }).click();
 
-  const secondWindow = desktop.waitForEvent('window');
-  await desktop.evaluate(({ Menu }) => Menu.getApplicationMenu().items[0].submenu.items[0].click());
+  const secondWindow = required(desktop).waitForEvent('window');
+  await required(desktop).evaluate(({ Menu }) => Menu.getApplicationMenu()?.items[0].submenu?.items[0].click());
   const second = await secondWindow;
   await instrument(second);
   second.on('pageerror', error => errors.push(error.message));
@@ -256,8 +267,8 @@ desktop = await electron.launch({
   await expect(second.getByText('Mensagem nova durante leitura', { exact: true })).toHaveCount(1);
   expect(await second.locator('.messages').evaluate(element => element.scrollTop)).toBe(0);
 
-  const observerPromise = desktop.waitForEvent('window');
-  await desktop.evaluate(({ Menu }) => Menu.getApplicationMenu().items[0].submenu.items[0].click());
+  const observerPromise = required(desktop).waitForEvent('window');
+  await required(desktop).evaluate(({ Menu }) => Menu.getApplicationMenu()?.items[0].submenu?.items[0].click());
   const observer = await observerPromise;
   observer.on('pageerror', error => errors.push(error.message));
   await observer.getByLabel('Seu nome', { exact: true }).fill('Ana');
@@ -282,9 +293,9 @@ desktop = await electron.launch({
   await expect.poll(firstMuted).toBe(false);
   await first.getByRole('button', { name: 'Silenciar áudio', exact: true }).click();
   await expect.poll(firstMuted).toBe(true);
-  expect(await first.evaluate(() => window.__testCaptures.at(-1).getAudioTracks().every(track => track.enabled && track.readyState === 'live'))).toBe(true);
+  expect(await first.evaluate(() => window.__testCaptures.at(-1)?.getAudioTracks().every(track => track.enabled && track.readyState === 'live'))).toBe(true);
   await first.evaluate(protocolVersion=>{
-    const previous=window.__testCallEvents.find(event=>event.type==='call-join');
+    const previous=window.__testCallEvents.find(event=>event.type==='call-join');if(!previous)throw new Error('Missing call attempt');
     const common={v:protocolVersion,context:window.__testRoomContext,callId:previous.callId};
     for(const event of [
       {...common,type:'ack',requestId:previous.requestId,action:'call-join',generation:previous.generation,inCall:true,muted:false,sharing:false},
@@ -294,7 +305,7 @@ desktop = await electron.launch({
   expect(await firstMuted()).toBe(true);expect(await first.getByRole('button',{name:'Ativar áudio',exact:true}).count()).toBe(1);
   await first.getByRole('button', { name: 'Ativar áudio', exact: true }).click();
   await expect.poll(firstMuted).toBe(false);
-  const playbackAttempt=await first.evaluate(()=>window.__testCallEvents.filter(event=>event.type==='call-join').at(-1));
+  const playbackAttempt=required(await first.evaluate(()=>window.__testCallEvents.filter(event=>event.type==='call-join').at(-1)));
   const playbackBefore=diagnostics.filter(value=>value.phase==='playback').length;
   await first.evaluate(()=>{window.__rejectNextPlayback=true;});
   await second.getByRole('button', { name: 'Participar', exact: true }).click();
@@ -329,7 +340,7 @@ desktop = await electron.launch({
   await firstNativeWindow.evaluate((window, title) => window.setTitle(title), captureTitle);
   await firstNativeWindow.evaluate(window => {
     const send = window.webContents.send.bind(window.webContents);
-    window.webContents.send = (channel, payload) => { if (channel === 'capture-sources') window.__capturePayload = payload; return send(channel, payload); };
+    window.webContents.send = (channel:string, payload:unknown) => { if (channel === 'capture-sources'){if(!payload||typeof payload!=='object')throw new Error('Invalid capture payload');window.__capturePayload={...payload};}return send(channel, payload); };
   });
   await first.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
   const cancelledPicker = first.getByRole('dialog', { name: 'O que vamos compartilhar?' });
@@ -337,14 +348,14 @@ desktop = await electron.launch({
   await firstNativeWindow.evaluate(window => { window.__oldCapturePayload = window.__capturePayload; });
   await expect(first.getByRole('button', { name: 'Compartilhar tela', exact: true })).toBeEnabled();
   await first.evaluate(() => {
-    const socket = window.__testSocket, receive = socket.onmessage;
+    const socket = window.__testSocket, receive = socket.onmessage;if(!receive)throw new Error('Missing socket listener');
     window.__holdMedia = 'start'; window.__heldMedia = [];
     socket.onmessage = event => {
       const value = JSON.parse(event.data);
       if (value.type === 'ack' && value.action === 'media' && ((window.__holdMedia === 'start' && value.sharing) || (window.__holdMedia === 'stop' && !value.sharing))) window.__heldMedia.push(event);
-      else receive(event);
+      else receive.call(socket,event);
     };
-    window.__releaseMedia = () => { window.__holdMedia = null; window.__heldMedia.splice(0).forEach(event => receive(event)); };
+    window.__releaseMedia = () => { window.__holdMedia = null; window.__heldMedia.splice(0).forEach(event => receive.call(socket,event)); };
   });
   await first.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
   const picker = first.getByRole('dialog', { name: 'O que vamos compartilhar?' });
@@ -361,15 +372,15 @@ desktop = await electron.launch({
   await expect(observer.getByRole('button', { name: 'Participar', exact: true })).toBeVisible();
   await expect(first.getByRole('button', { name: 'Parar compartilhamento', exact: true })).toBeInViewport();
   await expect(second.getByRole('button', { name: 'Encerrar chamada', exact: true })).toBeInViewport();
-  await expect.poll(() => second.locator('video').evaluateAll(videos => videos.some(v => v.videoWidth > 0)), { timeout: 20000 }).toBe(true);
+  await expect.poll(() => second.locator('video').evaluateAll(videos => videos.some(v => v instanceof HTMLVideoElement&&v.videoWidth > 0)), { timeout: 20000 }).toBe(true);
   await settings.click();
   await first.getByLabel('Qualidade do compartilhamento').selectOption('720');
   await expect(first.getByText('A qualidade selecionada vale para a próxima captura.', { exact: true })).toBeVisible();
   await first.keyboard.press('Escape');
   await second.screenshot({ path: resolve(output, '03-tela-compartilhada.png') });
   if (external) {
-    const thirdWindow = desktop.waitForEvent('window');
-    await desktop.evaluate(({ Menu }) => Menu.getApplicationMenu().items[0].submenu.items[0].click());
+    const thirdWindow = required(desktop).waitForEvent('window');
+    await required(desktop).evaluate(({ Menu }) => Menu.getApplicationMenu()?.items[0].submenu?.items[0].click());
     const third = await thirdWindow;
     third.on('pageerror', error => errors.push(error.message));
     await third.getByLabel('Seu nome', { exact: true }).fill('Carla');
@@ -377,13 +388,13 @@ desktop = await electron.launch({
     await third.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
     await third.getByRole('button', { name: 'Participar', exact: true }).click();
     await expect(third.getByText('3 pessoas na chamada', { exact: true })).toBeVisible();
-    await expect.poll(() => third.locator('video').evaluateAll(videos => videos.some(v => v.videoWidth > 0)), { timeout: 20000 }).toBe(true);
+    await expect.poll(() => third.locator('video').evaluateAll(videos => videos.some(v => v instanceof HTMLVideoElement&&v.videoWidth > 0)), { timeout: 20000 }).toBe(true);
     await third.getByRole('button', { name: 'Encerrar chamada', exact: true }).click();
     console.log('PASS: separate group server, cross-origin desktop connection and third participant joining an active screen share.');
   }
   await first.evaluate(() => {
     window.__holdMedia = 'stop';
-    const button=document.querySelector('[aria-label="Parar compartilhamento"]');
+    const button=document.querySelector('[aria-label="Parar compartilhamento"]');if(!(button instanceof HTMLButtonElement))throw new Error('Missing stop screen button');
     window.__stopUI={started:null,readyAt:null};
     button.addEventListener('click',()=>{window.__stopUI.started=performance.now();},{once:true,capture:true});
     const observer=new MutationObserver(()=>{
@@ -398,25 +409,25 @@ desktop = await electron.launch({
   });
   await first.getByRole('button', { name: 'Parar compartilhamento', exact: true }).click();
   await expect(first.getByText('Parando…', { exact: true })).toBeVisible();
-  expect(await first.evaluate(() => window.__testDisplays.at(-1).getTracks().every(track => track.readyState === 'ended'))).toBe(true);
-  expect(await first.evaluate(() => window.__testCaptures.at(-1).getTracks().every(track => track.readyState === 'live'))).toBe(true);
+  expect(await first.evaluate(() => window.__testDisplays.at(-1)?.getTracks().every(track => track.readyState === 'ended'))).toBe(true);
+  expect(await first.evaluate(() => window.__testCaptures.at(-1)?.getTracks().every(track => track.readyState === 'live'))).toBe(true);
   await expect(first.getByRole('button',{name:'Compartilhar tela',exact:true})).toBeEnabled({timeout:1500});
   const stopTiming=await first.evaluate(()=>window.__stopUI);
   expect(stopTiming.started).toEqual(expect.any(Number));expect(stopTiming.readyAt).toEqual(expect.any(Number));
-  expect(stopTiming.readyAt-stopTiming.started).toBeLessThanOrEqual(1000);
+  assert.ok(stopTiming.readyAt!==null&&stopTiming.started!==null);expect(stopTiming.readyAt-stopTiming.started).toBeLessThanOrEqual(1000);
   await first.getByRole('button',{name:'Compartilhar tela',exact:true}).click();
   await expect(picker).toBeVisible();await picker.getByRole('button',{name:captureTitle,exact:true}).click();
   await expect(first.getByRole('button',{name:'Parar compartilhamento',exact:true})).toBeEnabled();
-  const replacementDisplay=await first.evaluate(()=>window.__testDisplays.at(-1).getVideoTracks()[0].id);
+  const replacementDisplay=await first.evaluate(()=>window.__testDisplays.at(-1)?.getVideoTracks()[0].id);
   await first.evaluate(() => window.__releaseMedia());
-  expect(await first.evaluate(id=>window.__testDisplays.at(-1).getVideoTracks().some(track=>track.id===id&&track.readyState==='live'),replacementDisplay)).toBe(true);
+  expect(await first.evaluate(id=>window.__testDisplays.at(-1)?.getVideoTracks().some(track=>track.id===id&&track.readyState==='live'),replacementDisplay)).toBe(true);
   await expect(first.getByRole('button',{name:'Parar compartilhamento',exact:true})).toBeEnabled();
   await first.getByRole('button',{name:'Parar compartilhamento',exact:true}).click();
   await expect(second.getByText('Tela de Ana', { exact: true })).toHaveCount(0);
   await first.evaluate(() => {
-    const socket = window.__testSocket, receive = socket.onmessage;window.__delayedRoom = [];
-    socket.onmessage = event => { const value=JSON.parse(event.data);if(value.type==='joined')window.__delayedRoom.push(event);else receive(event); };
-    window.__releaseNewRoom = () => { socket.onmessage=receive;window.__delayedRoom.splice(0).forEach(event=>receive(event)); };
+    const socket = window.__testSocket, receive = socket.onmessage;if(!receive)throw new Error('Missing socket listener');window.__delayedRoom = [];
+    socket.onmessage = event => { const value=JSON.parse(event.data);if(value.type==='joined')window.__delayedRoom.push(event);else receive.call(socket,event); };
+    window.__releaseNewRoom = () => { socket.onmessage=receive;window.__delayedRoom.splice(0).forEach(event=>receive.call(socket,event)); };
   });
   await first.getByRole('button', { name: 'Adicionar sala', exact: true }).click();
   await first.getByLabel('Nome da sala', { exact: true }).fill('Estúdio');
@@ -431,14 +442,14 @@ desktop = await electron.launch({
   await expect(second.getByText('1 pessoa na chamada', { exact: true })).toBeVisible();
   await first.getByRole('button', { name: 'Entrar na chamada', exact: true }).click();
   await expect(first.getByText('VOCÊ ESTÁ NA CHAMADA', { exact: true })).toBeVisible();
-  const reloadedIds = await first.evaluate(() => window.__testCaptures.at(-1).getTracks().map(track=>track.id));
+  const reloadedIds = required(await first.evaluate(() => window.__testCaptures.at(-1)?.getTracks().map(track=>track.id)));
   await first.reload();
   for (const id of reloadedIds) await expect.poll(() => stops.some(track=>track.id===id&&track.state==='ended')).toBe(true);
   await expect.poll(firstMuted).toBe(true);expect(await first.locator('audio,video').count()).toBe(0);
   await instrument(first);await first.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
   await first.getByRole('button', { name: 'Participar', exact: true }).click();
   await expect(first.getByText('VOCÊ ESTÁ NA CHAMADA', { exact: true })).toBeVisible();
-  const disconnectedIds = await first.evaluate(() => window.__testCaptures.at(-1).getTracks().map(track=>track.id));
+  const disconnectedIds = required(await first.evaluate(() => window.__testCaptures.at(-1)?.getTracks().map(track=>track.id)));
   await settings.click();await first.getByRole('button', { name: 'Sair e trocar de servidor', exact: true }).click();
   for (const id of disconnectedIds) await expect.poll(() => stops.some(track=>track.id===id&&track.state==='ended')).toBe(true);
   await expect.poll(firstMuted).toBe(true);expect(await first.locator('audio,video').count()).toBe(0);

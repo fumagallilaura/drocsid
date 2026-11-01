@@ -17,6 +17,6 @@ const missingLinks = [...report.matchAll(/\]\(([^)]+)\)/g)].map(m => m[1]).filte
   return !existsSync(actual);
 });
 assert.deepEqual(missingLinks, []);
-const summary = { version: '0.1.1', implementationFilesUnchanged: before.length, findings: entries.length, priorities: entries.reduce((counts, e) => { counts[e.priority] = (counts[e.priority] || 0) + 1; return counts; }, {}), confirmedProbes: 17, existingServerTests: { passed: 3, failed: 0 }, isolatedBuild: 'passed', npmAuditReportedVulnerabilities: 0, rendererErrorsInUiProbes: ui.rendererErrors, report: 'review/REVISAO_COMPLETA.md' };
+const summary = { version: '0.1.1', implementationFilesUnchanged: before.length, findings: entries.length, priorities: entries.reduce<Record<string,number>>((counts, e) => { counts[e.priority] = (counts[e.priority] || 0) + 1; return counts; }, {}), confirmedProbes: 17, existingServerTests: { passed: 3, failed: 0 }, isolatedBuild: 'passed', npmAuditReportedVulnerabilities: 0, rendererErrorsInUiProbes: ui.rendererErrors, report: 'review/REVISAO_COMPLETA.md' };
 writeFileSync('review/summary.json', JSON.stringify(summary, null, 2));
 console.log(JSON.stringify(summary, null, 2));

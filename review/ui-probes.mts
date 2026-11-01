@@ -1,4 +1,5 @@
 import { _electron as electron } from 'playwright';
+import type {ElectronApplication,Page} from 'playwright';
 import { expect } from '@playwright/test';
 import { createServer } from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -6,15 +7,22 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createService } from '../server/service.js';
+import {createPostgresFixture} from '../tests/helpers/postgres.js';
+import {testPort} from '../tests/helpers/service.js';
+import {testEnvironment} from '../scripts/test-runtime.mjs';
+import {parseClientEvent,parseServerEvent} from '../shared/protocol.js';
 
-const results = [], errors = [];
+// Historical defect reproducer. Its assertions are not a health gate of HEAD.
+
+const results = [], errors:string[] = [];
 const root = resolve(import.meta.dirname, '..');
-const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
+const env = testEnvironment(); delete env.ELECTRON_RUN_AS_NODE;
 const dataDirectory = resolve(tmpdir(), `conversa-review-ui-${Date.now()}`);
-const backend = createService({ dbPath: ':memory:', iceServers: [] });
-await new Promise(resolveListen => backend.server.listen(0, '127.0.0.1', resolveListen));
-const backendPort = backend.server.address().port;
-const seenMessages = [];
+const postgres=await createPostgresFixture();env.DATABASE_URL=postgres.url;env.DROCSID_HOST='1';env.DROCSID_TRUSTED_LOCAL='1';
+const backend = await createService({database:await postgres.open(),trustedLocal:true, iceServers: [] });
+await new Promise<void>(resolveListen => backend.server.listen(0, '127.0.0.1', resolveListen));
+const backendPort = testPort(backend.server);
+const seenMessages:{sentDuringDelayedJoin:boolean}[] = [];
 let mode = 'normal', delayedRoom = false;
 const proxy = createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -25,9 +33,9 @@ const wss = new WebSocketServer({ server: proxy });
 wss.on('connection', downstream => {
   if (mode === 'no-hello') return;
   const upstream = new WebSocket(`ws://127.0.0.1:${backendPort}/ws`);
-  const pending = [];
+  const pending:string[] = [];
   downstream.on('message', raw => {
-    const event = JSON.parse(raw);
+    const event = parseClientEvent(raw.toString());
     if (event.type === 'call-join' && mode === 'reject-call') {
       downstream.send(JSON.stringify({ type: 'error', message: 'Muitas ações. Aguarde alguns segundos.' })); return;
     }
@@ -39,7 +47,7 @@ wss.on('connection', downstream => {
   });
   upstream.on('open', () => { for (const event of pending) upstream.send(event); });
   upstream.on('message', raw => {
-    const event = JSON.parse(raw);
+    const event = parseServerEvent(raw.toString());
     if (mode === 'delay-join' && event.type === 'joined' && event.room.id === 'projetos') {
       delayedRoom = true;
       setTimeout(() => { delayedRoom = false; if (downstream.readyState === WebSocket.OPEN) downstream.send(raw.toString()); }, 800);
@@ -49,23 +57,23 @@ wss.on('connection', downstream => {
   downstream.on('error', () => {});
   downstream.on('close', () => upstream.close());
 });
-await new Promise(resolveListen => proxy.listen(0, '127.0.0.1', resolveListen));
-const proxyUrl = `http://127.0.0.1:${proxy.address().port}`;
-let desktop;
+await new Promise<void>(resolveListen => proxy.listen(0, '127.0.0.1', resolveListen));
+const proxyUrl = `http://127.0.0.1:${testPort(proxy)}`;
+let desktop:ElectronApplication|undefined;
 async function launch() {
   return electron.launch({ args: [root, `--user-data-dir=${dataDirectory}`, '--mute-audio', '--use-fake-device-for-media-stream'], env, timeout: 20000 });
 }
-async function freshWindow(app) {
+async function freshWindow(app:ElectronApplication) {
   const waiting = app.waitForEvent('window');
-  await app.evaluate(({ Menu }) => Menu.getApplicationMenu().items[0].submenu.items[0].click());
+  await app.evaluate(({ Menu }) => Menu.getApplicationMenu()?.items[0].submenu?.items[0].click());
   const page = await waiting;
   page.on('pageerror', error => errors.push(error.message));
   return page;
 }
-async function login(page, address = proxyUrl) {
+async function login(page:Page, address = proxyUrl) {
   await page.getByLabel('Seu nome', { exact: true }).fill('Review Guest');
   await page.getByLabel('Servidor do grupo').fill(address);
-  await page.getByRole('button', { name: 'Entrar no Conversa', exact: true }).click();
+  await page.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
 }
 try {
   desktop = await launch();
@@ -110,7 +118,7 @@ try {
   const escapeKeptDialogOpen = await dialog.isVisible();
   await page.getByLabel('Nome da sala', { exact: true }).focus();
   await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Shift+Tab');
-  const focusEscaped = await page.evaluate(() => !document.activeElement.closest('[role="dialog"]'));
+  const focusEscaped = await page.evaluate(() => {if(!document.activeElement)throw new Error('Missing keyboard focus');return !document.activeElement.closest('[role="dialog"]');});
   expect(escapeKeptDialogOpen).toBe(true); expect(focusEscaped).toBe(true);
   await dialog.getByRole('button', { name: 'Fechar', exact: true }).click();
   results.push({ id: 'UI-06', confirmed: true, observation: 'The modal does not close on Escape and keyboard focus escapes into the background.', escapeKeptDialogOpen, focusEscaped });
@@ -149,9 +157,9 @@ try {
 } finally {
   await desktop?.close();
   for (const ws of wss.clients) ws.terminate();
-  await new Promise(resolveClose => wss.close(resolveClose));
-  await new Promise(resolveClose => proxy.close(resolveClose));
-  await backend.close();
+  await new Promise<void>((resolveClose,reject) => wss.close(error=>error?reject(error):resolveClose()));
+  await new Promise<void>((resolveClose,reject) => proxy.close(error=>error?reject(error):resolveClose()));
+  try{await backend.close();}finally{await postgres.close();}
   mkdirSync(resolve(root, 'review'), { recursive: true });
   writeFileSync(resolve(root, 'review/ui-probes.json'), JSON.stringify({ results, rendererErrors: errors }, null, 2));
 }

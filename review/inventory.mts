@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
-const files = ['package.json', 'package-lock.json', 'vite.config.js', 'index.html', '.gitignore'];
+const files = ['package.json', 'package-lock.json', 'vite.config.ts', 'index.html', '.gitignore'];
 for (const directory of ['src', 'server', 'electron', 'scripts', 'tests', 'public']) {
   for (const entry of readdirSync(resolve(root, directory), { withFileTypes: true })) if (entry.isFile()) files.push(`${directory}/${entry.name}`);
 }

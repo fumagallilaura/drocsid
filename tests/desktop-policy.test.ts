@@ -1,3 +1,4 @@
+import {isRecord} from './helpers/assertions.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { allowPermissionCheck, allowPermissionRequest, allowDisplayCapture, trustedIpc, validatePreferences, validCaptureKey, sameCaptureKey } from '../electron/policy.js';
@@ -54,7 +55,7 @@ test('BUILD-02: display capture accepts serialized local origin only from its ma
 
 test('STAB-45: preference contract persists only bounded supported profile fields',()=>{
   assert.deepEqual(validatePreferences({name:'Ana',server:'http://localhost:4310/?room=cafe',quality:'720',ignored:'not stored'}),{name:'Ana',server:'http://localhost:4310/?room=cafe',quality:'720'});
-  for(const bad of [null,[],{name:'x'.repeat(33),server:'',quality:'1080'},{name:'Ana',server:'file:///secret',quality:'1080'},{name:'Ana',server:'http://user:password@localhost',quality:'1080'},{name:'Ana',server:'',quality:'4000'}])assert.throws(()=>validatePreferences(bad),e=>e.code==='INVALID_INPUT');
+  for(const bad of [null,[],{name:'x'.repeat(33),server:'',quality:'1080'},{name:'Ana',server:'file:///secret',quality:'1080'},{name:'Ana',server:'http://user:password@localhost',quality:'1080'},{name:'Ana',server:'',quality:'4000'}])assert.throws(()=>validatePreferences(bad),e=>isRecord(e)&&e.code==='INVALID_INPUT');
 });
 
 test('MEDIA-09/11/28: capture keys are bounded and identify exactly one call operation',()=>{

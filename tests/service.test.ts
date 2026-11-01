@@ -9,11 +9,15 @@ import { DatabaseSync } from 'node:sqlite';
 import { WebSocket } from 'ws';
 import { createService, logFailure } from '../server/service.js';
 import { client } from './helpers/client.js';
-import { startService } from './helpers/service.js';
+import { startService, testPort } from './helpers/service.js';
 import { postgresFixture } from './helpers/postgres.js';
 import { importSqlite } from '../scripts/import-sqlite.mjs';
+import type {TestContext} from 'node:test';
+import {required,isRecord} from './helpers/assertions.js';
+type Clock=NonNullable<NonNullable<Parameters<typeof createService>[0]>['clock']>;
+type Warning={phase:string;code:string;version:string;requestId?:string|null};
 
-async function start(t, options={}) {
+async function start(t:TestContext, options:Parameters<typeof startService>[1]={}) {
   return startService(t,options);
 }
 
@@ -40,12 +44,12 @@ test('STAB-25/26/55: failed delivery after commit survives restart; locked write
   let s=await start(t,{fixture});
   let a=await client(s.url);
   const socket=[...s.wss.clients][0], original=socket.send;
-  socket.send=function(data,...rest){if(JSON.parse(data).type==='message')throw Error('delivery');return original.call(this,data,...rest);};
+  socket.send=function(data,options?:Parameters<WebSocket['send']>[1]|((error?:Error)=>void),callback?:Parameters<WebSocket['send']>[2]){if(JSON.parse(data.toString()).type==='message')throw Error('delivery');return original.call(this,data,typeof options==='function'?{}:options??{},typeof options==='function'?options:callback);};
   const accepted=await a.request({type:'message',operationId:'durable',text:'Confirmada'});
   assert.equal(accepted.message.text,'Confirmada'); await s.close();
   s=await start(t,{fixture}); a=await client(s.url);
   assert.equal((await a.request({type:'message',operationId:'durable',text:'Confirmada'})).message.id,accepted.message.id);
-  const locker=await fixture.open(), locked=Promise.withResolvers(), release=Promise.withResolvers();
+  const locker=await fixture.open(), locked=Promise.withResolvers<void>(), release=Promise.withResolvers<void>();
   const lock=locker.transaction(async connection=>{await connection.query('LOCK TABLE drocsid.messages IN ACCESS EXCLUSIVE MODE');locked.resolve();await release.promise;});
   await locked.promise;
   a.send({type:'message',operationId:'must-not-commit',text:'Bloqueada'});
@@ -65,12 +69,12 @@ test('STAB-28/29/30/68: leave and stop-screen bypass exhausted action budgets',a
   assert.equal(left.type,'ack');assert.equal(left.inCall,false); assert.equal(left.sharing,false);
   const repeated=await a.request({type:'call-leave'}); assert.equal(repeated.inCall,false); assert.equal(repeated.callId,a.callId);
   const presence=await b.next('presence',e=>e.members.some(m=>m.id===a.id&&!m.inCall));
-  assert.equal(presence.members.find(m=>m.id===a.id).sharing,false);
+  assert.equal(required(presence.members.find(m=>m.id===a.id)).sharing,false);
   a.send({type:'call-join',callId:a.callId,generation:1}); assert.equal((await a.next('error',e=>e.code!=='RATE_LIMITED')).code,'INVALID_EVENT');
 });
 
 test('STAB-33/36/37: unknown upgrades are rejected and concurrent shutdown completes',async t=>{
-  const s=await start(t), port=s.server.address().port, socket=connect(port,'127.0.0.1');
+  const s=await start(t), port=testPort(s.server), socket=connect(port,'127.0.0.1');
   await once(socket,'connect'); socket.write('GET /unused-upgrade HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n');
   const socketClosed=once(socket,'close'); let bytes;
   try { [bytes]=await once(socket,'data',{signal:AbortSignal.timeout(1500)}); }
@@ -100,7 +104,7 @@ test('STAB-53/54/55/61: legacy history keeps stable insertion order with an inde
   const s=await start(t,{sqliteSource:dbPath});
   t.after(async()=>{await s.close();rmSync(dir,{recursive:true,force:true});});
   const a=await client(s.url), history=await a.request({type:'join',name:'Ana',room:'geral'});
-  assert.equal(history.messages.length,200); assert.equal(history.messages[0].text,'Mensagem 9800'); assert.equal(history.messages.at(-1).text,'Mensagem 9999');
+  assert.equal(history.messages.length,200); assert.equal(history.messages[0].text,'Mensagem 9800'); assert.equal(required(history.messages.at(-1)).text,'Mensagem 9999');
   assert.deepEqual(history.messages.map(m=>[m.id,m.room,m.text,m.created]),Array.from({length:200},(_,i)=>[String(9800+i),'geral',`Mensagem ${9800+i}`,1]));
   assert.equal(history.messages[0].authorId,null);
   await s.database.query('ANALYZE drocsid.messages');
@@ -127,7 +131,7 @@ test('STAB-49/55: incompatible stored data is refused without changing prior row
     db.exec(`PRAGMA user_version=${variant==='newer-version'?2:0}`);
     const before={rooms:db.prepare('SELECT * FROM rooms').all(),messages:db.prepare('SELECT * FROM messages').all(),version:db.prepare('PRAGMA user_version').get()};db.close();
     const fixture=await postgresFixture(t),database=await fixture.open();
-    await assert.rejects(importSqlite(dbPath,database),error=>error.code==='INVALID_LEGACY_DATABASE');
+    await assert.rejects(importSqlite(dbPath,database),error=>isRecord(error)&&error.code==='INVALID_LEGACY_DATABASE');
     assert.deepEqual(await database.rooms(),[]);
     const reopened=new DatabaseSync(dbPath);
     try{
@@ -151,7 +155,7 @@ test('STAB-51/52: connection cap refuses 25th and slow consumer cannot block hea
 
 test('STAB-32: heartbeat releases silent participant within 60 seconds',async t=>{
   t.mock.timers.enable({apis:['setInterval','setTimeout','Date'],now:0});
-  const clock={now:()=>Date.now(),setTimeout:(fn,ms)=>setTimeout(fn,ms),clearTimeout:id=>clearTimeout(id),setInterval:(fn,ms)=>setInterval(fn,ms),clearInterval:id=>clearInterval(id)};
+  const clock:Clock={now:()=>Date.now(),setTimeout:(fn,ms)=>setTimeout(fn,ms),clearTimeout:id=>clearTimeout(id),setInterval:(fn,ms)=>setInterval(fn,ms),clearInterval:id=>clearInterval(id)};
   const s=await start(t,{clock}), a=await client(s.url,'Ana','geral',{autoPong:false}), b=await client(s.url,'Bia','geral',{autoPong:false});
   await a.request({type:'call-join'}); const closed=Promise.all([once(a.ws,'close'), ...[...s.wss.clients].map(ws=>once(ws,'close'))]);
   t.mock.timers.tick(60000); await closed;
@@ -162,16 +166,16 @@ test('STAB-51: 100th room is accepted and 101st is refused without deleting room
   const s=await start(t), a=await client(s.url);
   for(let i=3;i<100;i++)await a.request({type:'create-room',name:`Sala ${i}`});
   const requestId=a.send({type:'create-room',name:'Excesso'}); assert.equal((await a.next('error',e=>e.requestId===requestId)).code,'INVALID_INPUT');
-  assert.equal(a.events.filter(e=>e.type==='rooms').at(-1).rooms.length,100);
+  assert.equal(required(a.events.filter(e=>e.type==='rooms').at(-1)).rooms.length,100);
 });
 
 test('STAB-37/67: failed cleanup still closes remaining resources and diagnostic omits secret payloads',async t=>{
   const fixture=await postgresFixture(t),s=await createService({database:await fixture.open(),trustedLocal:true,iceServers:[]});
-  await new Promise(resolve=>s.server.listen(0,'127.0.0.1',resolve));
+  await new Promise<void>(resolve=>s.server.listen(0,'127.0.0.1',resolve));
   t.after(()=>s.close().catch(()=>{}));
-  const warnings=[],originalWarn=console.warn;console.warn=value=>warnings.push(JSON.parse(value));t.after(()=>{console.warn=originalWarn;});
-  const originalClose=s.wss.close.bind(s.wss);s.wss.close=callback=>originalClose(()=>callback(new Error('SECRET_TOKEN and message text')));
-  await assert.rejects(s.close(),e=>e.code==='SHUTDOWN_FAILED');
+  const warnings:Warning[]=[],originalWarn=console.warn;console.warn=(value:string)=>warnings.push(JSON.parse(value));t.after(()=>{console.warn=originalWarn;});
+  const originalClose=s.wss.close.bind(s.wss);s.wss.close=callback=>originalClose(()=>required(callback)(new Error('SECRET_TOKEN and message text')));
+  await assert.rejects(s.close(),e=>isRecord(e)&&e.code==='SHUTDOWN_FAILED');
   assert.equal(s.server.listening,false);assert.equal(warnings[0].phase,'shutdown');assert.equal(warnings[0].code,'SHUTDOWN_FAILED');
   assert.equal(warnings[0].version,'0.1.1');assert.equal(JSON.stringify(warnings).includes('SECRET_TOKEN'),false);
 });
@@ -220,17 +224,17 @@ test('MEDIA-25/26: saturated message, media and signaling budgets still allow st
   const leaveId=a.send({type:'call-leave',generation:1}),left=await a.next(['ack','error'],e=>e.requestId===leaveId);
   assert.equal(left.type,'ack');assert.equal(left.inCall,false); assert.equal(left.sharing,false); assert.equal(left.generation,1);
   const terminal=await b.next('presence',e=>e.members.find(m=>m.id===a.id)?.inCall===false);
-  assert.equal(terminal.members.find(m=>m.id===a.id).sharing,false); assert.ok(performance.now()-started<1000);
+  assert.equal(required(terminal.members.find(m=>m.id===a.id)).sharing,false); assert.ok(performance.now()-started<1000);
   await extra.request({type:'call-join'});
   const replacement=await b.next('presence',e=>e.members.find(m=>m.id===extra.id)?.inCall);
   assert.equal(replacement.members.filter(m=>m.inCall).length,6);
 });
 
 test('MEDIA-27: heartbeat deadline follows an off-tick pong and clears timers on close',async t=>{
-  let time=0,next=0;const jobs=new Map();
-  const clock={now:()=>time,setTimeout:(fn,ms)=>{const id=++next;jobs.set(id,{at:time+ms,fn});return id;},clearTimeout:id=>jobs.delete(id),
+  let time=0,next=0;const jobs=new Map<number,{at:number;fn():void}>();
+  const clock:Clock={now:()=>time,setTimeout:(fn,ms)=>{const id=++next;jobs.set(id,{at:time+ms,fn});return id;},clearTimeout:id=>{if(typeof id==='number')jobs.delete(id);},
     setInterval:()=>++next,clearInterval:()=>{}};
-  const tick=ms=>{time+=ms;for(const [id,job]of [...jobs])if(job.at<=time){jobs.delete(id);job.fn();}};
+  const tick=(ms:number)=>{time+=ms;for(const [id,job]of [...jobs])if(job.at<=time){jobs.delete(id);job.fn();}};
   const s=await start(t,{clock}), a=await client(s.url,'Ana','geral',{autoPong:false});
   await a.request({type:'call-join'}); const serverSocket=[...s.wss.clients][0];
   assert.equal(jobs.size,1); tick(12345);
@@ -248,12 +252,12 @@ test('MEDIA-05/24/28: v1 requests cannot enter a v2 service or occupy its call',
   a.ws.send(JSON.stringify({v:1,type:'call-join',requestId:'old-version',callId:'old-call',generation:1,muted:false}));
   const error=await a.next('error',e=>e.requestId==='old-version');assert.equal(error.code,'INCOMPATIBLE_PROTOCOL');
   const present=await observer.request({type:'join',name:'Bia',room:'geral'});assert.equal(present.room.id,'geral');
-  const snapshot=await observer.next('presence',e=>e.members.some(m=>m.id===a.id));assert.equal(snapshot.members.find(m=>m.id===a.id).inCall,false);
+  const snapshot=await observer.next('presence',e=>e.members.some(m=>m.id===a.id));assert.equal(required(snapshot.members.find(m=>m.id===a.id)).inCall,false);
   const next=await a.request({type:'call-join'});assert.equal(next.inCall,true);assert.equal(next.generation,1);
 });
 
 test('MEDIA-32: media diagnostics exclude sensitive error properties and untrusted cause names',t=>{
-  const warnings=[],original=console.warn;console.warn=value=>warnings.push(value);t.after(()=>{console.warn=original;});
+  const warnings:string[]=[],original=console.warn;console.warn=(value:string)=>warnings.push(value);t.after(()=>{console.warn=original;});
   const error=Object.assign(Error('MEDIA_PRIVATE_AUDIO'),{name:'MEDIA_PRIVATE_TITLE',sdp:'MEDIA_PRIVATE_SDP',candidate:'MEDIA_PRIVATE_ICE',credential:'MEDIA_PRIVATE_SECRET',thumbnail:'MEDIA_PRIVATE_IMAGE',messageText:'MEDIA_PRIVATE_CHAT'});
   logFailure('capture-inventory','MEDIA_FAILED','technical-request',error);
   assert.equal(warnings.length,1);assert.equal(warnings.join('').includes('MEDIA_PRIVATE_'),false);
@@ -291,7 +295,7 @@ test('STAB-21/27: rejected text creates no record and 2000 UTF-16 units commit a
 });
 
 test('STAB-35/37: pending shutdown refuses HTTP and WS with one terminal result',async t=>{
-  const s=await start(t),port=s.server.address().port,original=s.server.close.bind(s.server);let release;
+  const s=await start(t),port=testPort(s.server),original=s.server.close.bind(s.server);let release:(()=>void)|null=null;
   s.server.close=callback=>{release=()=>{release=null;original(callback);};return s.server;};
   const ending=s.close();t.after(async()=>{release?.();await ending;});
   assert.equal(s.close(),ending);
@@ -302,31 +306,31 @@ test('STAB-35/37: pending shutdown refuses HTTP and WS with one terminal result'
     const guard=setTimeout(()=>reject(Error('no WS response during shutdown')),1000);
     ws.once('unexpected-response',(_req,res)=>{clearTimeout(guard);res.resume();ws.terminate();resolve(res.statusCode);});
   });
-  assert.equal(status,503);release();await ending;assert.equal(s.server.listening,false);
+  assert.equal(status,503);required<()=>void>(release)();await ending;assert.equal(s.server.listening,false);
 });
 
 test('STAB-36/37: repeated close does not extend a stalled cleanup deadline',async t=>{
   const fixture=await postgresFixture(t),s=await createService({database:await fixture.open(),trustedLocal:true,iceServers:[]});s.wss.close=()=>{};
   t.mock.timers.enable({apis:['setTimeout','setInterval']});
   t.after(()=>t.mock.timers.tick(10000));
-  let settled=false,cause;const ending=s.close();ending.then(()=>{settled=true;},error=>{settled=true;cause=error;});
+  let settled=false,cause:unknown;const ending=s.close();ending.then(()=>{settled=true;},error=>{settled=true;cause=error;});
   t.mock.timers.tick(4999);await Promise.resolve();assert.equal(settled,false);assert.equal(s.close(),ending);
   t.mock.timers.tick(1);for(let i=0;i<12;i++)await Promise.resolve();
-  assert.equal(settled,true);assert.equal(cause.code,'SHUTDOWN_FAILED');await assert.rejects(ending,error=>error.code==='SHUTDOWN_FAILED');
+  assert.ok(isRecord(cause));assert.equal(settled,true);assert.equal(cause.code,'SHUTDOWN_FAILED');await assert.rejects(ending,error=>isRecord(error)&&error.code==='SHUTDOWN_FAILED');
 });
 
 test('STAB-33/63/R07: an unknown Upgrade returns 404 and closes within 1s',async t=>{
-  const s=await start(t),socket=connect(s.server.address().port,'127.0.0.1');t.after(()=>socket.destroy());await once(socket,'connect');
+  const s=await start(t),socket=connect(testPort(s.server),'127.0.0.1');t.after(()=>socket.destroy());await once(socket,'connect');
   let bytes='',closedAt;socket.on('data',data=>{bytes+=data;});socket.once('close',()=>{closedAt=performance.now();});
   const started=performance.now();socket.write('GET /unused-upgrade HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n');
   await new Promise(resolve=>setTimeout(resolve,1000));
-  assert.match(bytes,/^HTTP\/1\.1 404/);assert.equal(typeof closedAt,'number');assert.ok(closedAt-started<=1000);assert.equal(socket.destroyed,true);
+  assert.ok(typeof closedAt==='number');assert.match(bytes,/^HTTP\/1\.1 404/);assert.equal(typeof closedAt,'number');assert.ok(closedAt-started<=1000);assert.equal(socket.destroyed,true);
 });
 
 test('STAB-67: validation and state refusals log correlated metadata without payloads',async t=>{
   const s=await start(t),a=await client(s.url),b=await client(s.url,'Bia');
   await a.request({type:'call-join'});await b.request({type:'call-join'});
-  const warnings=[];t.mock.method(console,'warn',value=>warnings.push(JSON.parse(value)));
+  const warnings:Warning[]=[];t.mock.method(console,'warn',(value:string)=>warnings.push(JSON.parse(value)));
   const invalid=a.send({type:'signal',to:b.id,toCallId:b.callId,signal:{candidate:{candidate:'STAB_PRIVATE_MEDIA',sdpMid:'STAB_PRIVATE_TOKEN',sdpMLineIndex:7.25}}});
   const refused=await a.next('error',event=>event.requestId===invalid);
   assert.equal(refused.code,'INVALID_EVENT');assert.equal(refused.phase,'protocol');

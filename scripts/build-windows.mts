@@ -14,7 +14,7 @@ mkdirSync('release-windows', { recursive: true });
 const portable = resolve('release-windows', artifactName);
 const partial = `${portable}.${randomUUID()}.partial`;
 try { copyFileSync(resolve(staging, artifactName), partial); renameSync(partial, portable); }
-finally { try { unlinkSync(partial); } catch (error) { if (error.code !== 'ENOENT') throw error; } }
+finally { try { unlinkSync(partial); } catch (error) { if (!(error instanceof Error)||!('code' in error)||error.code !== 'ENOENT') throw error; } }
 const digest = createHash('sha256');
 for await (const bytes of createReadStream(portable)) digest.update(bytes);
 mkdirSync('test-results', { recursive: true });

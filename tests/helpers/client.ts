@@ -5,11 +5,11 @@ import { PROTOCOL_VERSION, parseServerEvent } from '../../shared/protocol.js';
 import type { ServerEvent } from '../../shared/protocol.js';
 
 type Kind = ServerEvent['type'];
-type Selected<T extends Kind> = Extract<ServerEvent,{type:T}>;
+type Selected<T extends string> = Extract<ServerEvent,{type:T}>;
 type Action = Record<string,unknown> & {type:string};
 type Waiter = {matches(event:ServerEvent):boolean;resolve(event:ServerEvent):void;reject(error:unknown):void;timer:ReturnType<typeof setTimeout>};
 const callIds=new Map<string,string>();
-function selected<T extends Kind>(event:ServerEvent,types:T[]):event is Selected<T> { return types.some(type=>event.type===type); }
+function selected<T extends string>(event:ServerEvent,types:T[]):event is Selected<T> { return types.some(type=>event.type===type); }
 
 export async function client(url:string,name='Ana',initialRoom:string|null='geral',options:ClientOptions={}) {
   const ws=new WebSocket(url,options),events:ServerEvent[]=[],waiters:Waiter[]=[];
@@ -22,10 +22,10 @@ export async function client(url:string,name='Ana',initialRoom:string|null='gera
     if(index>=0){const [waiter]=waiters.splice(index,1);clearTimeout(waiter.timer);waiter.resolve(event);}
     else{events.push(event);if(events.length>256)events.shift();}
   });
-  function next<T extends Kind>(type:T|T[],match:(event:Selected<T>)=>boolean=()=>true):Promise<Selected<T>> {
+  function next<T extends string>(type:T|T[],match:(event:Selected<T>)=>unknown=()=>true):Promise<Selected<T>> {
     return new Promise((resolve,reject)=>{
       const types=Array.isArray(type)?type:[type];
-      const matches=(event:ServerEvent):event is Selected<T>=>selected(event,types)&&match(event);
+      const matches=(event:ServerEvent):event is Selected<T>=>selected(event,types)&&!!match(event);
       const index=events.findIndex(matches);
       if(index>=0){const [event]=events.splice(index,1);if(matches(event))resolve(event);return;}
       if(ws.readyState===WebSocket.CLOSED){reject(new Error('WS closed'));return;}

@@ -7,8 +7,9 @@ CREATE INDEX messages_room_created ON messages(room, created);`);
 const historyPlan = db.prepare('EXPLAIN QUERY PLAN SELECT id, room, author, text, created FROM (SELECT rowid AS sequence, * FROM messages WHERE room = ? ORDER BY rowid DESC LIMIT 200) ORDER BY sequence').all('geral');
 const busyTimeout = db.prepare('PRAGMA busy_timeout').get();
 db.close();
-function luminance(hex) {
-  const rgb = hex.match(/[0-9a-f]{2}/gi).map(v => parseInt(v, 16) / 255).map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+function luminance(hex:string) {
+  const components=hex.match(/[0-9a-f]{2}/gi);if(!components||components.length!==3)throw new Error('Invalid RGB color');
+  const rgb = components.map(v => parseInt(v, 16) / 255).map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
   return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
 }
 const contrast = [

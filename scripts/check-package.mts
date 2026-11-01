@@ -3,8 +3,9 @@ import { readFileSync, existsSync, createReadStream, readdirSync, statSync } fro
 import { resolve, dirname, posix, normalize } from 'node:path';
 import { createHash } from 'node:crypto';
 import { listPackage, extractFile } from '@electron/asar';
+import {readBuildManifest} from './test-runtime.mjs';
 
-const manifest = JSON.parse(readFileSync(process.argv[2] || 'test-results/build.json', 'utf8'));
+const manifest = readBuildManifest(process.argv[2]);
 const metadata = JSON.parse(readFileSync('package.json', 'utf8'));
 assert.equal(manifest.version, metadata.version);
 assert.equal(existsSync(manifest.portable), true);
@@ -13,10 +14,10 @@ const digest = createHash('sha256');
 for await (const bytes of createReadStream(manifest.portable)) digest.update(bytes);
 assert.equal(digest.digest('hex'), manifest.sha256);
 const archive = resolve(dirname(manifest.executable), 'resources/app.asar');
-const entries = new Set(listPackage(archive).map(path => path.replaceAll('\\', '/').replace(/^\//, '')));
-const pending = ['electron/main.js', 'electron/preload.cjs'], checked = new Set();
+const entries = new Set(listPackage(archive,{isPack:false}).map(path => path.replaceAll('\\', '/').replace(/^\//, '')));
+const pending = ['electron/main.js', 'electron/preload.cjs'], checked = new Set<string>();
 while (pending.length) {
-  const path = pending.pop(); if (checked.has(path)) continue;
+  const path = pending.pop(); if (path===undefined)throw new Error('Missing package module');if (checked.has(path)) continue;
   assert.equal(entries.has(path), true, `Missing packaged module: ${path}`);
   const bytes = extractFile(archive, normalize(path));
   const source = bytes.toString('utf8'); checked.add(path);
@@ -30,7 +31,7 @@ while (pending.length) {
 assert.equal(checked.has('shared/protocol.js'), true);
 assert.equal(JSON.parse(extractFile(archive, 'package.json').toString('utf8')).version, manifest.version);
 assert.equal(entries.has('dist/index.html'), true);
-for (const path of readdirSync('dist', { recursive: true }).filter(path => statSync(resolve('dist', path)).isFile())) {
+for (const path of readdirSync('dist', { recursive: true,encoding:'utf8' }).filter(path => statSync(resolve('dist', path)).isFile())) {
   const target = `dist/${path.replaceAll('\\', '/')}`;
   assert.deepEqual(extractFile(archive, normalize(target)), readFileSync(target), `Stale packaged bundle: ${target}`);
 }

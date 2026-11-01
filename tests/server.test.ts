@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { client } from './helpers/client.js';
 import { startService } from './helpers/service.js';
 import { postgresFixture } from './helpers/postgres.js';
+import type {TestContext} from 'node:test';
 
-async function start(t, fixture) {
+async function start(t:TestContext, fixture?:Awaited<ReturnType<typeof postgresFixture>>) {
   return startService(t,{fixture});
 }
 
@@ -51,7 +52,7 @@ test('messages and custom rooms survive a server restart', async t => {
 
 test('calls enforce a six-person limit and free a slot on departure', async t => {
   const service = await start(t); t.after(() => service.close());
-  const people = [];
+  const people:Awaited<ReturnType<typeof client>>[] = [];
   for (let i = 0; i < 7; i++) people.push(await client(service.url, `Pessoa ${i}`));
   for (const person of people.slice(0, 6)) {
     person.send({ type: 'call-join' });
