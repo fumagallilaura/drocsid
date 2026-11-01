@@ -73,7 +73,9 @@ try {
   expect(Number(new URL(page.url()).port)).not.toBe(oldPort);
   expect(await page.evaluate(() => {if(!window.desktop)throw new Error('Missing desktop bridge');return window.desktop.preferences;})).toEqual(saved);
   await page.getByLabel('Servidor do grupo').fill('');
+  const configuration=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/config');
   await page.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
+  expect(new URL((await configuration).url()).origin).toBe(new URL(page.url()).origin);
   await page.getByRole('button', { name: 'Configurações', exact: true }).click();
   await expect(page.getByLabel('Qualidade do compartilhamento')).toHaveValue('720');
   await expect(page.getByRole('checkbox', { name: /Incluir áudio do sistema/ })).not.toBeChecked();

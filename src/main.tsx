@@ -186,19 +186,22 @@ function App() {
     window.desktop?.setPlaybackEnabled(!!(controller.state.connected && callRef.current?.admitted && !next));
     setDeafened(next);
   }
-  function savePreferences(nextQuality:Preferences['quality'] = quality) {
-    const value:Preferences = { name: controller.state.session?.name??name.trim(), server: serverInput.trim(), quality: nextQuality };
+  function savePreferences(nextQuality:Preferences['quality'] = quality, server=serverInput) {
+    const value:Preferences = { name: controller.state.session?.name??name.trim(), server: server.trim(), quality: nextQuality };
     if (window.desktop?.savePreferences) window.desktop.savePreferences(value).catch(error => report(error, 'preferences'));
     else { localStorage.setItem('conversa.name', value.name); localStorage.setItem('conversa.server', value.server); }
   }
   async function enter(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if(guestMode){try{const destination=parseInvite(serverInput,controller.localOrigin);if(!['localhost','127.0.0.1','[::1]'].includes(new URL(destination.server).hostname))throw new ProtocolError('INVALID_INPUT','Convidados estão disponíveis apenas no modo local de confiança.');}catch(error){report(error,'authentication');return;}}
+    const server=new FormData(event.currentTarget).get('server');
+    if(typeof server!=='string'){report(new ProtocolError('INVALID_INPUT'),'authentication');return;}
+    setServerInput(server);
+    if(guestMode){try{const destination=parseInvite(server,controller.localOrigin);if(!['localhost','127.0.0.1','[::1]'].includes(new URL(destination.server).hostname))throw new ProtocolError('INVALID_INPUT','Convidados estão disponíveis apenas no modo local de confiança.');}catch(error){report(error,'authentication');return;}}
     try {
       let result;
-      if(guestMode){result=await controller.connect({name,server:serverInput,room:new URLSearchParams(location.search).get('room')||'geral'});}
-      else result=await controller.signIn({server:serverInput,username,password,register:registering,...(new URLSearchParams(location.search).has('room')?{room:new URLSearchParams(location.search).get('room')??''}:{})});
-      if(result){setPassword('');clearTimeout(toastTimer.current);setToast('');savePreferences();}
+      if(guestMode){result=await controller.connect({name,server,room:new URLSearchParams(location.search).get('room')||'geral'});}
+      else result=await controller.signIn({server,username,password,register:registering,...(new URLSearchParams(location.search).has('room')?{room:new URLSearchParams(location.search).get('room')??''}:{})});
+      if(result){setPassword('');clearTimeout(toastTimer.current);setToast('');savePreferences(quality,server);}
     }catch{/* Session reports and terminates the failed attempt. */}
   }
   function leaveCall() {
@@ -280,7 +283,7 @@ function App() {
       <div className="welcome-form"><div className="form-inner"><span className="eyebrow">BEM-VINDO AO DROCSID</span><h2>Vamos nos encontrar?</h2><p>{guestMode?'Teste local com convidados de confiança.':registering?'Crie uma conta para participar dos seus grupos.':'Entre com sua conta e encontre seu grupo.'}</p>
         <form onSubmit={enter}>
           {guestMode?<><label htmlFor="name">Seu nome</label><input id="name" autoFocus maxLength={32} value={name} onChange={event=>setName(event.target.value)} placeholder="Como você se chama?" required disabled={joining}/></>:<><label htmlFor="username">Usuário</label><input id="username" autoComplete="username" autoCapitalize="none" minLength={2} maxLength={32} pattern="[a-z0-9_.]{2,32}" value={username} onChange={event=>setUsername(event.target.value)} required disabled={joining}/><small>2–32 caracteres: letras minúsculas, números, _ ou .</small><label htmlFor="password">Senha</label><input id="password" type="password" minLength={15} maxLength={128} autoComplete={registering?'new-password':'current-password'} value={password} onChange={event=>setPassword(event.target.value)} required disabled={joining}/>{registering&&<small>Use uma senha de 15 a 128 caracteres.</small>}</>}
-          <label htmlFor="server">Servidor do grupo <span>{ownMode==='client'?'necessário':'opcional'}</span></label><input id="server" value={serverInput} onChange={event=>setServerInput(event.target.value)} placeholder="https://seu-servidor.com" required={ownMode==='client'} disabled={joining}/><small>{guestMode?'Deixe vazio para testar neste computador. O servidor precisa habilitar o modo local de confiança.':'Use o endereço do servidor do seu grupo.'}</small>
+          <label htmlFor="server">Servidor do grupo <span>{ownMode==='client'?'necessário':'opcional'}</span></label><input id="server" name="server" value={serverInput} onChange={event=>setServerInput(event.target.value)} placeholder="https://seu-servidor.com" required={ownMode==='client'} disabled={joining}/><small>{guestMode?'Deixe vazio para testar neste computador. O servidor precisa habilitar o modo local de confiança.':'Use o endereço do servidor do seu grupo.'}</small>
           <button className="primary enter" disabled={joining||ownMode==='loading'||(guestMode?!name.trim():!username.trim()||!password)}>{joining?'Conectando…':!guestMode&&registering?'Criar conta':'Entrar no Drocsid'}<ArrowRight size={18}/></button>
         </form>
         <div className="auth-actions">{guestMode?<button className="auth-link" disabled={joining} onClick={()=>{setGuestMode(false);setPassword('');}}>Entrar com conta</button>:<><button className="auth-link" disabled={joining} onClick={()=>{setRegistering(!registering);setPassword('');}}>{registering?'Já tenho conta':'Criar uma conta'}</button><button className="auth-link" disabled={joining} onClick={()=>{setGuestMode(true);setPassword('');}}>Teste local</button></>}</div>
