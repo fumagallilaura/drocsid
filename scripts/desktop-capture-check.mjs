@@ -18,7 +18,7 @@ try {
   };
   const enterCall = async page => {
     await page.getByLabel('Seu nome', { exact: true }).fill('Captura isolada');
-    await page.getByRole('button', { name: 'Entrar no Conversa', exact: true }).click();
+    await page.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
     await page.getByRole('button', { name: 'Entrar na chamada', exact: true }).click();
   };
   const holdInventory = () => desktop.evaluate(({ desktopCapturer }) => {

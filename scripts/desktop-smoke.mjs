@@ -109,11 +109,11 @@ desktop = await electron.launch({
   await instrument(first);
   await first.getByLabel('Seu nome', { exact: true }).fill('Ana');
   await first.getByLabel('Servidor do grupo').fill('file:///invalid');
-  await first.getByRole('button', { name: 'Entrar no Conversa', exact: true }).click();
+  await first.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
   await expect(first.getByText('Endereço ou sala inválidos.', { exact: true })).toBeVisible();
   await first.getByLabel('Servidor do grupo').fill('');
   if (external) await first.getByLabel('Servidor do grupo').fill(externalUrl);
-  await first.getByRole('button', { name: 'Entrar no Conversa', exact: true }).click();
+  await first.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
   await expect(first.getByRole('heading', { name: 'geral', exact: true })).toBeVisible();
 
   // STAB-57/58: real keyboard focus, not only ARIA attributes.
@@ -238,7 +238,7 @@ desktop = await electron.launch({
   second.on('pageerror', error => errors.push(error.message));
   await second.getByLabel('Seu nome', { exact: true }).fill('Bruno');
   if (external) await second.getByLabel('Servidor do grupo').fill(externalUrl);
-  await second.getByRole('button', { name: 'Entrar no Conversa', exact: true }).click();
+  await second.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
   await expect(second.getByText('2 online')).toBeVisible();
   await first.getByLabel('Mensagem', { exact: true }).fill('Olá, grupo! Vamos compartilhar as ideias?');
   await first.getByRole('button', { name: 'Enviar mensagem', exact: true }).click();
@@ -262,7 +262,7 @@ desktop = await electron.launch({
   observer.on('pageerror', error => errors.push(error.message));
   await observer.getByLabel('Seu nome', { exact: true }).fill('Ana');
   if (external) await observer.getByLabel('Servidor do grupo').fill(externalUrl);
-  await observer.getByRole('button', { name: 'Entrar no Conversa', exact: true }).click();
+  await observer.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
   await expect(observer.getByRole('heading', { name: 'geral', exact: true })).toBeVisible();
   await observer.getByLabel('Mensagem', { exact: true }).fill('Outra pessoa chamada Ana');
   await observer.getByRole('button', { name: 'Enviar mensagem', exact: true }).click();
@@ -374,7 +374,7 @@ desktop = await electron.launch({
     third.on('pageerror', error => errors.push(error.message));
     await third.getByLabel('Seu nome', { exact: true }).fill('Carla');
     await third.getByLabel('Servidor do grupo').fill(externalUrl);
-    await third.getByRole('button', { name: 'Entrar no Conversa', exact: true }).click();
+    await third.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
     await third.getByRole('button', { name: 'Participar', exact: true }).click();
     await expect(third.getByText('3 pessoas na chamada', { exact: true })).toBeVisible();
     await expect.poll(() => third.locator('video').evaluateAll(videos => videos.some(v => v.videoWidth > 0)), { timeout: 20000 }).toBe(true);
@@ -435,7 +435,7 @@ desktop = await electron.launch({
   await first.reload();
   for (const id of reloadedIds) await expect.poll(() => stops.some(track=>track.id===id&&track.state==='ended')).toBe(true);
   await expect.poll(firstMuted).toBe(true);expect(await first.locator('audio,video').count()).toBe(0);
-  await instrument(first);await first.getByRole('button', { name: 'Entrar no Conversa', exact: true }).click();
+  await instrument(first);await first.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
   await first.getByRole('button', { name: 'Participar', exact: true }).click();
   await expect(first.getByText('VOCÊ ESTÁ NA CHAMADA', { exact: true })).toBeVisible();
   const disconnectedIds = await first.evaluate(() => window.__testCaptures.at(-1).getTracks().map(track=>track.id));

@@ -2,12 +2,12 @@ import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'no
 import type { PoolClient } from 'pg';
 import type { Database } from './database.js';
 import { LIMITS, ProtocolError } from '../shared/protocol.js';
-import type { Room } from '../shared/protocol.js';
+import type { Room, Group } from '../shared/protocol.js';
+export type { Group } from '../shared/protocol.js';
 
 export type User = { id: string; username: string };
 export type AuthResult = { user: User; token: string };
 export type Session = { id: string; user: User; expiresAt: number; idleAt: number };
-export type Group = { id: string; name: string; ownerId: string; rooms: Room[] };
 type Row = Record<string, unknown>;
 type Attempt = { count: number; until: number };
 const USERNAME = /^[a-z0-9_.]{2,32}$/;

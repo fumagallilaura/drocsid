@@ -6,6 +6,7 @@ export const LIMITS = Object.freeze({
 });
 
 export type Room = { id: string; name: string; description: string };
+export type Group = { id:string; name:string; ownerId:string; rooms:Room[] };
 export type Message = { id: string; room: string; author: string; text: string; created: number; sequence: number; authorId: string | null; operationId: string | null };
 export type Member = { id: string; name: string; inCall: boolean; muted: boolean; sharing: boolean; callId: string | null; generation: number };
 export type Signal = { description: { type: 'offer' | 'answer'; sdp: string }; candidate?: never } |
@@ -114,6 +115,9 @@ export function parseClientEvent(raw: string): ClientEvent {
 
 const room = (r: unknown): r is Room => object(r) && string(r.id) && name(r.name) && typeof r.description === 'string' && r.description.length <= 2000;
 const rooms = (list: unknown): list is Room[] => Array.isArray(list) && list.length <= LIMITS.rooms && list.every(room);
+const group = (value:unknown):value is Group=>object(value)&&string(value.id)&&name(value.name)&&string(value.ownerId)&&rooms(value.rooms)&&value.rooms.length>0;
+export function readGroup(value:unknown):Group {if(!group(value))fail();return value;}
+export function readGroups(value:unknown):Group[] {if(!Array.isArray(value)||value.length>LIMITS.rooms||!value.every(group))fail();return value;}
 const message = (m: unknown): m is Message => object(m) && string(m.id) && string(m.room) && name(m.author) &&
   string(m.text, LIMITS.text) && integer(m.created) && integer(m.sequence) && m.sequence > 0 &&
   (m.authorId === null || string(m.authorId)) && (m.operationId === null || string(m.operationId));

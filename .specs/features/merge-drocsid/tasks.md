@@ -14,6 +14,7 @@ Usar tlc-spec-driven carregada pelo MCP. Execução local e decisões técnicas 
 **Run migration**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/import-sqlite.test.js
 **Run identity**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/identity.test.js
 **Run client**: node scripts/desktop-client-check.mjs
+**Run accounts**: node scripts/with-test-postgres.mjs -- node scripts/desktop-accounts-check.mjs
 
 O Build usa os comandos próprios existentes e passará a incluir strict/emissão conforme T2 os habilitar. A configuração não excluirá fontes migradas para contornar erro. A aprovação é o mandato de execução com decisões delegadas, não uma palavra inventada em nome do usuário.
 
@@ -218,8 +219,8 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12
 
 **Done when**:
 
-- [ ] React em TS com cadastro/login/logout e criação/convite de grupos por gestos; token/senha só em memória, autorização sempre no serviço.
-- [ ] Gate build aprovado, contagem94 + delta, zero falha/skip/cancelled/todo; evidência e commit da tarefa registrados.
+- [x] React TSX mantém mídia/Session e apresenta Drocsid, cadastro/login/logout, criação/troca de grupos e convite de uso único por gestos reais. Preferências continuam só nome/servidor/qualidade; senha/token/código ficam em memória. A Session limita autenticação/API a8s, cancela requisições expiradas e rejeita respostas de contexto antigo. A UI descarta listagens antigas mesmo na mesma conta. Política permite somente escrita sanitizada no clipboard pela janela principal confiável; leitura, frames externos e câmera continuam negados. Lucide0.577.0 atualiza os tipos SVG removidos pelo @types/react atual, sem skipLibCheck nem migração maior.
+- [x] Gate build PASS:147/147 (141+4 Session+1 protocolo de grupos+1 política clipboard), zero fail/skip/cancelled/todo; strict quatro ambientes, Vite, contas por gestos com PostgreSQL real, client sem banco e desktop-smoke/profile/capture/lifecycle PASS. A troca de grupo e logout encerram tracks em até1s; conta seguinte não recebe rascunho/grupo anterior. Seis sensores por falha de asserção (credencial no estado, aborto no prazo, grupo inválido, clipboard/frame, listagem antiga e senha persistida), fontes intactas.141 casos/921 assert anteriores e113 ACs preservados. Logs `test-results/drocsid-merge-t10-*` e `merge-t10-sensors.json`. Commit desta tarefa `feat(ui): integrate secure accounts and private groups`. Ensaio automatizado em um PC, sem certificação MEDIA/T9 física.
 
 **Tests**: integration/e2e, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
@@ -320,7 +321,7 @@ Proof: run identity | ✔ MERGE-11: invites expire and are consumed once atomica
 Proof: run integration | ✔ MERGE-12: message receipts belong to their authenticated author
 
 **C13** - O produto SHALL cumprir MERGE-13, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-13: credentials never enter persistent renderer preferences
+Proof: run accounts | PASS: registration, login, logout, private groups and one-use invites work through controls without persistent credentials.
 
 **C14** - O produto SHALL cumprir MERGE-14, conforme valor e condição da spec.
 Proof: run integration | ✔ MERGE-14: media ownership and camera restrictions remain intact
@@ -354,4 +355,4 @@ Proof: run integration | ✔ MERGE-21: database credentials stay in the server w
 
 **Walked:** pendente da implementação; checkers atuais seguem como regressão, não aprovação automática da nova interface.
 
-**Current:** T1–T9 de integração concluídas. T7 c11135e, T8 4fa053e; T9 neste commit entrega host/policy/preload tipados, cliente padrão sem PostgreSQL, perfil antigo preservado e marca nativa Drocsid.141/141, strict em quatro ambientes, Vite, client e desktop-smoke/profile/capture/lifecycle PASS; produção audit0 na T8. Sensores dos lotes41/41 (T3:4,T4:3,T5:3,T6:4,T7:9,T8:12,T9:6), por AssertionError em cópias isoladas; fontes intactas.141 casos/921 assert e113 ACs históricos intactos na T9. Próxima T10: React TSX com cadastro/login/logout, grupos e convites por gestos reais, mantendo Call/Session. T11 converte apenas harness restante; test-runtime/checker client já TS. T12 limpa apps/dependências, constrói pacote/candidata/hash e só depois provas/Verifier fresco. MEDIA/T9 física permanece indisponível. Sem push/deploy. Python314._pth no TEMP agora inclui scripts verificados da skill para subprocessos; selftest24 killed/0 survived. Audit completo anterior15 moderadas dev/0 altas/críticas, limpeza final pendente.
+**Current:** T1–T10 de integração concluídas. T7 c11135e, T8 4fa053e, T9 5848828; T10 neste commit `feat(ui): integrate secure accounts and private groups`.147/147, strict em quatro ambientes, Vite, contas por gestos com PostgreSQL real, client e desktop-smoke/profile/capture/lifecycle PASS. Sensores dos lotes47/47 (T3:4,T4:3,T5:3,T6:4,T7:9,T8:12,T9:6,T10:6), falhas de asserção em cópias isoladas, fontes intactas.141 casos/921 assert e113 ACs anteriores intactos na T10. Próxima T11 converte apenas harness restante, incluindo vite.config; test-runtime/checkers client/accounts já TS. T12 limpa apps/dependências, constrói pacote/candidata/hash e só depois provas/Verifier fresco. MEDIA/T9 física permanece indisponível. Sem push/deploy. Python314._pth no TEMP inclui scripts verificados; skill selftest24 killed/0 survived na T9. Audit produção0 na T8; completo anterior15 moderadas dev/0 altas/críticas, limpeza final pendente.

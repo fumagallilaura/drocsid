@@ -14,7 +14,7 @@ try{
   // Retain React's public Root only in this test response, never in source/ASAR.
   await desktop.context().route('**/assets/*.js',async route=>{
     const response=await route.fetch(),body=await response.text();
-    const root=/([\w$]+\.createRoot\(document\.getElementById\("root"\)\))\.render\(/g;
+    const root=/([\w$]+\.createRoot\((?:document\.getElementById\("root"\)|[\w$]+)\))\.render\(/g;
     expect([...body.matchAll(root)].length).toBe(1);rootFixtures++;
     await route.fulfill({response,body:body.replace(root,'(window.__lifecycleRoot=$1).render(')});
   });
@@ -54,7 +54,7 @@ try{
     const native=await desktop.browserWindow(page),title=`Conversa lifecycle ${phase} ${Date.now()}`;
     await native.evaluate((window,value)=>window.setTitle(value),title);
     await page.getByLabel('Seu nome',{exact:true}).fill('Ciclo de mídia');
-    await page.getByRole('button',{name:'Entrar no Conversa',exact:true}).click();
+    await page.getByRole('button',{name:'Entrar no Drocsid',exact:true}).click();
     await page.getByRole('button',{name:'Entrar na chamada',exact:true}).click();
     await page.getByRole('button',{name:'Configurações',exact:true}).click();
     await page.getByRole('checkbox',{name:/Incluir áudio do sistema/}).check();await page.keyboard.press('Escape');

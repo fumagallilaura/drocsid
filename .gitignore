@@ -37,3 +37,6 @@ electron/preload.cjs
 scripts/test-runtime.mjs
 scripts/desktop-client-check.mjs
 tests/fixtures/profile-main.mjs
+tests/account-session.test.js
+scripts/desktop-accounts-check.mjs
+src/main.js

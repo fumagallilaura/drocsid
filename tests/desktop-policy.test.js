@@ -7,6 +7,24 @@ const frame={url:origin+'/'};
 const contents={mainFrame:frame,getURL:()=>frame.url,isDestroyed:()=>false};
 const details={isMainFrame:true,requestingUrl:frame.url,securityOrigin:origin};
 
+test('MERGE-13: copying an invite allows sanitized writes only from the trusted main frame',()=>{
+  assert.equal(allowPermissionCheck(contents,'clipboard-sanitized-write',origin,details,origin),true);
+  assert.equal(allowPermissionRequest(contents,'clipboard-sanitized-write',details,origin),true);
+  for(const permission of ['clipboard-read','deprecated-sync-clipboard-read','unknown']) {
+    assert.equal(allowPermissionCheck(contents,permission,origin,details,origin),false);
+    assert.equal(allowPermissionRequest(contents,permission,details,origin),false);
+  }
+  for(const bad of [{...details,isMainFrame:false},{...details,requestingUrl:'https://foreign.example'},{...details,securityOrigin:'https://foreign.example'},{}]) {
+    assert.equal(allowPermissionCheck(contents,'clipboard-sanitized-write',origin,bad,origin),false);
+    assert.equal(allowPermissionRequest(contents,'clipboard-sanitized-write',bad,origin),false);
+  }
+  for(const sender of [null,{...contents,getURL:()=> 'https://foreign.example'},{...contents,isDestroyed:()=>true}]) {
+    assert.equal(allowPermissionCheck(sender,'clipboard-sanitized-write',origin,details,origin),false);
+    assert.equal(allowPermissionRequest(sender,'clipboard-sanitized-write',details,origin),false);
+  }
+  assert.equal(allowPermissionCheck(contents,'clipboard-sanitized-write','https://foreign.example',details,origin),false);
+});
+
 test('STAB-48: only main local frame may request audio, never camera',()=>{
   assert.equal(allowPermissionCheck(contents,'media',origin,{...details,mediaType:'audio'},origin),true);
   assert.equal(allowPermissionRequest(contents,'media',{...details,mediaTypes:['audio']},origin),true);

@@ -11,10 +11,10 @@ function trustedRequest(contents:Contents|null,details:unknown,origin:string):de
   return trustedContents(contents,origin)&&object(details)&&details.isMainFrame===true&&sameOrigin(details.requestingUrl,origin)&&(!details.securityOrigin||sameOrigin(details.securityOrigin,origin));
 }
 export function allowPermissionCheck(contents:Contents|null,permission:string,requestingOrigin:string,details:unknown,origin:string):boolean {
-  return sameOrigin(requestingOrigin,origin)&&trustedRequest(contents,details,origin)&&(permission==='display-capture'||(permission==='media'&&details.mediaType==='audio'));
+  return sameOrigin(requestingOrigin,origin)&&trustedRequest(contents,details,origin)&&(permission==='clipboard-sanitized-write'||permission==='display-capture'||(permission==='media'&&details.mediaType==='audio'));
 }
 export function allowPermissionRequest(contents:Contents|null,permission:string,details:unknown,origin:string):boolean {
-  return trustedRequest(contents,details,origin)&&(permission==='display-capture'||(permission==='media'&&Array.isArray(details.mediaTypes)&&details.mediaTypes.length>0&&details.mediaTypes.every(type=>type==='audio')));
+  return trustedRequest(contents,details,origin)&&(permission==='clipboard-sanitized-write'||permission==='display-capture'||(permission==='media'&&Array.isArray(details.mediaTypes)&&details.mediaTypes.length>0&&details.mediaTypes.every(type=>type==='audio')));
 }
 export function trustedIpc(event:Ipc,origin:string):boolean {
   return trustedContents(event.sender,origin)&&event.senderFrame===event.sender.mainFrame&&sameOrigin(event.senderFrame?.url,origin);

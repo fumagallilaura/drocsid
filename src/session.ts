@@ -104,6 +104,36 @@ export class Session {
     if(this.accountId!==null){this.drafts.clear();this.outbox.clear();}
     this.accountId=null;this.accessToken=null;this.lose(new ProtocolError('CANCELLED'), true);
   }
+  private async http(origin:string,path:string,signal:AbortSignal,token:string|null=null,method='GET',input?:unknown):Promise<unknown> {
+    const response=await this.fetcher(`${origin}${path}`,{signal,method,headers:{...(token?{Authorization:`Bearer ${token}`} : {}),...(input!==undefined?{'Content-Type':'application/json'}:{})},...(input!==undefined?{body:JSON.stringify(input)}:{})});
+    const value=await response.json();
+    if(!response.ok)throw new ProtocolError(object(value)&&typeof value.code==='string'?value.code:'CONNECTION_FAILED',object(value)&&typeof value.message==='string'?value.message:'Falha na comunicação com o servidor.');
+    return value;
+  }
+  async signIn({server,username,password,register=false,room}:{server:string;username:string;password:string;register?:boolean;room?:string}) {
+    let destination;
+    try{destination=parseInvite(server,this.localOrigin);}
+    catch(error){const cause=failure(error);this.onError(cause);throw cause;}
+    const epoch=++this.epoch;this.cancelTransport(new ProtocolError('CANCELLED'));this.onDisconnect();
+    this.origin=destination.server;this.accessToken=null;this.publish({...emptyState(),connecting:true});
+    const controller=new AbortController();this.controller=controller;
+    let token:string;
+    try{
+      const value=await this.wait(this.http(destination.server,`/api/auth/${register?'register':'login'}`,controller.signal,null,'POST',{username,password}),'authentication');
+      if(epoch!==this.epoch)return;
+      if(!object(value)||typeof value.token!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(value.token)||!object(value.user)||typeof value.user.id!=='string'||!value.user.id||value.user.id.length>128||value.user.username!==username)throw new ProtocolError('INVALID_EVENT');
+      token=value.token;
+    }catch(error){if(epoch!==this.epoch)return;const cause=failure(error);this.lose(cause);throw cause;}
+    return this.connect({server,room,token});
+  }
+  async api(path:string,{method='GET',input}:{method?:'GET'|'POST'|'DELETE';input?:unknown}={},phase='groups'):Promise<unknown> {
+    if(!this.state.connected||!this.accessToken||!this.controller)throw new ProtocolError('UNAUTHENTICATED','Entre na sua conta.');
+    if(!path.startsWith('/api/')||path.includes('\\'))throw new ProtocolError('INVALID_INPUT');
+    const epoch=this.epoch,connection=this.controller,request=new AbortController(),abort=()=>request.abort();
+    if(connection.signal.aborted)request.abort();else connection.signal.addEventListener('abort',abort,{once:true});
+    try{const value=await this.wait(this.http(this.origin,path,request.signal,this.accessToken,method,input),phase);if(epoch!==this.epoch)throw new ProtocolError('CANCELLED');return value;}
+    finally{connection.signal.removeEventListener('abort',abort);request.abort();}
+  }
   async logout() {
     const token=this.accessToken,origin=this.origin;this.disconnect();
     if(token)await this.wait((async()=>{
@@ -123,13 +153,7 @@ export class Session {
     this.origin = destination.server; this.name = name?.trim()??'';this.accessToken=token??null;
     this.publish({ ...emptyState(), connecting: true });
     const controller=new AbortController();this.controller=controller;
-    const headers:Record<string,string>=token?{Authorization:`Bearer ${token}`} : {};
-    const read=async(path:string,method='GET')=>{
-      const response=await this.fetcher(`${destination.server}${path}`,{signal:controller.signal,headers,method});
-      const value=await response.json();
-      if(!response.ok)throw new ProtocolError(object(value)&&typeof value.code==='string'?value.code:'CONNECTION_FAILED',object(value)&&typeof value.message==='string'?value.message:'Falha na comunicação com o servidor.');
-      return value;
-    };
+    const read=(path:string,method='GET')=>this.http(destination.server,path,controller.signal,token??null,method);
     try {
       let accountId:string|null=null;
       if(token){

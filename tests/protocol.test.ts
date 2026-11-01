@@ -1,10 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseClientEvent, parseServerEvent, readIceServers, parsePort, LIMITS, PROTOCOL_VERSION, ProtocolError } from '../shared/protocol.js';
+import { parseClientEvent, parseServerEvent, readIceServers, parsePort, readGroups, LIMITS, PROTOCOL_VERSION, ProtocolError } from '../shared/protocol.js';
 
 const event = (type: string, fields: Record<string, unknown> = {}) => ({ v: PROTOCOL_VERSION, type, requestId: 'request-1', ...fields });
 const decode = (value: unknown) => parseClientEvent(JSON.stringify(value));
 const rejects = (fn: () => unknown, code: string) => assert.throws(fn, e => e instanceof ProtocolError && e.code === code);
+
+test('MERGE-09/13: group responses require bounded identities and complete room data',()=>{
+  const group={id:'group-a',name:'Equipe A',ownerId:'account-a',rooms:[{id:'room-a',name:'geral',description:'Sala inicial'}]};
+  assert.deepEqual(readGroups([group]),[group]);assert.deepEqual(readGroups([]),[]);
+  for(const value of [null,{},[null],[{...group,ownerId:false}],[{...group,name:''}],[{...group,rooms:[]}],[{...group,rooms:[{id:'room',name:'geral'}]}],Array.from({length:101},()=>group)])rejects(()=>readGroups(value),'INVALID_EVENT');
+});
 
 test('STAB-40/41: version and malformed client events have stable distinct outcomes', () => {
   for (const value of [null, [], 12, {}, { type: 'join' }, event('unknown')]) {

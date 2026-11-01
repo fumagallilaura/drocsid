@@ -69,7 +69,7 @@ try {
   expect(Number(new URL(page.url()).port)).not.toBe(oldPort);
   expect(await page.evaluate(() => window.desktop.preferences)).toEqual(saved);
   await page.getByLabel('Servidor do grupo').fill('');
-  await page.getByRole('button', { name: 'Entrar no Conversa', exact: true }).click();
+  await page.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
   await page.getByRole('button', { name: 'Configurações', exact: true }).click();
   await expect(page.getByLabel('Qualidade do compartilhamento')).toHaveValue('720');
   await expect(page.getByRole('checkbox', { name: /Incluir áudio do sistema/ })).not.toBeChecked();
@@ -88,7 +88,7 @@ try {
   await expect.poll(() => desktop.evaluate(() => typeof globalThis.__releaseInventory)).toBe('function');
   await page.reload();
   await desktop.evaluate(({ desktopCapturer }) => { globalThis.__releaseInventory([]); desktopCapturer.getSources = globalThis.__originalSources; });
-  await page.getByRole('button', { name: 'Entrar no Conversa', exact: true }).click();
+  await page.getByRole('button', { name: 'Entrar no Drocsid', exact: true }).click();
   await page.getByRole('button', { name: 'Entrar na chamada', exact: true }).click();
   await page.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
   const picker = page.getByRole('dialog', { name: 'O que vamos compartilhar?' });
