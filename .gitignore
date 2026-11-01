@@ -69,3 +69,6 @@ tests/session.test.js
 vite.config.js
 tests/helpers/assertions.js
 tests/fixtures/rtc.js
+scripts/security-check.mjs
+tests/security.test.js
+scripts/release-check.mjs

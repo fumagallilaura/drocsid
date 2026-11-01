@@ -23,16 +23,23 @@ while (pending.length) {
   const source = bytes.toString('utf8'); checked.add(path);
   if (!path.endsWith('.js') && !path.endsWith('.cjs')) continue;
   assert.equal(createHash('sha256').update(bytes).digest('hex'), createHash('sha256').update(readFileSync(path)).digest('hex'), `Stale packaged module: ${path}`);
-  for (const match of source.matchAll(/(?:from\s*|import\s*)['"](\.[^'"]+)['"]/g)) {
+  for (const match of source.matchAll(/(?:from\s*|import\s*\(?\s*)['"](\.[^'"]+)['"]/g)) {
     const target = posix.normalize(posix.join(posix.dirname(path), match[1]));
     assert.equal(target.startsWith('../'), false, `Import escapes archive: ${target}`); pending.push(target);
   }
 }
-assert.equal(checked.has('shared/protocol.js'), true);
-assert.equal(JSON.parse(extractFile(archive, 'package.json').toString('utf8')).version, manifest.version);
+for(const path of ['electron/main.js','electron/preload.cjs','electron/policy.js','server/diagnostics.js','server/service.js','server/database.js','server/identity.js','shared/protocol.js'])assert.ok(checked.has(path),`Unverified reachable module: ${path}`);
+const packaged=JSON.parse(extractFile(archive,'package.json').toString('utf8'));
+assert.equal(packaged.version, manifest.version);assert.equal(packaged.name,'drocsid');assert.equal(packaged.main,'electron/main.js');
+for(const path of entries){
+  if(path.startsWith('node_modules/'))continue;
+  assert.equal(/^(?:apps|tests|test-results|data|\.specs)\//.test(path)||/(?:^|\/)(?:\.env(?:\..*)?|preferences\.json)$|\.(?:sqlite|sqlite3|db)$/i.test(path),false,`Private/development file in client: ${path}`);
+}
 assert.equal(entries.has('dist/index.html'), true);
 for (const path of readdirSync('dist', { recursive: true,encoding:'utf8' }).filter(path => statSync(resolve('dist', path)).isFile())) {
   const target = `dist/${path.replaceAll('\\', '/')}`;
   assert.deepEqual(extractFile(archive, normalize(target)), readFileSync(target), `Stale packaged bundle: ${target}`);
+  if(/\.(?:js|html)$/.test(target))assert.doesNotMatch(extractFile(archive,normalize(target)).toString('utf8'),/DATABASE_URL|PG_CA_FILE|postgres(?:ql)?:\/\//,`Database configuration in renderer: ${target}`);
 }
 console.log(JSON.stringify({ package: 'PASS', version: manifest.version, modules: [...checked].sort(), sha256: manifest.sha256 }));
+console.log('PASS: the portable SHA256 and every reachable emitted module and renderer bundle match the ASAR.');

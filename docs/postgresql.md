@@ -1,12 +1,18 @@
 # PostgreSQL
 
-A decisão AD-003 substitui SQLite na integração Drocsid. O serviço HTTP/WebSocket usa PostgreSQL; o cliente Electron usará a API e não receberá a URL ou senha do banco.
+A decisão AD-003 substitui SQLite na integração Drocsid. O serviço HTTP/WebSocket usa PostgreSQL; o cliente Electron usa a API e não recebe a URL ou senha do banco.
 
 ## Integration status
 
 T3 entrega a persistência e T4 o importador somente leitura. T7 entrega identidade/grupos; T8 liga esses componentes ao serviço e ao bootstrap em TypeScript. SQLite deixou de ser banco ativo: permanece somente como origem explícita do importador. Nenhum dado do usuário foi migrado e nenhum deploy AWS foi feito.
 
-O host Electron é TypeScript e abre como cliente por padrão, sem PostgreSQL instalado ou configuração de banco. `DROCSID_HOST=1` habilita explicitamente o host de desenvolvimento em127.0.0.1 com `DATABASE_URL`; os checkers usam esse modo com bancos temporários. O diretório padrão de preferências continua `appData/conversa`, mesmo com o nome Drocsid. A interface de contas/grupos chega na T10; a distribuição final, limpeza e nova candidata são T12.
+O host Electron é TypeScript e abre como cliente por padrão, sem PostgreSQL instalado ou configuração de banco. `DROCSID_HOST=1` habilita explicitamente o host de desenvolvimento em127.0.0.1 com `DATABASE_URL`; os checkers usam esse modo com bancos temporários. O diretório padrão de preferências continua `appData/conversa`, mesmo com o nome Drocsid. A interface de contas/grupos/convites está implementada e ensaiada por controles nativos. T12 fecha a distribuição; os gates atuais estão no plano MERGE, sem herdar aprovação física.
+
+## Local Compose
+
+`docker-compose.yml` fixa `postgres:17.11` pelo digest oficial `sha256:31ba9c94a03ada9988f2bb493a22a75eef3a185884533e5cdbcd498ea835b08f`, conferido no registro Docker Hub em2026-11-01. A porta é publicada somente em `127.0.0.1:5432`. Defina `DROCSID_POSTGRES_PASSWORD_FILE` como caminho de um arquivo protegido fora do Git contendo a senha; o container recebe o secret em `/run/secrets/postgres_password`. A configuração recusa ausência desse caminho e não contém senha padrão. O operador ainda configura `DATABASE_URL` do serviço com a mesma credencial.
+
+É configuração de desenvolvimento, sem aprovação de deploy. Docker não está disponível nesta máquina: a validação do Compose é estática, e os testes transacionais usam o PostgreSQL nativo17.11 real. Volumes existentes não têm a senha alterada por mudar o arquivo; faça a gestão explícita de credenciais e backup antes de qualquer mudança num banco já utilizado.
 
 ## Server configuration
 

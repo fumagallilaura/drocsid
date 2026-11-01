@@ -1,14 +1,20 @@
 services:
   db:
-    image: postgres:17
+    image: postgres:17.11@sha256:31ba9c94a03ada9988f2bb493a22a75eef3a185884533e5cdbcd498ea835b08f
     environment:
       POSTGRES_USER: drocsid
-      POSTGRES_PASSWORD: drocsid
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DB: drocsid
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
+    secrets:
+      - postgres_password
     volumes:
       - db:/var/lib/postgresql/data
 
 volumes:
   db:
+
+secrets:
+  postgres_password:
+    file: "${DROCSID_POSTGRES_PASSWORD_FILE:?Provide a password file outside Git}"

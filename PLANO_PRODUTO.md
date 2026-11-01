@@ -1,8 +1,8 @@
-# Evolução do Conversa para uma primeira versão confiável
+# Evolução do Drocsid para uma primeira versão confiável
 
-Este é um plano proposto, baseado na revisão do código da versão 0.1.1. Atualização de coerência: 2026-10-25, base `7eedac8`, último código/testes `58be3ed`. As metas de produto abaixo continuam futuras; resultados locais existentes estão separados na situação atual.
+Este plano reúne estado implementado e propostas futuras. Atualização2026-11-01: integração na branch `integration/drocsid`, base Conversa preservada, nome Drocsid, TypeScript estrito e PostgreSQL único. As12 tarefas de implementação e distribuição passaram seus gates; o parecer independente e as provas em HEAD constam no plano MERGE. O plano não autoriza publicação.
 
-O trabalho autorizado agora é revisar a documentação e depois continuar a estabilização do protótipo com convidados para pessoas de confiança, em uma sessão nova. Contas, grupos privados e TURN autenticado bloqueiam publicação futura e não fazem parte dessa estabilização. LiveKit/SFU permanece proposta. Todo JavaScript próprio será migrado para TypeScript somente depois da estabilização; o [inventário preparatório](docs/migracao-typescript.md) não inicia essa mudança.
+O usuário autorizou integrar os projetos, mantendo Conversa como principal, com marca Drocsid, TypeScript e PostgreSQL. Isso substituiu o adiamento anterior de contas/tipos. Contas e grupos estão implementados; TURN com credenciais temporárias, infraestrutura AWS, certificação física e operação pública continuam pendentes. LiveKit/SFU permanece proposta não aprovada. O [inventário TypeScript](docs/migracao-typescript.md) distingue o retrato histórico da conversão atual.
 
 ## Objetivo inicial
 
@@ -10,14 +10,14 @@ Uma pessoa instala o aplicativo no Windows, cria sua conta, aceita um convite e 
 
 ## Situação atual
 
-- Texto e histórico em SQLite, voz e tela em WebRTC foram implementados.
+- Texto, histórico, contas e grupos usam PostgreSQL; voz e tela continuam WebRTC. SQLite é somente origem de importação explícita, sem modificar o arquivo legado.
 - Os testes atuais de comunicação usam janelas no mesmo computador e microfone sintético.
-- O acesso é de convidado. O servidor aceita nomes informados pelo cliente e não implementa contas, associação a grupos ou autorização por sala.
+- Cadastro/login/logout, sessões revogáveis, associação a grupos, autorização por sala e convites de uso único/24h estão implementados no serviço e na interface. O modo convidado legado exige ativação explícita e loopback real, sem bind de rede.
 - A mídia usa conexões entre cada par de participantes. Há um limite de seis pessoas, sem avaliação de qualidade com seis usuários reais.
 - Uma queda de conexão exige intervenção manual. O código atual confirma mensagens após persistência e deduplica pelo identificador de operação; o cliente mantém texto sem confirmação para reenvio manual na mesma execução. Isso ainda não certifica integralmente os critérios STAB correspondentes.
 - O ruído relatado na entrada não foi reproduzido. Foram adicionados bloqueio de reprodução fora das chamadas e silêncio na saída dos testes.
 - O bloqueio por Device Guard pertence ao ensaio histórico em `artifacts/VALIDACAO.md`. Depois, o [Verifier BUILD](.specs/features/build-confiavel/validation.md) aprovou localmente source, win-unpacked e abertura/envio pelo wrapper portátil de `58be3ed`: 11 critérios, 50 testes Node e 12 gates. Assinatura, instalador, distribuição pública e outras políticas Windows continuam pendentes.
-- Os [68 STAB](.specs/features/estabilizacao/spec.md) têm [retomada própria](.specs/features/estabilizacao/execution.md), sem certificação integral. A [rodada independente 2 de MEDIA](.specs/features/captura-midia-saida/validation-round2.md) passou 80 testes, 16 gates e seis mutações por asserção; falta reverificar a última conjunção automática. O bloqueio histórico de Device Guard não se repetiu na nova build. Nenhum MEDIA Verified; T9/MEDIA-33/34 continuam pendentes por indisponibilidade explícita de recursos em 26/10. A [revisão de coerência](docs/revisao-coerencia-documental.md) conserva a referência documental anterior; o Handoff dá o estado atual.
+- As [provas STAB](.specs/features/estabilizacao/evidence-current.md) e [MEDIA](.specs/features/captura-midia-saida/evidence.md) registram o fechamento automático anterior, sem transferir aprovação à candidata unificada. T9/MEDIA-33/34 físicos continuam pendentes por indisponibilidade de dois PCs Windows, fones/microfones reais e dois operadores. O [plano MERGE](.specs/features/merge-drocsid/tasks.md) reúne regressão, novo hash e revisão desta integração.
 - Trocar texto encerra a chamada; “Silenciar áudio” afeta somente reprodução. Tela já existe e será estabilizada; câmera permanece negada.
 
 ## Etapa 1 — estabelecer uma base verificável
@@ -32,6 +32,8 @@ Trabalho:
 Aceitação: abrir e fechar o aplicativo repetidamente sem reprodução não solicitada; registrar passos, versão e resultado para cada falha; ter um procedimento de reprodução para os problemas ainda abertos.
 
 ## Etapa 2 — contas, grupos e administrador
+
+Implementados no merge: cadastro/login/logout, scrypt com sal, limites de tentativas, sessões e tickets, dono/membro, grupos/salas, autorização, convites revogáveis de uso único/24h, migrações e testes negativos. Continuam propostas: administrador do serviço, procedimento de instalação administrativa, remoção/bloqueio de membros e política completa de papéis. A etapa inteira não está aprovada por entregar somente esse subconjunto.
 
 Trabalho:
 
@@ -91,7 +93,7 @@ Metas propostas para aprovação:
 4. Há evidência de isolamento entre grupos e de autorização de ações administrativas.
 5. A versão instalada é a mesma versão aprovada nos testes, com limites e problemas conhecidos registrados.
 
-A próxima entrega autorizada é a continuidade da estabilização, após a revisão documental, reaproveitando a tela existente e verificando os gaps contra STAB/MEDIA. O fluxo conta → grupo privado → convite → entrada autorizada da etapa 2 pertence ao produto futuro e continua necessário antes de publicação. As metas de 60 minutos e seis pessoas acima não são o ensaio físico MEDIA de dois PCs por 10 minutos; nenhum deles foi aprovado por BUILD.
+A entrega atual fecha a integração local com regressão source/empacotado/portátil e Verifier independente. O fluxo conta → grupo privado → convite → entrada autorizada está implementado, com testes pelos controles reais. A aceitação física MEDIA continua separada e pendente. As metas futuras de 60 minutos e seis pessoas acima não são o ensaio MEDIA de dois PCs por10 minutos; nenhum deles foi aprovado por BUILD ou por automação em um PC.
 
 ## Referências técnicas consultadas
 

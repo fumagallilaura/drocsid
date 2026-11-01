@@ -28,3 +28,11 @@ Os doubles RTC têm portas estruturais verificadas contra Call e são compartilh
 A conversão encontrou uma suposição errada na fixture: o handshake `capture-document` não possui chave de operação. Ele passa ao handler original; os controles de captura continuam observados e validados. Exceção da fixture encerra Electron com1, evitando bloqueio por diálogo nativo. O checker completo aprovou inventário, IPC antigo, cancelamento e fronteira exata60s após essa correção.
 
 Sete ferramentas históricas receberam fontes `.mts` e emissão ignorada `.mjs`. As que dependem do serviço usam a fixture PostgreSQL isolada; as asserções que reproduzem defeitos continuam sendo sondagens históricas, sem executar o gerador nem reaprovar HEAD. Relatórios, JSONs, bundle e fonte formatada históricos não foram regenerados. Scripts de revisão não são gates de saúde.
+
+## Release Integrity, T12
+
+A comparação contra4a77a51 encontra todos os149 casos anteriores e suas1008 asserções idênticas, sem adaptação adicional de valores. Os três novos casos cobrem metadados Drocsid, ausência de backend/workspaces paralelos e configuração segura do Compose, além da recusa de auditoria alta/crítica/incompleta. A suíte atual contém152 casos; o resultado executado fica na matriz de release, não é inferido desta contagem. Os113 ACs históricos e Decisions continuam intactos.
+
+`apps/*` saiu do produto conforme T12: eram três aplicativos upstream não executados pelos comandos do Conversa, com servidor e contratos independentes. O teste desse servidor duplicado acompanha a remoção do proprietário; não substitui nem remove os149 testes mantidos da base integrada. Todo o código upstream permanece acessível no ancestral94d9b9a. Não se migrou nem removeu dado de usuário; caches ignorados de dependências não foram apagados.
+
+Cinco sensores T12 detectados por AssertionError em cópias isoladas: identidade desatualizada no ASAR, SHA incorreto do portátil, falta da verificação de import dinâmico, auditoria aceitando alta/crítica e publicação PostgreSQL fora de loopback. Fontes, emitidos, ASAR e EXE originais byte-idênticos antes/depois. Relatórios locais: `test-results/merge-t12-test-integrity.json`, `merge-t12-sensors.json` e logs por sensor.

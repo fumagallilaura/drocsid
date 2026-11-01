@@ -15,7 +15,9 @@
     "test": "npm run build:runtime && node scripts/with-test-postgres.mjs -- node --test tests/*.test.js",
     "import:sqlite": "npm run build:runtime && node scripts/import-sqlite.mjs",
     "desktop": "npm run build && electron .",
-    "dist:win": "npm run build && node scripts/prepare-electron.mjs && node scripts/build-windows.mjs"
+    "dist:win": "npm run build && node scripts/prepare-electron.mjs && node scripts/build-windows.mjs",
+    "security": "npm run build:runtime && node scripts/security-check.mjs",
+    "check:release": "npm run build:runtime && node scripts/with-test-postgres.mjs -- node scripts/release-check.mjs"
   },
   "engines": {
     "node": ">=24.15.0"
@@ -29,7 +31,11 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@babel/generator": "7.29.8",
+    "@babel/parser": "7.29.11",
+    "@electron/asar": "3.4.1",
     "@playwright/test": "^1.56.0",
+    "@types/babel__generator": "7.27.0",
     "@types/express": "5.0.6",
     "@types/node": "24.19.2",
     "@types/pg": "8.23.1",
@@ -39,8 +45,10 @@
     "@vitejs/plugin-react": "^5.0.0",
     "electron": "45.0.0",
     "electron-builder": "26.18.0",
+    "playwright": "1.64.1",
     "typescript": "7.0.2",
-    "vite": "^7.0.0"
+    "vite": "^7.0.0",
+    "yaml": "2.9.1"
   },
   "build": {
     "appId": "app.drocsid.desktop",
@@ -64,8 +72,5 @@
     "portable": {
       "artifactName": "Drocsid-${version}-Windows.exe"
     }
-  },
-  "workspaces": [
-    "apps/*"
-  ]
+  }
 }

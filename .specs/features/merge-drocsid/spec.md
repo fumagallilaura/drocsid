@@ -123,27 +123,27 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| MERGE-01 | US1 | Execute/T1 | Implemented; final proofs pending |
-| MERGE-02 | US1 | Execute/T9/T10 + Tasks/T12 | Drocsid native host and React UI implemented; final package/proofs pending |
-| MERGE-03 | US1 | Execute/T2–T11 + Tasks/T12 | Maintained app/tooling/tests/review sources pass strict inventory without explicit any/suppressions; temporary upstream apps cleanup and final proofs pending |
-| MERGE-04 | US1 | Execute/T4/T9 | Legacy import and native default profile/preferences/database bytes tested; final proofs pending |
-| MERGE-05 | US2 | Execute/T7/T8 | Identity and HTTP implemented; final proofs pending |
-| MERGE-06 | US2 | Execute/T7/T8 | Identity and HTTP limits tested; final proofs pending |
-| MERGE-07 | US2 | Execute/T7/T8 | Expiry/revocation, owned connection termination and logout/ticket concurrency tested; final proofs pending |
-| MERGE-08 | US2 | Execute/T7–T9 | Network authorization, one-use tickets and desktop client default tested; final proofs pending |
-| MERGE-09 | US3 | Execute/T7/T8/T10 | Service and UI isolation tested with two accounts/groups; final proofs pending |
-| MERGE-10 | US3 | Execute/T7/T8/T10 | Atomic owner administration and group controls tested; final proofs pending |
-| MERGE-11 | US3 | Execute/T7/T8/T10 | Atomic invitations plus native copy/paste, acceptance and reuse refusal tested; final proofs pending |
-| MERGE-12 | US3 | Execute/T3/T6/T8 | Authenticated receipts and concurrent single broadcast tested; final proofs pending |
-| MERGE-13 | US4 | Execute/T10 | Native account/group controls, recovery, deadlines, stale response rejection and non-persistent credentials tested; final proofs pending |
-| MERGE-14 | US4 | Execute/T5/T6/T9–T11 + Tasks/T12 | Typed media/UI/harness pass regression and desktop/capture/lifecycle/startup; final artifact pending; physical T9 unavailable |
-| MERGE-15 | US4 | Tasks | In Tasks |
-| MERGE-16 | US4 | Tasks | In Tasks |
-| MERGE-17 | US4 | Tasks | In Tasks |
-| MERGE-18 | US4 | Execute/T8 + Tasks/T12 | Service uses PostgreSQL; upstream duplicate app/dependencies cleanup pending |
-| MERGE-19 | US5 | Execute/T3 | Implemented; final proofs pending |
-| MERGE-20 | US5 | Execute/T4 | Implemented; final proofs pending |
-| MERGE-21 | US5 | Execute/T3 + Tasks/T8/T9/T12 | Partial: configuration and real no-fallback test; client/artifact checks pending |
+| MERGE-01 | US1 | Execute/T1 | Implemented; final proofs and independent review pending |
+| MERGE-02 | US1 | Execute/T9/T10 + Tasks/T12 | Implemented; final proofs and independent review pending |
+| MERGE-03 | US1 | Execute/T2–T11 + Tasks/T12 | Implemented; final proofs and independent review pending |
+| MERGE-04 | US1 | Execute/T4/T9 | Implemented; final proofs and independent review pending |
+| MERGE-05 | US2 | Execute/T7/T8 | Implemented; final proofs and independent review pending |
+| MERGE-06 | US2 | Execute/T7/T8 | Implemented; final proofs and independent review pending |
+| MERGE-07 | US2 | Execute/T7/T8 | Implemented; final proofs and independent review pending |
+| MERGE-08 | US2 | Execute/T7–T9 | Implemented; final proofs and independent review pending |
+| MERGE-09 | US3 | Execute/T7/T8/T10 | Implemented; final proofs and independent review pending |
+| MERGE-10 | US3 | Execute/T7/T8/T10 | Implemented; final proofs and independent review pending |
+| MERGE-11 | US3 | Execute/T7/T8/T10 | Implemented; final proofs and independent review pending |
+| MERGE-12 | US3 | Execute/T3/T6/T8 | Implemented; final proofs and independent review pending |
+| MERGE-13 | US4 | Execute/T10 | Implemented; final proofs and independent review pending |
+| MERGE-14 | US4 | Execute/T5/T6/T9–T11 + Tasks/T12 | Implemented; final proofs and independent review pending |
+| MERGE-15 | US4 | Tasks | Implemented; final proofs and independent review pending |
+| MERGE-16 | US4 | Tasks | Implemented; final proofs and independent review pending |
+| MERGE-17 | US4 | Tasks | Implemented; final proofs and independent review pending |
+| MERGE-18 | US4 | Execute/T8 + Tasks/T12 | Implemented; final proofs and independent review pending |
+| MERGE-19 | US5 | Execute/T3 | Implemented; final proofs and independent review pending |
+| MERGE-20 | US5 | Execute/T4 | Implemented; final proofs and independent review pending |
+| MERGE-21 | US5 | Execute/T3 + Tasks/T8/T9/T12 | Implemented; final proofs and independent review pending |
 
 ## Sources
 

@@ -15,6 +15,7 @@ Usar tlc-spec-driven carregada pelo MCP. Execução local e decisões técnicas 
 **Run identity**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/identity.test.js
 **Run client**: node scripts/desktop-client-check.mjs
 **Run accounts**: node scripts/with-test-postgres.mjs -- node scripts/desktop-accounts-check.mjs
+**Run release**: node scripts/with-test-postgres.mjs -- node scripts/release-check.mjs
 
 O Build usa os comandos próprios existentes e passará a incluir strict/emissão conforme T2 os habilitar. A configuração não excluirá fontes migradas para contornar erro. A aprovação é o mandato de execução com decisões delegadas, não uma palavra inventada em nome do usuário.
 
@@ -251,8 +252,8 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12
 
 **Done when**:
 
-- [ ] Somente um aplicativo/runtime, dependências sem uso removidas, matriz source/packaged/portátil, hash e auditoria registrados; sem aprovação física.
-- [ ] Gate build aprovado, contagem94 + delta, zero falha/skip/cancelled/todo; evidência e commit da tarefa registrados.
+- [x] Somente Drocsid executável, PostgreSQL único; apps/workspaces paralelos e dependências sem uso removidos. Compose17.11 fixado por digest, senha externa e loopback. Documentação atualizada, perfil legado preservado; nova candidata SHA256 `00a862e610c005b552905385cfff5d36663764de220b2e891f150caf8bc809c9`. [Evidência](evidence.md), sem aprovação física.
+- [x] Gate release PASS:152/152, zero falha/skip/cancelled/todo; strict quatro ambientes/Vite, dist:win e18 gates da matriz source/empacotado/portátil. Cinco sensores detectados por asserção, fontes/emitidos/ASAR/EXE intactos;149 casos/1008 assert anteriores e113 ACs preservados. Audit produção0, completo15 moderadas dev/0 altas/críticas. Logs `test-results/drocsid-merge-t12-*` e `test-results/release/`. Commit desta tarefa `build(release): validate the unified drocsid distribution`. Provas em HEAD e Verifier independente são fechamento obrigatório após este commit.
 
 **Tests**: integration/e2e, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
@@ -288,7 +289,7 @@ Todos os proprietários de comportamento têm testes nesta tarefa; nenhuma conve
 Proof: run integration | ✔ MERGE-01: integration history retains both source commits
 
 **C2** - O produto SHALL cumprir MERGE-02, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-02: Drocsid is the single application metadata
+Proof: run release | PASS: MERGE-02 source, packaged and portable run the single Drocsid application.
 
 **C3** - O produto SHALL cumprir MERGE-03, conforme valor e condição da spec.
 Proof: run integration | ✔ MERGE-03: every maintained source is covered by strict TypeScript
@@ -324,19 +325,19 @@ Proof: run integration | ✔ MERGE-12: message receipts belong to their authenti
 Proof: run accounts | PASS: registration, login, logout, private groups and one-use invites work through controls without persistent credentials.
 
 **C14** - O produto SHALL cumprir MERGE-14, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-14: media ownership and camera restrictions remain intact
+Proof: run release | PASS: MERGE-14 source and packaged media ownership, deadlines, playback and camera denial regressions passed.
 
 **C15** - O produto SHALL cumprir MERGE-15, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-15: the portable package matches emitted runtime bytes
+Proof: run release | PASS: MERGE-15 current emitted modules and bundles match the ASAR and portable SHA256.
 
 **C16** - O produto SHALL cumprir MERGE-16, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-16: security validation records negative cases and dependency findings
+Proof: run release | PASS: MERGE-16 negative authorization and session tests and dependency audits passed; independent review is a separate required gate.
 
 **C17** - O produto SHALL cumprir MERGE-17, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-17: physical acceptance remains explicitly pending
+Proof: run release | PASS: MERGE-17 physical acceptance remains pending and the current candidate is identified by SHA256.
 
 **C18** - O produto SHALL cumprir MERGE-18, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-18: the unified product has no parallel unused backend
+Proof: run release | PASS: MERGE-18 one PostgreSQL backend serves the unified source, packaged and portable product.
 
 **C19** - O PostgreSQL SHALL persistir dados, ordem e recibos após reconexão, reverter operações incompletas e fechar o pool (MERGE-19).
 Proof: run postgres | ✔ MERGE-19: PostgreSQL commits, survives reconnect and rolls back incomplete work
@@ -345,7 +346,7 @@ Proof: run postgres | ✔ MERGE-19: PostgreSQL commits, survives reconnect and r
 Proof: run migration | ✔ MERGE-20: legacy SQLite imports preserve data and source bytes atomically
 
 **C21** - A configuração SHALL manter credenciais só no servidor e verificar TLS remoto, sem segredos no renderer/pacote (MERGE-21).
-Proof: run integration | ✔ MERGE-21: database credentials stay in the server with verified TLS
+Proof: run release | PASS: MERGE-21 verified database TLS and credential isolation tests passed, including the default client without PostgreSQL.
 
 ## Handoff
 
@@ -353,6 +354,6 @@ Proof: run integration | ✔ MERGE-21: database credentials stay in the server w
 
 **Dispatched:** nenhum. Plano12tarefas; manter execução inline conforme escolha persistente desta sessão, sem nova pergunta repetida. Após T12, Verifier fresco da feature MERGE, sem herdar Handoff; sem captura vinculante e sem screens sub-agent. Pareceres MEDIA/STAB não são parecer desta integração.
 
-**Walked:** pendente da implementação; checkers atuais seguem como regressão, não aprovação automática da nova interface.
+**Walked:** US1: source, empacotado e wrapper portátil abriram Drocsid; perfil legado e histórico importado foram confrontados por bytes/campos nos respectivos gates. US2: nas janelas nativas, cadastro ana/bia, login errado com erro recuperável, login correto e logout. US3: criar Equipe A/B, copiar/colar e aceitar convite, recusar inválido/repetido, membro sem administração e mensagem com autoria bia; grupos privados não aparecem à outra conta. US4: chamada sintética, troca de grupo e logout encerraram tracks em até1s, bloqueando reprodução; UI e screenshot inspecionados. US5: PostgreSQL real, reinício/rollback e importação somente leitura conferidos nos testes, sem tela própria. Laboratório aberto com banco isolado: `test-results/drocsid-lab.json` informa endereço/perfil/usuários de fixture; duas janelas bia, grupos Equipe A/B; Configurações → Sair e trocar de servidor → ana acessa Equipe A/Privado A. Criar `test-results/drocsid-lab-stop` encerra e limpa somente esse laboratório. Não é o ensaio físico T9.
 
-**Current:** T1–T11 de integração concluídas. T7 c11135e, T8 4fa053e, T9 5848828, T10 3d05180; T11 neste commit `refactor(tooling): type test and release tooling`.149/149, strict quatro ambientes, Vite, client/desktop-smoke/profile/capture/lifecycle/startup PASS. Sensores dos lotes51/51 (T3:4,T4:3,T5:3,T6:4,T7:9,T8:12,T9:6,T10:6,T11:4), asserções em cópias isoladas, fontes/emitidos intactos.147 casos/986 assert anteriores preservados nos resultados;946 textualmente iguais após tipos/required,40 adaptações explicadas em test-integrity.md.113 ACs e Decisions intactos; skill selftest24 killed/0 survived. Próxima T12 limpa apps/dependências e configuração Compose, atualiza README, conclui checkers da candidata, constrói ASAR/portátil/hash, auditoria, matriz/provas e só então Verifier fresco. Ferramentas de release foram tipadas, ainda não certificam a nova candidata. MEDIA/T9 física indisponível. Sem push/deploy. Audit produção0 na T8; completo anterior15 moderadas dev/0 altas/críticas, limpeza final pendente.
+**Current:** T1–T12 implementadas, gates próprios verdes; T11 4a77a51, T12 neste commit `build(release): validate the unified drocsid distribution`.152/152, strict quatro ambientes/Vite, dist:win +18 gates source/empacotado/portátil PASS. Sensores históricos dos lotes56/56 (T3:4,T4:3,T5:3,T6:4,T7:9,T8:12,T9:6,T10:6,T11:4,T12:5); não são todos reexecutados numa única árvore.149 casos/1008 assert anteriores intactos neste lote;113 ACs e Decisions preservados. Audit produção0, completo15 moderadas dev/0 altas/críticas. Próximo: check_proofs em HEAD, Verifier fresco, uma passagem de correções e gate formal. Hash/caminhos/commits e limitações em evidence.md. Laboratório local aberto com dados de fixture. MEDIA/T9 física indisponível; nenhum PASS integral de hardware ou deploy.

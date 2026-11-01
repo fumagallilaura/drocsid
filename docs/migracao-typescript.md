@@ -1,4 +1,12 @@
-# Preparação para a migração para TypeScript
+# Migração para TypeScript e inventário histórico
+
+## Current status
+
+Em2026-10-31, AD-001 substituiu o adiamento abaixo: o usuário pediu o merge Drocsid com TypeScript. As fontes próprias mantidas de aplicação, servidor, Electron, scripts, testes, fixtures, Vite e sete ferramentas de revisão foram convertidas nas tarefas MERGE/T2–T11. Quatro configurações strict/noEmitOnError verificam Node, browser, Electron e ferramentas; `npm run build:runtime` emite os runtimes JS/MJS/CJS ignorados pelo Git. O teste MERGE-03 inventaria todas as fontes mantidas e recusa `any` explícito, supressões, exclusões de cobertura, noCheck e skipLibCheck. A candidata e seus gates estão em [MERGE/evidence.md](../.specs/features/merge-drocsid/evidence.md); o parecer final é separado em verification.md.
+
+O inventário a seguir é o retrato de2026-10-25, preservado como histórico, incluindo suas contagens e decisões então vigentes. Os caminhos `.js/.mjs/.cjs` citados passaram a saídas emitidas; as fontes correspondentes são `.ts/.mts/.cts`, e `main.jsx` é `main.tsx`. Os dois artefatos históricos de revisão permanecem intactos e não são fontes mantidas. Os enunciados de “migração futura/não começou” abaixo descrevem somente aquela data, não o estado atual.
+
+## Historical preparation, 2026-10-25
 
 O usuário confirmou que todo código JavaScript próprio será migrado para TypeScript **depois da estabilização**. Este documento inventaria o projeto e os cuidados necessários para planejar essa mudança. A migração não começou; nenhuma dependência, configuração ou fonte foi alterada para habilitá-la.
 

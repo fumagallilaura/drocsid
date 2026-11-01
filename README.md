@@ -1,125 +1,84 @@
-# Conversa
+# Drocsid
 
-Protótipo desktop para Windows inspirado na experiência de conversar em grupo: salas de texto, chamada de voz e compartilhamento de tela. Implementação independente em Electron, React, Node.js, WebSocket, SQLite e WebRTC.
+Aplicativo Windows de texto, voz e compartilhamento de tela para pequenos grupos. Mantém a interface e os controladores do Conversa, com contas, grupos privados e PostgreSQL no servidor. Os históricos dos dois projetos estão unidos na branch `integration/drocsid`; não houve push nem deploy.
 
-## Abrir no Windows
+O estado dos gates e do parecer independente está em [.specs/features/merge-drocsid/tasks.md](.specs/features/merge-drocsid/tasks.md), com [hash e evidência da candidata](.specs/features/merge-drocsid/evidence.md). As provas BUILD/STAB/MEDIA anteriores pertencem às suas candidatas históricas. Não certificam o novo portátil, hardware, ruído ou eco.
 
-O executável portátil fica em `release-windows/Conversa-0.1.1-Windows.exe` depois de `npm run dist:win`. Abra o arquivo, escolha seu nome e deixe o servidor vazio para testar localmente. No menu **Conversa → Nova janela de teste**, abra outro participante. As janelas compartilham o servidor local do mesmo processo.
+## Executar
 
-Para executar a partir do código:
+Requer Node >=24.15 e `npm.cmd ci`. O build compila as fontes próprias TypeScript em quatro ambientes estritos antes de executar Vite. Os `.js/.mjs/.cjs` de runtime são emitidos e ignorados pelo Git.
+
+No PC do participante:
 
 ```powershell
-npm.cmd install
 npm.cmd run desktop
 ```
 
-Requisito de desenvolvimento: Node.js 24.15 ou posterior compatível com `node:sqlite`. O executável inclui seu próprio runtime e não requer Node.js instalado.
+O cliente padrão abre sem PostgreSQL instalado. Informe o endereço do servidor, crie uma conta ou entre com usuário e senha. Crie um grupo ou aceite um código de convite. Somente membros acessam histórico, presença e chamadas; somente o dono cria salas e convites. Convites duram 24 horas, são revogáveis e de uso único. Senhas têm 15–128 caracteres; usuário usa 2–32 caracteres `a-z0-9_.`. Senha, sessão e convite ficam em memória; ao reabrir o app é preciso entrar novamente.
 
-## Capacidades implementadas
-
-O [BUILD em `58be3ed`](.specs/features/build-confiavel/validation.md) tem PASS local de 11 critérios, 50 testes Node e 12 gates. Isso não certifica integralmente os [68 STAB](.specs/features/estabilizacao/spec.md) nem os [34 MEDIA](.specs/features/captura-midia-saida/spec.md). A lista abaixo descreve capacidades existentes, ainda sujeitas à estabilização.
-
-- Salas compartilhadas, criação de salas e lista de participantes online.
-- Mensagens reais por WebSocket; os 200 últimos registros da sala são carregados ao entrar.
-- Persistência das salas e de todas as mensagens no SQLite.
-- Chamadas com até seis participantes, microfone, silêncio do áudio recebido e saída da chamada.
-- Compartilhamento de janela ou monitor por seleção explícita no aplicativo Windows.
-- Preferência de 720p/1080p, até 30 fps, e áudio do sistema opcional. A resolução efetiva depende da fonte e da negociação WebRTC.
-- Parar a transmissão pelo aplicativo ou pelo encerramento da captura.
-- Uso de um servidor de grupo externo, informado na tela de entrada.
-- Reprodução de áudio bloqueada na entrada, após sair da chamada e ao recarregar a janela. A reprodução é liberada somente dentro de uma chamada e respeita o botão de silenciar áudio.
-
-## Conversar entre computadores
-
-Todos os participantes precisam apontar para **o mesmo servidor**. Cada processo desktop inicia um servidor restrito ao próprio computador; deixar o endereço vazio em máquinas diferentes cria espaços separados.
-
-Para um teste em uma rede local confiável, rode o servidor do projeto no computador que hospedará o grupo:
+No computador servidor, configure um PostgreSQL dedicado com usuário, senha e banco explícitos. Defina `DATABASE_URL` no ambiente do servidor por seu gerenciador de segredos; consulte [configuração, TLS e migrações](docs/postgresql.md). Depois:
 
 ```powershell
-npm.cmd run build
-$env:HOST = '0.0.0.0'
+$env:HOST = '127.0.0.1'
 $env:PORT = '4310'
+npm.cmd run build
 npm.cmd start
 ```
 
-No aplicativo de cada pessoa, informe `http://IP-DO-COMPUTADOR:4310` no campo **Servidor do grupo**. O firewall do computador servidor precisa permitir essa porta para a rede usada. O aplicativo desktop mantém a interface local e conecta apenas os dados e a sinalização a esse endereço.
+Para acesso de outros PCs numa LAN confiável, use `HOST=0.0.0.0` no servidor e informe `http://IP-DO-SERVIDOR:4310` nos clientes. O firewall precisa permitir a porta na rede de teste. Use conta e grupo privado; não habilite modo convidado nesse bind. O Electron mantém a interface local e conecta dados/sinalização ao servidor escolhido.
 
-Publicação futura exige contas, grupos privados e TURN autenticado, além de HTTPS/WSS. Esses bloqueadores continuam abertos. Para ensaios restritos com pessoas de confiança, o servidor inicia com STUN público do Google; STUN sozinho não estabelece conexão em todas as redes. O processo que hospeda o grupo aceita esta configuração ICE de teste:
+O modo legado é opcional e restrito ao loopback real: `DROCSID_TRUSTED_LOCAL=1` com `HOST=127.0.0.1`. Um host embutido de desenvolvimento exige também `DROCSID_HOST=1` e `DATABASE_URL`. Abertura normal do cliente não inicia banco nem servidor de grupo.
+
+## PostgreSQL e dados legados
+
+PostgreSQL é a única persistência ativa. A URL/senha do banco ficam no servidor, fora do renderer, preferências e portátil. Conexões remotas exigem `sslmode=verify-full`; `PG_CA_FILE` permite uma CA confiável. Não há senha padrão ou fallback SQLite.
+
+O Compose local usa PostgreSQL 17.11 fixado por digest, porta somente `127.0.0.1:5432` e senha por arquivo externo ao Git, indicado em `DROCSID_POSTGRES_PASSWORD_FILE`. Essa configuração foi verificada estaticamente; Docker não está instalado no ambiente de validação. Os testes usam PostgreSQL real nativo. Veja [docs/postgresql.md](docs/postgresql.md).
+
+O perfil padrão permanece `%APPDATA%/conversa`, preservando preferências e os bytes do SQLite legado. Não há importação automática nem inferência de conta pelo nome de convidado. Para importar uma cópia consistente, com o processo legado encerrado, configure o destino PostgreSQL e execute explicitamente:
 
 ```powershell
-$env:ICE_SERVERS = '[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:SEU-TURN:3478","username":"USUARIO","credential":"SENHA"}]'
-npm.cmd start
+npm.cmd run import:sqlite -- --source 'C:\copia\conversa.sqlite'
 ```
 
-O protótipo distribui essa configuração sem autenticação. O exemplo é somente para um relay de teste restrito; não usar credenciais de produção. A emissão de credenciais TURN de curta duração após sessão autenticada pertence a uma entrega futura.
+Teste primeiro num destino dedicado. O importador abre a origem somente em leitura, preserva IDs/autoria/ordem/recibos e recusa conflitos numa transação. Nenhum banco real do usuário foi migrado por esta integração.
 
-## Dados e limites
+## Internet e AWS
 
-No desktop, o banco fica no diretório `userData` do Electron, normalmente `%APPDATA%/Conversa/conversa.sqlite`. No servidor separado, o padrão é `data/conversa.sqlite` e pode ser alterado com `DB_PATH`.
+O protocolo não é limitado a LAN. O servidor pode ser hospedado na AWS, mas ainda faltam implantação HTTPS/WSS, TURN autenticado com credenciais temporárias, operação de segredos, backup/restauração e validação entre redes. A integração local não publica infraestrutura.
 
-Esta versão usa convidados, sem autenticação: nomes não comprovam identidade, salas não são privadas e qualquer pessoa com acesso ao servidor pode entrar e ler o histórico das salas. Use em testes com pessoas de confiança. Não é uma versão pronta para hospedagem pública.
+A mídia usa WebRTC em malha, com limite de seis participantes. STUN sozinho não atravessa todas as redes. O servidor aceita `ICE_SERVERS` como JSON; essa configuração só é entregue após autenticação, ou no modo legado explícito de loopback. Um TURN de teste restrito pode ser configurado pelo operador; não embuta credenciais permanentes de produção no cliente. A emissão de credenciais temporárias ainda é futura. SFU/LiveKit não foi aprovado.
 
-A mídia usa uma malha de conexões diretas entre os participantes, ou relay TURN quando configurado. O limite de seis pessoas é imposto pelo servidor, mas não representa uma garantia de qualidade: o consumo de upload cresce com o grupo. Uma eventual adoção de SFU/LiveKit depende de avaliação e decisão futura; não foi aprovada.
-
-Trocar de sala de texto encerra a chamada. “Silenciar áudio” bloqueia somente a reprodução; não altera automaticamente o microfone como deafen. Compartilhamento de tela já existe e será estabilizado nos caminhos atuais. Câmera permanece negada.
-
-O áudio do sistema pode incluir todos os aplicativos, inclusive a reprodução da própria chamada. Use fones e mantenha essa opção desligada quando não for necessária. A opção está desligada por padrão.
+Trocar sala de texto ou grupo encerra a chamada. “Silenciar áudio” bloqueia somente reprodução. Tela já está implementada com seleção explícita de janela/monitor, 720p/1080p e áudio do sistema opcional, desligado por padrão. Câmera continua negada. Use fones: áudio global pode incluir a reprodução da própria chamada. Seleção de dispositivos, push-to-talk, reconexão automática e grupos maiores continuam propostas do [plano de produto](PLANO_PRODUTO.md).
 
 ## Verificação
+
+`npm.cmd test` exige PostgreSQL real e falha se ele estiver ausente. Configure `DROCSID_PG_BIN` para `bin` de uma instalação completa, ou `DROCSID_TEST_DATABASE_URL` de um cluster local isolado com permissão de criar/remover bancos de teste. Não use produção. O wrapper cria clusters SCRAM/bancos aleatórios, encerra os proprietários e guarda logs em `test-results/postgres/`.
 
 ```powershell
 npm.cmd test
 npm.cmd run build
-node scripts/desktop-smoke.mjs
-node scripts/desktop-profile-check.mjs
-node scripts/desktop-capture-check.mjs
-node scripts/desktop-lifecycle-check.mjs
+npm.cmd run security
+npm.cmd run dist:win
+npm.cmd run check:release
 ```
 
-Os testes Node verificam contrato, captura, sessão, mensagens, persistência, capacidade, encerramento, staging e limpeza do harness. O smoke desktop usa microfone sintético, verifica áudio RTP nos dois sentidos, vídeo recebido e parada de captura. A saída física fica desativada com `--mute-audio`; os pacotes continuam sendo verificados. O teste de perfil exercita preferências após mudança de porta, instância única, câmera/subframe negados e cancelamento da seleção. Capturas atuais ficam em `test-results/desktop/`; os registros em `artifacts/` são históricos.
+O último comando reutiliza a candidata construída: compara módulos emitidos/bundle ao ASAR e SHA-256 do EXE; executa testes Node, controles de conta/grupo/convite, perfil, captura, ciclo de vida e startup em source/empacotado, além do wrapper portátil real e auditoria. Os 18 gates sequenciais ficam em `test-results/release/`, a matriz em `test-results/release-matrix.json` e o manifesto em `test-results/build.json`. `artifacts/` contém evidência histórica.
 
-Para testar também um servidor separado e um terceiro participante entrando durante a transmissão:
+Para executar um checker isoladamente após compilar:
 
 ```powershell
-$env:CONVERSA_TEST_EXTERNAL = '1'
-node scripts/desktop-smoke.mjs
+node scripts/with-test-postgres.mjs -- node scripts/desktop-smoke.mjs
+node scripts/with-test-postgres.mjs -- node scripts/desktop-accounts-check.mjs
+node scripts/desktop-client-check.mjs
 ```
 
-Depois de `npm.cmd run dist:win`, execute `node scripts/check-package.mjs` para conferir imports, bundle, versão e SHA-256 do portátil. O manifesto atual fica em `test-results/build.json`; `artifacts/build.json` é histórico. Para testar o aplicativo empacotado, defina `CONVERSA_TEST_EXECUTABLE` com o campo `executable` desse manifesto e execute os scripts desktop. Isso testa o executável win-unpacked. Para abrir e verificar o wrapper portátil real, execute `node scripts/portable-startup-check.mjs`; ele usa perfil temporário, verifica entrada/envio e fecha o aplicativo. Os testes locais não verificam NAT entre redes distintas, desempenho com seis transmissores nem áudio real do sistema.
+Os testes de mídia usam dispositivos sintéticos e `--mute-audio`; não demonstram audibilidade física. O diagnóstico `startup-audio-check.mjs` observa abertura/reload sem microfone sintético, com 16 amostras de 750 ms e inventário de aquisição/reprodução. As flags `CONVERSA_CHECK_SOURCE`, `CONVERSA_CHECK_MUTED` e `CONVERSA_TEST_EXTERNAL` aceitam somente `0/1`; `CONVERSA_TEST_EXECUTABLE` seleciona o executável empacotado.
 
-Para verificar a abertura normal, sem microfone sintético nem flags para silenciar o processo inteiro:
+**MEDIA/T9 continua pendente:** são necessários dois PCs Windows na mesma LAN confiável, fones/microfones reais e dois operadores para o [roteiro A7 de dez minutos](.specs/features/captura-midia-saida/uat.md), usando o mesmo hash de candidata validada. Ruído, eco, loopback real, qualidade com seis transmissores e NAT entre redes não estão aprovados.
 
-```powershell
-$env:CONVERSA_CHECK_MUTED = '1'
-$env:CONVERSA_CHECK_SOURCE = '1'
-node scripts/startup-audio-check.mjs
-```
+## Histórico e referências
 
-O diagnóstico observa todas as janelas, contadores de aquisição instalados antes do App na abertura/reload, reprodução audível e elementos de áudio/vídeo na entrada. São oito amostras de 750 ms em cada fase. O resultado atual fica em `test-results/startup-audio.json`. O modo source não lê manifesto. Para diagnosticar o executável empacotado, use `CONVERSA_CHECK_SOURCE=0` e o manifesto atual ou `CONVERSA_TEST_EXECUTABLE`. As flags booleanas aceitam somente `0` e `1`. Esses ensaios não demonstram a causa do ruído físico relatado.
+[Estado atual e decisões](.specs/STATE.md), [especificação MERGE](.specs/features/merge-drocsid/spec.md), [integridade da regressão](.specs/features/merge-drocsid/test-integrity.md) e [migração TypeScript](docs/migracao-typescript.md) registram a evolução.
 
-## O que falta para um produto completo
-
-Em 2026-10-25, o usuário autorizou a sequência: revisão documental, estabilização e, somente depois de sua conclusão, migração de todo o JavaScript próprio para TypeScript. A [revisão de coerência](docs/revisao-coerencia-documental.md) registra a entrega documental; o [Handoff](.specs/STATE.md) informa o estado atual.
-
-Em 31/10, o fechamento automático passou na candidata `ec874ec`: 94/94 testes Node, 158 provas STAB e 93 provas MEDIA aprovadas, além de 17 sensores por asserção. O gate formal STAB passou; MEDIA continua com o gate integral reprovado somente por T9/MEDIA-33/34 físicos não executados. Os mesmos Verifiers apenas indexaram os pareceres existentes, sem outra rodada. Código/testes e portátil permanecem iguais aos da candidata anterior, com bytes/hash reconferidos; a matriz de 16 gates foi preservada para esse mesmo produto, sem nova build. As [provas STAB](.specs/features/estabilizacao/evidence-current.md) e [MEDIA](.specs/features/captura-midia-saida/evidence.md) registram seus escopos separados. Recursos físicos continuam indisponíveis conforme resposta do usuário de 26/10, sem certificação de ruído, eco ou loopback real. A [preparação TypeScript](docs/migracao-typescript.md) não inicia a migração.
-
-Para o produto futuro, o [plano proposto](PLANO_PRODUTO.md) mantém estas etapas, sujeitas às decisões e validações indicadas:
-
-1. **Uso pela internet sem configuração manual:** hospedar servidor HTTPS/WSS e TURN, abrir convites diretamente no aplicativo e validar chamadas entre computadores em redes diferentes.
-2. **Identidade e privacidade:** contas, login, salas privadas, convites com expiração, papéis e permissões; hoje o acesso é de convidado.
-3. **Áudio no uso diário:** escolher microfone e fone/alto-falante, controlar volumes, push-to-talk e testar eco, Bluetooth e áudio real do sistema. Hoje são usados os dispositivos padrão.
-4. **Resiliência:** reconexão automática do servidor e recuperação da mídia após mudanças de rede. Hoje, a reconexão é manual; mensagens sem confirmação permanecem disponíveis para reenvio manual idempotente durante a mesma execução.
-5. **Distribuição e operação:** instalador, assinatura do executável, atualização automática, recuperação de falhas e backups do servidor.
-6. **Qualidade e capacidade:** testes prolongados com hardware real, redes lentas e seis participantes. Avaliar com essas medidas se grupos maiores exigem SFU; a troca da malha não está aprovada.
-
-Anexos, busca, edição de mensagens, reações, notificações e mensagens privadas são expansões adicionais; não são necessários para validar primeiro o fluxo de grupo, voz e tela.
-
-## Relação com a investigação do Discord
-
-A inspeção inicial D1 examinou o `package.json` do `app.asar` da instalação local `app-1.0.9265`, que declarou `bundle.js` como entrada Electron. A [investigação de 2026-10-25](.specs/features/captura-midia-saida/discord-investigation.md) acrescentou D2 e D6–D11: análises estáticas delimitadas de artefatos instalados e de um renderer histórico recuperado do cache. Esse cache não foi vinculado ao renderer ativo. D3–D5 são referências documentais. Nenhum código proprietário foi incorporado ao Conversa.
-
-U1 é evidência de UI/processo externa ao REA: o laboratório Conversa Lab / Teste de mídia foi criado com aceite explícito, sem convites; entrada e saída de voz foram confirmadas somente na interface. Câmera e tela estavam indisponíveis; a fonte artificial não foi compartilhada e foi encerrada. O gate de vídeo encontrado é hipótese de causa, e quatro dúvidas REA permanecem abertas. Os registros ficam fora do Git em `../discord-research/2026-10-25-media/` e `../discord-research/2026-10-25-runtime/`.
-
-Evidência original: `../discord-research/discord-package-evidence.json`, ID `ev_9300ac6c7d10ca4a8f8a67a55a85ae0c5da52cc25ea05a77addabf037502c158`. Artefato SHA-256: `0025c02c7241045a12464309604ec4d5b8ec7ed2ce43cce05d5dacb8f253f672`. A estrutura, transporte, limites e interface do Conversa são decisões próprias de implementação.
-
-Referências: [Electron: captura de mídia](https://www.electronjs.org/docs/latest/api/session#sessetdisplaymediarequesthandlerhandler-opts), [Electron: segurança](https://www.electronjs.org/docs/latest/tutorial/security), [WebRTC: conexões](https://webrtc.org/getting-started/peer-connections), [WebRTC: TURN](https://webrtc.org/getting-started/turn-server).
+A [investigação Discord](.specs/features/captura-midia-saida/discord-investigation.md) é referência histórica delimitada de artefatos e UI. O cache não foi vinculado ao renderer ativo; o gate de vídeo é hipótese, não diagnóstico observado. Nenhum código proprietário foi incorporado. Os registros grandes continuam em `C:/Code/discord-research/`, fora do Git.
