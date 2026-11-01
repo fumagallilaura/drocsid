@@ -9,7 +9,7 @@ Usar tlc-spec-driven carregada pelo MCP. Execução local e decisões técnicas 
 **Design**: [design.md](design.md)
 **Status**: In Progress
 **Build**: npm.cmd test; npm.cmd run build
-**Run integration**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/merge.test.js
+**Run integration**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/merge.test.js tests/authorization.test.js
 **Run postgres**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/database.test.js
 **Run migration**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/import-sqlite.test.js
 **Run identity**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/identity.test.js
@@ -185,8 +185,8 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12
 
 **Done when**:
 
-- [ ] Bootstrap/serviço em TS exigem autenticação na rede, bloqueiam acesso cruzado antes de consultar dados e preservam dados/shutdown.
-- [ ] Gate build aprovado, contagem94 + delta, zero falha/skip/cancelled/todo; evidência e commit da tarefa registrados.
+- [x] Bootstrap/serviço em TS usam o mesmo pool PostgreSQL e exigem sessão na rede; ICE, dados, administração e upgrade são autorizados. Convidado só no modo explícito com listener/endereço/Host reais de loopback. Tickets descartáveis, revogação de todos os sockets da sessão, inspeção de expiração, autor estável/recibo por dono e broadcast único concorrente. Session usa Bearer/ticket em memória, aceita conta sem salas e isola/limpa o contexto ao trocar conta/sair. Fila por conexão mantém ordem após awaits; shutdown interrompe trabalho PG e fecha o pool. Corrigido bloqueio entre logout e consumo de ticket, reproduzido pelo novo teste: ambos agora bloqueiam sessão antes de ticket.
+- [x] Gate build PASS:141/141 (126+12 autorização+3 Session), zero fail/skip/cancelled/todo; strict Node/browser, Vite, desktop-smoke, perfil, capture e lifecycle PASS. Doze sensores por AssertionError com bytes originais intactos; o teste de broadcast ganhou uma barreira real de leitura para assegurar disputa dos dois escritores antes do commit. Produção audit0. Evidências `test-results/drocsid-merge-t8-*`/`merge-t8-sensors.json`. Integridade AST:126 casos anteriores presentes,774/779 assert idênticos e5 adaptados ao PostgreSQL/importador (fixture da porta ocupada, causa de conexão, plano sem Sort/com Index Scan, contagem10000 e recusa assíncrona do legado);113 ACs e Decisions intactos. Commit desta tarefa `feat(server): authorize postgresql service and websocket sessions`. Host/client default, marca, UI e pacote final ainda T9–T12.
 
 **Tests**: unit/integration, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
@@ -301,7 +301,7 @@ Proof: run identity | ✔ MERGE-05: registration stores salted scrypt hashes and
 Proof: run identity | ✔ MERGE-06: authentication failures and concurrency are bounded
 
 **C7** - O produto SHALL cumprir MERGE-07, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-07: expired or revoked sessions cannot be reused
+Proof: run integration | ✔ MERGE-07: logout closes every owned media connection while another session remains usable
 
 **C8** - O produto SHALL cumprir MERGE-08, conforme valor e condição da spec.
 Proof: run integration | ✔ MERGE-08: network access and websocket tickets require authentication
@@ -353,4 +353,4 @@ Proof: run integration | ✔ MERGE-21: database credentials stay in the server w
 
 **Walked:** pendente da implementação; checkers atuais seguem como regressão, não aprovação automática da nova interface.
 
-**Current:** T1–T7 concluídas. T1 em41afbae/T2 em8d78b1f; PostgreSQL em AD-003/a3f3367, T3 em1965746, T4 em1c18786, Call em8a4e2a3 e Session em61c4b94. T7 neste commit: identidade/grupos transacionais,126/126 + strict Node/browser e Vite. Sensores23/23 (T3:4,T4:3,T5:3,T6:4,T7:9), por AssertionError em cópias isoladas e bytes originais intactos. Próxima T8: ligar HTTP/WS/bootstrap ao PostgreSQL e autorizar antes de dados/recibos/sinais; preservar fechamento/filas após awaits. Serviço ativo ainda SQLite até T8; login/UI, TS completo e pacote pendentes. Produção audit0; audit completo exit1 com15 moderadas de desenvolvimento e0 altas/críticas, limpeza T12 pendente. MEDIA/T9 física indisponível; nenhuma certificação transferida. PostgreSQL17.11 real local no TEMP. Verifier MERGE somente após T12.
+**Current:** T1–T8 concluídas. T7 emc11135e; T8 neste commit liga serviço/bootstrap ao PostgreSQL e autoriza HTTP/WS.141/141, strict Node/browser/Vite e desktop-smoke/profile/capture/lifecycle PASS; produção audit0. Sensores dos lotes35/35 (T3:4,T4:3,T5:3,T6:4,T7:9,T8:12), por AssertionError em cópias isoladas com bytes originais intactos. Nova disputa logout/ticket reproduzida e corrigida; broadcast concorrente agora força ambos os leitores a observar ausência antes de escrever. Próxima T9: Electron main/policy/preload em TS, marca Drocsid e perfil legado; cliente por API sem exigir PostgreSQL/credenciais nos PCs. Estado intermediário ainda usa host de desenvolvimento nos checkers, UI de contas/grupos T10, harness TS restante T11 e pacote/limpeza T12. Nenhum Verifier MERGE antes de T12. MEDIA/T9 física indisponível; sem push/deploy. Auditoria completa anterior:15 moderadas dev/0 altas ou críticas; limpeza final pendente.

@@ -2,10 +2,12 @@ import { _electron as electron } from 'playwright';
 import { expect } from '@playwright/test';
 import { resolve } from 'node:path';
 import { createTestProfile, removeTestProfile, closeDesktop, closeResources } from './test-runtime.mjs';
+import { createPostgresFixture } from '../tests/helpers/postgres.js';
 
 const profile = createTestProfile(), env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
-let desktop;
+let desktop,postgres;
 try {
+  postgres=await createPostgresFixture();env.DATABASE_URL=postgres.url;env.DROCSID_TRUSTED_LOCAL='1';env.DROCSID_HOST='1';
   desktop = await electron.launch({ args: [resolve('tests/fixtures/desktop-main.mjs'), `--user-data-dir=${profile}`, '--use-fake-device-for-media-stream', '--mute-audio'], env, timeout: 15000 });
   const first = await desktop.firstWindow();
   const openGuard = async () => {
@@ -155,5 +157,5 @@ try {
   console.log('PASS: native gesture, guard across Call owners, cancellation before handler, duplicate handler, 60s boundary, invalid source/key and old-document IPC.');
 } finally {
   try { await closeResources([() => closeDesktop(desktop)]); }
-  finally { removeTestProfile(profile); }
+  finally { try{await postgres?.close();}finally{removeTestProfile(profile);} }
 }

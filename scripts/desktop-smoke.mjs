@@ -3,6 +3,7 @@ import { expect } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createService } from '../server/service.js';
+import { createPostgresFixture } from '../tests/helpers/postgres.js';
 import { PROTOCOL_VERSION } from '../shared/protocol.js';
 import { readFlag, createTestProfile, removeTestProfile, closeDesktop, closeResources } from './test-runtime.mjs';
 
@@ -78,9 +79,10 @@ const desktopEnv = { ...process.env };
 delete desktopEnv.ELECTRON_RUN_AS_NODE;
 const externalMode = readFlag('CONVERSA_TEST_EXTERNAL');
 const profile = createTestProfile();
-let external, desktop;
+let external, desktop, postgres;
 try {
-external = externalMode ? createService({ dbPath: ':memory:', iceServers: [] }) : null;
+postgres=await createPostgresFixture();desktopEnv.DATABASE_URL=postgres.url;desktopEnv.DROCSID_TRUSTED_LOCAL='1';desktopEnv.DROCSID_HOST='1';
+external = externalMode ? await createService({ database:await postgres.open(),trustedLocal:true, iceServers: [] }) : null;
 if (external) await new Promise(resolveListen => external.server.listen(0, '127.0.0.1', resolveListen));
 const externalUrl = external ? `http://127.0.0.1:${external.server.address().port}` : '';
 desktop = await electron.launch({
@@ -444,5 +446,5 @@ desktop = await electron.launch({
   console.log('PASS: Windows desktop, two users, group chat, voice RTP, mute, screen video, stop capture, room creation and call cleanup.');
 } finally {
   try { await closeResources([() => closeDesktop(desktop), () => external?.close()]); }
-  finally { removeTestProfile(profile); }
+  finally { try{await postgres?.close();}finally{removeTestProfile(profile);} }
 }

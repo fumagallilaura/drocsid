@@ -34,7 +34,7 @@ ipcMain.handle('preferences-save', (event, value) => {
   } catch (error) { logFailure('preferences', error.code === 'INVALID_INPUT' ? 'INVALID_INPUT' : 'PERSISTENCE_FAILED', null, error); return { ok: false, code: error.code === 'INVALID_INPUT' ? 'INVALID_INPUT' : 'PERSISTENCE_FAILED' }; }
 });
 const iceServers = readIceServers(process.env.ICE_SERVERS === undefined ? undefined : JSON.parse(process.env.ICE_SERVERS));
-service = createService({ dbPath: resolve(app.getPath('userData'), 'conversa.sqlite'), iceServers });
+service = await createService({ iceServers, trustedLocal:process.env.DROCSID_TRUSTED_LOCAL==='1' });
 service.app.use((_req, res, next) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' http: https: ws: wss:");
   next();

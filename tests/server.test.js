@@ -1,19 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { client } from './helpers/client.js';
-import { createService } from '../server/service.js';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { startService } from './helpers/service.js';
+import { postgresFixture } from './helpers/postgres.js';
 
-async function start(dbPath = ':memory:') {
-  const service = createService({ dbPath, iceServers: [] });
-  await new Promise(resolve => service.server.listen(0, '127.0.0.1', resolve));
-  return { ...service, url: `ws://127.0.0.1:${service.server.address().port}/ws` };
+async function start(t, fixture) {
+  return startService(t,{fixture});
 }
 
 test('group messages, room isolation, signaling authorization and disconnect cleanup', async t => {
-  const service = await start(); t.after(() => service.close());
+  const service = await start(t); t.after(() => service.close());
   const ana = await client(service.url, 'Ana');
   const bia = await client(service.url, 'Bia');
   const caio = await client(service.url, 'Caio', 'cafe');
@@ -38,24 +34,23 @@ test('group messages, room isolation, signaling authorization and disconnect cle
 });
 
 test('messages and custom rooms survive a server restart', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'conversa-test-'));
-  const dbPath = join(directory, 'test.sqlite');
-  let service = await start(dbPath);
-  t.after(async () => { await service.close(); rmSync(directory, { recursive: true, force: true }); });
+  const fixture=await postgresFixture(t);
+  let service = await start(t,fixture);
+  t.after(async () => { await service.close(); });
   const ana = await client(service.url, 'Ana');
   ana.send({ type: 'create-room', name: 'Estúdio' });
   const { room } = await ana.next('room-created');
   ana.send({ type: 'join', name: 'Ana', room: room.id }); await ana.next('joined');
   ana.send({ type: 'message', text: 'Persistiu!' }); await ana.next('message');
   await service.close();
-  service = await start(dbPath);
+  service = await start(t,fixture);
   const bia = await client(service.url, 'Bia', room.id);
   bia.send({ type: 'join', name: 'Bia', room: room.id });
   assert.equal((await bia.next('joined')).messages[0].text, 'Persistiu!');
 });
 
 test('calls enforce a six-person limit and free a slot on departure', async t => {
-  const service = await start(); t.after(() => service.close());
+  const service = await start(t); t.after(() => service.close());
   const people = [];
   for (let i = 0; i < 7; i++) people.push(await client(service.url, `Pessoa ${i}`));
   for (const person of people.slice(0, 6)) {

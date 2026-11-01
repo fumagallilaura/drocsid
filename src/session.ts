@@ -5,7 +5,7 @@ type Reply = Extract<ServerEvent,{type:'joined'|'room-created'|'message-accepted
 type Hello = Extract<ServerEvent,{type:'hello'}>;
 export type SessionInfo = { id:string; name:string; server:string };
 type Configuration = Record<string,unknown> & { protocolVersion:typeof PROTOCOL_VERSION; iceServers:IceServer[]; maxCallMembers:number };
-export type OutboxItem = { server:string; room:string; text:string; operationId:string; status:'pending'|'failed'; error?:string|null; confirmed?:Message };
+export type OutboxItem = { server:string; accountId:string|null; room:string; text:string; operationId:string; status:'pending'|'failed'; error?:string|null; confirmed?:Message };
 export type SessionState = { session:SessionInfo|null; connected:boolean; connecting:boolean; rooms:Room[]; room:Room|null; roomPending:boolean;
   members:Member[]; messages:Message[]; draft:string; outbox:OutboxItem[]; config:Configuration|null };
 interface SocketPort {
@@ -14,7 +14,7 @@ interface SocketPort {
   onmessage:WebSocket['onmessage']|((event:{data:unknown})=>void);
 }
 interface Clock { setTimeout(fn:()=>void,ms:number):unknown; clearTimeout(token:unknown):void }
-type Fetcher = (url:string, options:{signal:AbortSignal})=>Promise<{ok:boolean;json():Promise<unknown>}>;
+type Fetcher = (url:string, options:{signal:AbortSignal;method?:string;headers?:Record<string,string>;body?:string})=>Promise<{ok:boolean;json():Promise<unknown>}>;
 type Options = { onState?:(state:SessionState)=>void; onError?:(error:ProtocolError)=>void; onSignal?:(event:Extract<ServerEvent,{type:'signal'}>)=>void;
   onPresence?:(members:Member[])=>void; onDisconnect?:()=>void; fetch?:Fetcher; WebSocket?:new(url:string)=>SocketPort; clock?:Clock; localOrigin?:string };
 type RequestAction = Exclude<ClientAction,{type:'signal'}>;
@@ -52,6 +52,7 @@ export class Session {
   state:SessionState;epoch:number;callGeneration:number;presenceRevision:number;
   pending:Map<string,Pending>;phases:Set<(error:ProtocolError)=>void>;drafts:Map<string,string>;outbox:Map<string,OutboxItem>;
   ws:SocketPort|null=null;controller:AbortController|null=null;origin='';name='';
+  accessToken:string|null=null;accountId:string|null=null;
   activeCallId:string|null=null;activeCallGeneration:number|null=null;screenRequest:ClientEvent|null=null;roomContext:string|null=null;
   constructor({ onState = () => {}, onError = () => {}, onSignal = () => {}, onPresence = () => {}, onDisconnect = () => {},
     fetch: fetcher = globalThis.fetch?.bind(globalThis), WebSocket: Socket = globalThis.WebSocket, clock = realClock,
@@ -71,10 +72,10 @@ export class Session {
       item.reject(Object.assign(new ProtocolError('CANCELLED'), { requestId, callId, generation, phase: item.event.type }));
     }
   }
-  key(room:string|undefined = this.state.room?.id) { return JSON.stringify([this.origin, room]); }
+  key(room:string|undefined = this.state.room?.id) { return JSON.stringify([this.origin, this.accountId, room]); }
   publish(patch:Partial<SessionState> = {}) {
     this.state = { ...this.state, ...patch };
-    this.state.outbox = [...this.outbox.values()].filter(e => e.server === this.origin && e.room === this.state.room?.id).map(e => ({ ...e }));
+    this.state.outbox = [...this.outbox.values()].filter(e => e.server === this.origin && e.accountId === this.accountId && e.room === this.state.room?.id).map(e => ({ ...e }));
     this.onState(this.state);
   }
   setDraft(text:string) { if (this.state.room) this.drafts.set(this.key(), text); this.publish({ draft: text }); }
@@ -99,24 +100,47 @@ export class Session {
     this.publish({ connected: false, connecting: false, roomPending: false, members: [], ...(welcome ? { session: null, room: null, messages: [], draft: '' } : {}) });
     if (error.code !== 'CANCELLED') this.onError(error);
   }
-  disconnect() { this.lose(new ProtocolError('CANCELLED'), true); }
-  async connect({ name, server, room = 'geral' }:{name:string;server:string;room?:string}) {
+  disconnect() {
+    if(this.accountId!==null){this.drafts.clear();this.outbox.clear();}
+    this.accountId=null;this.accessToken=null;this.lose(new ProtocolError('CANCELLED'), true);
+  }
+  async logout() {
+    const token=this.accessToken,origin=this.origin;this.disconnect();
+    if(token)await this.wait((async()=>{
+      const response=await this.fetcher(`${origin}/api/auth/logout`,{method:'POST',headers:{Authorization:`Bearer ${token}`},signal:new AbortController().signal});
+      if(!response.ok)throw new ProtocolError('CONNECTION_FAILED','Sessão local encerrada. Não foi possível confirmar a saída no servidor.');
+    })(),'logout');
+  }
+  async connect({ name, server, room, token }:{name?:string;server:string;room?:string;token?:string}) {
     let destination;
     try {
-      if (typeof name !== 'string' || !name.trim() || name.trim().length > 32) throw new ProtocolError('INVALID_INPUT');
-      destination = parseInvite(server, this.localOrigin, room);
+      if (token ? !/^[A-Za-z0-9_-]{43}$/.test(token) : typeof name !== 'string' || !name.trim() || name.trim().length > 32) throw new ProtocolError('INVALID_INPUT');
+      destination = parseInvite(server, this.localOrigin, room??'geral');
     } catch (error) { const cause=failure(error);this.onError(cause);throw cause; }
     const epoch = ++this.epoch;
     this.callGeneration = 0;
     this.cancelTransport(new ProtocolError('CANCELLED')); this.onDisconnect();
-    this.origin = destination.server; this.name = name.trim();
+    this.origin = destination.server; this.name = name?.trim()??'';this.accessToken=token??null;
     this.publish({ ...emptyState(), connecting: true });
     const controller=new AbortController();this.controller=controller;
+    const headers:Record<string,string>=token?{Authorization:`Bearer ${token}`} : {};
+    const read=async(path:string,method='GET')=>{
+      const response=await this.fetcher(`${destination.server}${path}`,{signal:controller.signal,headers,method});
+      const value=await response.json();
+      if(!response.ok)throw new ProtocolError(object(value)&&typeof value.code==='string'?value.code:'CONNECTION_FAILED',object(value)&&typeof value.message==='string'?value.message:'Falha na comunicação com o servidor.');
+      return value;
+    };
     try {
+      let accountId:string|null=null;
+      if(token){
+        const profile=await this.wait(read('/api/me'),'authentication');if(epoch!==this.epoch)return;
+        if(!object(profile)||!object(profile.user)||typeof profile.user.id!=='string'||!profile.user.id||profile.user.id.length>128||typeof profile.user.username!=='string'||!/^[a-z0-9_.]{2,32}$/.test(profile.user.username))throw new ProtocolError('INVALID_EVENT');
+        accountId=profile.user.id;this.name=profile.user.username;
+      }
+      if(this.accountId!==accountId){this.drafts.clear();this.outbox.clear();}
+      this.accountId=accountId;
       const value = await this.wait((async () => {
-        const response = await this.fetcher(`${this.origin}/api/config`, { signal: controller.signal });
-        if (!response.ok) throw new ProtocolError('CONNECTION_FAILED');
-        return response.json();
+        return read('/api/config');
       })(), 'configuration');
       if (epoch !== this.epoch) return;
       if (!object(value)||value.protocolVersion !== PROTOCOL_VERSION) throw new ProtocolError('INCOMPATIBLE_PROTOCOL');
@@ -124,6 +148,11 @@ export class Session {
       if (value.maxCallMembers !== LIMITS.callMembers) throw new ProtocolError('INVALID_EVENT');
       const config:Configuration={...value,protocolVersion:PROTOCOL_VERSION,iceServers:readIceServers(value.iceServers),maxCallMembers:value.maxCallMembers};
       const address = new URL('/ws', this.origin); address.protocol = address.protocol === 'https:' ? 'wss:' : 'ws:';
+      if(token){
+        const ticket=await this.wait(read('/api/ws-ticket','POST'),'ticket');if(epoch!==this.epoch)return;
+        if(!object(ticket)||typeof ticket.ticket!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(ticket.ticket))throw new ProtocolError('INVALID_EVENT');
+        address.searchParams.set('ticket',ticket.ticket);
+      }
       const ws = new this.Socket(address.href); this.ws = ws;
       let greeted=false;
       const opened=Promise.withResolvers<void>(),hello=Promise.withResolvers<Hello>();hello.promise.catch(()=>{});
@@ -151,10 +180,12 @@ export class Session {
       await this.wait(opened.promise, 'websocket');
       const greeting = await helloWaiting;
       if (epoch !== this.epoch) return;
-      if (!greeting.rooms.some(r => r.id === destination.room)) throw new ProtocolError('INVALID_INPUT', 'A sala do endereço não existe.');
+      const explicitRoom=room!==undefined||new URL(server.trim()||this.localOrigin).searchParams.has('room');
+      const requested=token&&!explicitRoom?greeting.rooms[0]?.id:destination.room;
+      if (requested&&!greeting.rooms.some(r => r.id === requested)) throw new ProtocolError('INVALID_INPUT', 'A sala do endereço não existe.');
       this.publish({ connected: true, connecting: false, rooms: greeting.rooms, config,
         session: { id: greeting.id, name: this.name, server: this.origin } });
-      await this.changeRoom(destination.room);
+      if(requested)await this.changeRoom(requested);
       if (epoch === this.epoch) return this.state.session;
     } catch (error) {
       if (epoch !== this.epoch) return;
@@ -243,7 +274,7 @@ export class Session {
   confirmMessage(message:Message) {
     if(message.operationId===null)return;
     const item = this.outbox.get(message.operationId);
-    if (item && item.server === this.origin && item.room === message.room) { item.confirmed = message; this.outbox.delete(item.operationId); }
+    if (item && item.server === this.origin && item.accountId === this.accountId && item.room === message.room) { item.confirmed = message; this.outbox.delete(item.operationId); }
   }
   addMessage(message:Message) {
     this.confirmMessage(message);
@@ -253,13 +284,13 @@ export class Session {
   async sendText(text = this.state.draft) {
     if (!this.state.connected || this.state.roomPending || !this.state.room) throw new ProtocolError('INVALID_EVENT');
     if (!text.trim() || text.trim().length > LIMITS.text) throw new ProtocolError('INVALID_INPUT');
-    const item:OutboxItem = { server: this.origin, room: this.state.room.id, text, operationId: crypto.randomUUID(), status: 'pending' };
+    const item:OutboxItem = { server: this.origin, accountId:this.accountId, room: this.state.room.id, text, operationId: crypto.randomUUID(), status: 'pending' };
     this.outbox.set(item.operationId, item); this.setDraft('');
     return this.submit(item);
   }
   async retry(operationId:string) {
     const item = this.outbox.get(operationId);
-    if (!item || item.server !== this.origin || item.room !== this.state.room?.id || this.state.roomPending) throw new ProtocolError('ROOM_MISMATCH');
+    if (!item || item.server !== this.origin || item.accountId !== this.accountId || item.room !== this.state.room?.id || this.state.roomPending) throw new ProtocolError('ROOM_MISMATCH');
     if (item.status === 'pending') return;
     return this.submit(item);
   }
@@ -268,7 +299,7 @@ export class Session {
     try {
       const accepted = await this.request({ type: 'message', room: item.room, operationId: item.operationId, text: item.text });
       item.confirmed = accepted.message; this.outbox.delete(item.operationId);
-      if (this.state.room?.id === item.room && this.origin === item.server) this.addMessage(accepted.message);
+      if (this.state.room?.id === item.room && this.origin === item.server && this.accountId === item.accountId) this.addMessage(accepted.message);
       else this.publish();
       return accepted.message;
     } catch (error) {

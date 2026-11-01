@@ -174,16 +174,27 @@ export class Database {
   }
 
   async saveMessage(input: MessageInput): Promise<Message> {
+    return (await this.commitMessage(input)).message;
+  }
+
+  async receipt(operationId: string, ownerId: string | null, room: string, text: string): Promise<Message | undefined> {
+    const rows = await this.query(`SELECT ${messageColumns},receipt_owner FROM drocsid.messages WHERE operation_id=$1`, [operationId]);
+    if (!rows[0]) return;
+    if (rows[0].receipt_owner !== ownerId || rows[0].room !== room || rows[0].text !== text) throw new ProtocolError('OPERATION_CONFLICT');
+    return readMessage(rows[0]);
+  }
+
+  async commitMessage(input: MessageInput): Promise<{ message: Message; inserted: boolean }> {
     if (!input.operationId || (input.ownerId !== null && input.ownerId !== input.authorId)) throw new ProtocolError('INVALID_INPUT');
     readMessage({ ...input, created: String(input.created), sequence: '1' });
     return this.transaction(async client => {
       const rows = (await client.query<Row>(`INSERT INTO drocsid.messages(id,room,author,text,created,author_id,operation_id,receipt_owner)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(operation_id) DO NOTHING RETURNING ${messageColumns}`,
       [input.id, input.room, input.author, input.text, input.created, input.authorId, input.operationId, input.ownerId])).rows;
-      if (rows.length) return readMessage(rows[0]);
+      if (rows.length) return { message: readMessage(rows[0]), inserted: true };
       const existing = (await client.query<Row>(`SELECT ${messageColumns},receipt_owner FROM drocsid.messages WHERE operation_id=$1`, [input.operationId])).rows[0];
       if (!existing || existing.receipt_owner !== input.ownerId || existing.room !== input.room || existing.text !== input.text) throw new ProtocolError('OPERATION_CONFLICT');
-      return readMessage(existing);
+      return { message: readMessage(existing), inserted: false };
     });
   }
 

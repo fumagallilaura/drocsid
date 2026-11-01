@@ -6,6 +6,7 @@ import { createServer } from 'node:net';
 import { spawn } from 'node:child_process';
 import { createTestProfile, removeTestProfile, closeDesktop, closeResources } from './test-runtime.mjs';
 import { startServer } from '../server/index.js';
+import { createPostgresFixture } from '../tests/helpers/postgres.js';
 
 const profile = createTestProfile();
 const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
@@ -14,14 +15,15 @@ const executablePath = process.env.CONVERSA_TEST_EXECUTABLE;
 const args = [...(executablePath ? [] : [resolve('.')]), `--user-data-dir=${profile}`, '--use-fake-device-for-media-stream', '--mute-audio'];
 const launch = () => electron.launch({ ...(executablePath ? { executablePath } : {}), args, env, timeout: 15000 });
 const preferencesPath = join(profile, 'preferences.json');
-let desktop, blocker, comparison;
+let desktop, blocker, comparison, postgres;
 const nativeErrors = [];
 function observeNative(application) {
   application.process().stderr.on('data', bytes => { const text = bytes.toString(); if (/UnhandledPromiseRejection|uncaughtException/.test(text)) nativeErrors.push(text); });
 }
 try {
+  postgres=await createPostgresFixture();env.DATABASE_URL=postgres.url;env.DROCSID_TRUSTED_LOCAL='1';env.DROCSID_HOST='1';
   writeFileSync(preferencesPath, '{invalid preferences');
-  comparison=await startServer({production:true,env:{DB_PATH:':memory:',HOST:'127.0.0.1',PORT:'0',ICE_SERVERS:env.ICE_SERVERS}});
+  comparison=await startServer({production:true,env:{DATABASE_URL:postgres.url,DROCSID_TRUSTED_LOCAL:'1',HOST:'127.0.0.1',PORT:'0',ICE_SERVERS:env.ICE_SERVERS}});
   desktop = await launch();
   observeNative(desktop);
   let page = await desktop.firstWindow();
@@ -96,5 +98,5 @@ try {
   console.log('PASS: profile survives a forced port change; camera/subframe denied; duplicate host exits 1; system audio starts off.');
 } finally {
   try { await closeResources([() => closeDesktop(desktop), () => blocker && new Promise((resolveClose, reject) => blocker.close(error => error ? reject(error) : resolveClose())),()=>comparison?.close()]); }
-  finally { removeTestProfile(profile); }
+  finally { try{await postgres?.close();}finally{removeTestProfile(profile);} }
 }

@@ -127,20 +127,20 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 | MERGE-02 | US1 | Tasks | In Tasks |
 | MERGE-03 | US1 | Execute/T2–T6 + Tasks/T7–T11 | Partial: strict protocol, persistence/importer, Call and Session; remaining owners pending |
 | MERGE-04 | US1 | Execute/T4 + Tasks/T9 | Partial: legacy import data/preferences fixture bytes preserved; host profile pending |
-| MERGE-05 | US2 | Execute/T7 + Tasks/T8 | Component implemented; HTTP integration and final proofs pending |
-| MERGE-06 | US2 | Execute/T7 + Tasks/T8 | Component implemented; HTTP integration and final proofs pending |
-| MERGE-07 | US2 | Execute/T7 + Tasks/T8 | Partial: persistent expiry/revocation; connection termination pending |
-| MERGE-08 | US2 | Execute/T7 + Tasks/T8 | Partial: one-use expiring tickets; network authorization pending |
-| MERGE-09 | US3 | Execute/T7 + Tasks/T8 | Partial: group/room queries isolated; messages/presence/signaling pending |
-| MERGE-10 | US3 | Execute/T7 + Tasks/T8/T10 | Component implemented; service/UI integration and final proofs pending |
-| MERGE-11 | US3 | Execute/T7 + Tasks/T8/T10 | Component implemented; service/UI integration and final proofs pending |
-| MERGE-12 | US3 | Tasks | In Tasks |
+| MERGE-05 | US2 | Execute/T7/T8 | Identity and HTTP implemented; final proofs pending |
+| MERGE-06 | US2 | Execute/T7/T8 | Identity and HTTP limits tested; final proofs pending |
+| MERGE-07 | US2 | Execute/T7/T8 | Expiry/revocation, owned connection termination and logout/ticket concurrency tested; final proofs pending |
+| MERGE-08 | US2 | Execute/T7/T8 + Tasks/T9 | Network authorization and one-use tickets tested; desktop default pending |
+| MERGE-09 | US3 | Execute/T7/T8 + Tasks/T10 | Service isolation tested; UI integration and final proofs pending |
+| MERGE-10 | US3 | Execute/T7/T8 + Tasks/T10 | Atomic owner administration tested; UI integration and final proofs pending |
+| MERGE-11 | US3 | Execute/T7/T8 + Tasks/T10 | Atomic expiring/revocable invitations tested; UI integration and final proofs pending |
+| MERGE-12 | US3 | Execute/T3/T6/T8 | Authenticated receipts and concurrent single broadcast tested; final proofs pending |
 | MERGE-13 | US4 | Tasks | In Tasks |
 | MERGE-14 | US4 | Execute/T5/T6 + Tasks/T9/T10/T12 | Partial: typed Call/Session pass regression and desktop/capture/lifecycle; full integration pending |
 | MERGE-15 | US4 | Tasks | In Tasks |
 | MERGE-16 | US4 | Tasks | In Tasks |
 | MERGE-17 | US4 | Tasks | In Tasks |
-| MERGE-18 | US4 | Tasks | In Tasks |
+| MERGE-18 | US4 | Execute/T8 + Tasks/T12 | Service uses PostgreSQL; upstream duplicate app/dependencies cleanup pending |
 | MERGE-19 | US5 | Execute/T3 | Implemented; final proofs pending |
 | MERGE-20 | US5 | Execute/T4 | Implemented; final proofs pending |
 | MERGE-21 | US5 | Execute/T3 + Tasks/T8/T9/T12 | Partial: configuration and real no-fallback test; client/artifact checks pending |

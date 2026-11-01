@@ -162,9 +162,14 @@ export class Identity {
   async consumeTicket(ticket: unknown): Promise<Session> {
     const hash = this.tokenHash(ticket);
     return this.database.transaction(async client => {
-      const rows = (await client.query<Row>('DELETE FROM drocsid.ws_tickets WHERE ticket_hash=$1 AND expires_at>$2 RETURNING session_id', [hash, this.now()])).rows;
+      const rows = (await client.query<Row>('SELECT session_id FROM drocsid.ws_tickets WHERE ticket_hash=$1 AND expires_at>$2', [hash, this.now()])).rows;
       if (!rows[0]) throw unauthorized();
-      return this.session(client, text(rows[0].session_id), true);
+      // Logout locks the session before its cascading ticket deletion. Use the
+      // same order so a concurrent upgrade cannot prevent session revocation.
+      const session = await this.session(client, text(rows[0].session_id), true);
+      const consumed = (await client.query<Row>('DELETE FROM drocsid.ws_tickets WHERE ticket_hash=$1 AND session_id=$2 AND expires_at>$3 RETURNING session_id', [hash, session.id, this.now()])).rows;
+      if (!consumed[0]) throw unauthorized();
+      return session;
     });
   }
 

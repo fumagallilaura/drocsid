@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createServer, connect } from 'node:net';
 import { resolve } from 'node:path';
 import { readFlag, desktopTarget, closeResources, closeDesktop, createTestProfile, removeTestProfile } from '../scripts/test-runtime.mjs';
-import { createService } from '../server/service.js';
+import { startService } from './helpers/service.js';
 import { client } from './helpers/client.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -40,9 +40,8 @@ test('BUILD-08: a stalled cleanup has a terminal result within five seconds', as
   assert.equal(killed, true); await desktopResult;
 });
 
-test('BUILD-08: WS closure rejects a pending event instead of waiting for its timeout', async () => {
-  const service = createService({ dbPath: ':memory:', iceServers: [] });
-  await new Promise(resolveListen => service.server.listen(0, '127.0.0.1', resolveListen));
+test('BUILD-08: WS closure rejects a pending event instead of waiting for its timeout', async t => {
+  const service = await startService(t);
   try {
     const c = await client(`ws://127.0.0.1:${service.server.address().port}/ws`);
     const waiting = c.next('never'); c.ws.terminate(); await assert.rejects(waiting, /WS closed/);

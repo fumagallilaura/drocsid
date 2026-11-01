@@ -2,10 +2,12 @@ import { _electron as electron } from 'playwright';
 import { expect } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { desktopTarget, createTestProfile, removeTestProfile, closeDesktop, closeResources } from './test-runtime.mjs';
+import { createPostgresFixture } from '../tests/helpers/postgres.js';
 
 const profile=createTestProfile(),env={...process.env},target=desktopTarget();delete env.ELECTRON_RUN_AS_NODE;
-const ended=[],results=[],errors=[];let desktop,rootFixtures=0;
+const ended=[],results=[],errors=[];let desktop,postgres,rootFixtures=0;
 try{
+  postgres=await createPostgresFixture();env.DATABASE_URL=postgres.url;env.DROCSID_TRUSTED_LOCAL='1';env.DROCSID_HOST='1';
   desktop=await electron.launch({...target,args:[...target.args,`--user-data-dir=${profile}`,'--use-fake-device-for-media-stream','--mute-audio'],env,timeout:15000});
   const guard=await desktop.firstWindow();await expect(guard.getByRole('heading',{name:'Vamos nos encontrar?'})).toBeVisible();
   desktop.context().on('page',page=>page.on('pageerror',error=>errors.push(error.message)));
@@ -92,5 +94,5 @@ try{
   mkdirSync('test-results',{recursive:true});writeFileSync('test-results/media-lifecycle.json',JSON.stringify({synthetic:true,rootFixtures,results},null,2));
   console.log('PASS: all acquired mic, display and system-audio tracks ended within 1s on reload, disconnect, React Root.unmount and window close; playback blocked.');
 }finally{
-  try{await closeResources([()=>closeDesktop(desktop)]);}finally{removeTestProfile(profile);}
+  try{await closeResources([()=>closeDesktop(desktop)]);}finally{try{await postgres?.close();}finally{removeTestProfile(profile);}}
 }

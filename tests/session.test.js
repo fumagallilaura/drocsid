@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Session, parseInvite } from '../src/session.js';
-import { createService } from '../server/service.js';
+import { startService } from './helpers/service.js';
 import { Call } from '../src/rtc.js';
 
 const drain=async()=>{for(let i=0;i<20;i++)await Promise.resolve();};
@@ -30,6 +30,43 @@ function fixture(fetcher) {
   };
   return {session,sockets,errors,snapshots,clock,connect,setBackend:fn=>{backend=fn;}};
 }
+
+test('MERGE-08/13: an authenticated Session uses one-use tickets and clears another accounts context',async t=>{
+  const s=await startService(t,{trustedLocal:false}),password='uma senha longa e exclusiva';
+  const a=await s.identity.register('ana',password,'register-a'),b=await s.identity.register('bia',password,'register-b');
+  const ga=await s.identity.createGroup(a.user.id,'Equipe A'),gb=await s.identity.createGroup(b.user.id,'Equipe B');
+  const session=new Session();t.after(()=>session.disconnect());
+  await assert.doesNotReject(session.connect({server:s.origin,token:a.token}));assert.equal(session.state.session.name,'ana');assert.equal(session.state.room.id,ga.rooms[0].id);
+  assert.equal(session.ws.url.includes(a.token),false);assert.match(new URL(session.ws.url).searchParams.get('ticket'),/^[A-Za-z0-9_-]{43}$/);
+  const request=session.request.bind(session);session.request=()=>Promise.reject(Object.assign(Error('Falha'),{code:'RATE_LIMITED'}));
+  await assert.rejects(session.sendText('Texto privado A'),error=>error.code==='RATE_LIMITED');session.request=request;session.setDraft('Rascunho privado A');
+  assert.equal(session.state.outbox.length,1);
+  await session.connect({server:s.origin,token:b.token});assert.equal(session.state.session.name,'bia');assert.equal(session.state.room.id,gb.rooms[0].id);
+  assert.equal(session.state.draft,'');assert.deepEqual(session.state.outbox,[]);assert.deepEqual(session.state.messages,[]);assert.equal(session.drafts.size,0);assert.equal(session.outbox.size,0);
+  await session.logout();assert.equal(session.state.connected,false);assert.equal(session.state.session,null);assert.equal(session.accessToken,null);
+  const denied=await fetch(s.origin+'/api/config',{headers:{Authorization:`Bearer ${b.token}`}});assert.equal(denied.status,401);
+});
+
+test('MERGE-08/13: an empty account can connect while an explicit inaccessible room never falls back',async t=>{
+  const s=await startService(t,{trustedLocal:false}),a=await s.identity.register('ana','uma senha longa e exclusiva','ip');
+  const session=new Session();t.after(()=>session.disconnect());
+  await session.connect({server:s.origin,token:a.token});assert.equal(session.state.connected,true);assert.equal(session.state.room,null);assert.deepEqual(session.state.rooms,[]);
+  session.disconnect();
+  await assert.rejects(session.connect({server:s.origin+'/?room=geral',token:a.token}),error=>error.code==='INVALID_INPUT');assert.equal(session.state.connected,false);assert.equal(session.state.room,null);
+  await assert.rejects(session.connect({server:s.origin,token:'a'.repeat(43)}),error=>error.code==='UNAUTHENTICATED');assert.equal(session.state.connected,false);
+});
+
+test('MERGE-08: authentication and ticket phases keep their eight-second deadlines',async()=>{
+  for(const phase of ['authentication','ticket']){
+    const f=fixture(async url=>{
+      if(url.endsWith('/api/me'))return phase==='authentication'?new Promise(()=>{}):{ok:true,json:async()=>({user:{id:'account',username:'ana'}})};
+      if(url.endsWith('/api/ws-ticket'))return new Promise(()=>{});
+      return {ok:true,json:async()=>({protocolVersion:2,iceServers:[],maxCallMembers:6})};
+    });
+    const pending=f.session.connect({server:'http://localhost:4310',token:'a'.repeat(43)}),rejected=assert.rejects(pending,error=>error.code==='TIMEOUT'&&error.phase===phase);await drain();
+    f.clock.tick(7999);await drain();assert.equal(f.session.state.connecting,true);f.clock.tick(1);await rejected;assert.equal(f.sockets.length,0);assert.equal(f.session.state.connected,false);assert.equal(f.clock.jobs.size,0);
+  }
+});
 
 test('STAB-38: opening WS does not cancel the hello deadline; next attempt can succeed',async()=>{
   const f=fixture(), pending=f.session.connect({name:'Ana',server:'http://localhost:4310'});
@@ -99,7 +136,7 @@ test('STAB-46/47: pasted invite preserves room and invalid destinations never si
 });
 
 test('STAB-18/21/39: real client/server contract keeps the first presence and the committed destination',async t=>{
-  const service=createService({dbPath:':memory:',iceServers:[]});await new Promise(resolve=>service.server.listen(0,'127.0.0.1',resolve));
+  const service=await startService(t);
   const session=new Session();t.after(async()=>{session.disconnect();await service.close();});
   await session.connect({name:'Ana',server:`http://127.0.0.1:${service.server.address().port}`});
   await new Promise(resolve=>setImmediate(resolve));assert.equal(session.state.members[0].name,'Ana');
@@ -152,7 +189,7 @@ test('MEDIA-28: presence applies only increasing revisions in the current room c
 });
 
 test('MEDIA-05/24/28: successive Call owners share a Session generation and stale epochs fail before acquisition',async t=>{
-  const service=createService({dbPath:':memory:',iceServers:[]});await new Promise(resolve=>service.server.listen(0,'127.0.0.1',resolve));
+  const service=await startService(t);
   const session=new Session(), server=`http://127.0.0.1:${service.server.address().port}`;
   t.after(async()=>{session.disconnect();await service.close();});await session.connect({name:'Ana',server});
   const epoch=session.epoch,allocate=()=>session.nextCallGeneration(epoch);let acquisitions=0;

@@ -24,7 +24,7 @@ export type ClientAction = (
   (CallAction & CallContext)
 );
 export type ClientEvent = Envelope & Request & ClientAction;
-export type ServerEvent = Envelope & (
+export type ServerAction = (
   { type: 'hello'; id: string; rooms: Room[] } |
   ({ type: 'joined'; room: Room; messages: Message[] } & Request) |
   { type: 'rooms'; rooms: Room[] } |
@@ -36,6 +36,7 @@ export type ServerEvent = Envelope & (
   { type: 'signal'; context: string; from: string; fromCallId: string; callId: string; signal: Signal } |
   { type: 'error'; code: string; message: string; phase: string; requestId?: string | null }
 );
+export type ServerEvent = Envelope & ServerAction;
 
 export class ProtocolError extends Error {
   code: string;
@@ -44,7 +45,7 @@ export class ProtocolError extends Error {
   callId?: string;
   generation?: number;
   operationId?: string;
-  constructor(code: string, message = code) { super(message); this.code = code; }
+  constructor(code: string, message = code, options?: ErrorOptions) { super(message, options); this.code = code; }
 }
 const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const string = (value: unknown, max = 128): value is string => typeof value === 'string' && value.length > 0 && value.length <= max;

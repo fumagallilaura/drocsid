@@ -24,3 +24,8 @@ src/rtc.js
 src/session.js
 server/identity.js
 tests/identity.test.js
+server/service.js
+server/index.js
+tests/helpers/service.js
+tests/helpers/client.js
+tests/authorization.test.js

@@ -9,11 +9,12 @@ import { DatabaseSync } from 'node:sqlite';
 import { WebSocket } from 'ws';
 import { createService, logFailure } from '../server/service.js';
 import { client } from './helpers/client.js';
+import { startService } from './helpers/service.js';
+import { postgresFixture } from './helpers/postgres.js';
+import { importSqlite } from '../scripts/import-sqlite.mjs';
 
 async function start(t, options={}) {
-  const service=createService({dbPath:':memory:',iceServers:[],...options});
-  await new Promise(resolve=>service.server.listen(0,'127.0.0.1',resolve));
-  t.after(()=>service.close()); service.url=`ws://127.0.0.1:${service.server.address().port}/ws`; return service;
+  return startService(t,options);
 }
 
 test('STAB-18/19/21/23/24/53: destination is explicit and commit receipt is idempotent', async t=>{
@@ -35,19 +36,20 @@ test('STAB-18/19/21/23/24/53: destination is explicit and commit receipt is idem
 });
 
 test('STAB-25/26/55: failed delivery after commit survives restart; locked write is not confirmed', async t=>{
-  const dir=mkdtempSync(join(tmpdir(),'conversa-receipts-')), dbPath=join(dir,'test.sqlite');
-  let s=await start(t,{dbPath});
-  t.after(async()=>{await s.close();rmSync(dir,{recursive:true,force:true});});
+  const fixture=await postgresFixture(t);
+  let s=await start(t,{fixture});
   let a=await client(s.url);
   const socket=[...s.wss.clients][0], original=socket.send;
   socket.send=function(data,...rest){if(JSON.parse(data).type==='message')throw Error('delivery');return original.call(this,data,...rest);};
   const accepted=await a.request({type:'message',operationId:'durable',text:'Confirmada'});
   assert.equal(accepted.message.text,'Confirmada'); await s.close();
-  s=await start(t,{dbPath}); a=await client(s.url);
+  s=await start(t,{fixture}); a=await client(s.url);
   assert.equal((await a.request({type:'message',operationId:'durable',text:'Confirmada'})).message.id,accepted.message.id);
-  const lock=new DatabaseSync(dbPath); lock.exec('BEGIN IMMEDIATE');
+  const locker=await fixture.open(), locked=Promise.withResolvers(), release=Promise.withResolvers();
+  const lock=locker.transaction(async connection=>{await connection.query('LOCK TABLE drocsid.messages IN ACCESS EXCLUSIVE MODE');locked.resolve();await release.promise;});
+  await locked.promise;
   a.send({type:'message',operationId:'must-not-commit',text:'Bloqueada'});
-  assert.equal((await a.next('error')).code,'PERSISTENCE_FAILED'); lock.exec('ROLLBACK'); lock.close();
+  assert.equal((await a.next('error')).code,'PERSISTENCE_FAILED'); release.resolve(); await lock; await locker.close();
   const history=await a.request({type:'join',name:'Ana',room:'geral'});
   assert.deepEqual(history.messages.map(m=>m.text),['Confirmada']);
 });
@@ -92,16 +94,19 @@ test('STAB-40/41: malformed signals never reach a peer and errors keep correlati
 test('STAB-53/54/55/61: legacy history keeps stable insertion order with an indexed page', async t=>{
   const dir=mkdtempSync(join(tmpdir(),'conversa-legacy-')), dbPath=join(dir,'old.sqlite');
   const db=new DatabaseSync(dbPath); db.exec('CREATE TABLE messages (id TEXT PRIMARY KEY, room TEXT NOT NULL, author TEXT NOT NULL, text TEXT NOT NULL, created INTEGER NOT NULL)');
+  db.exec("CREATE TABLE rooms (id TEXT PRIMARY KEY,name TEXT NOT NULL,description TEXT NOT NULL); INSERT INTO rooms VALUES ('geral','geral','Legado');");
   db.exec('BEGIN'); const insert=db.prepare('INSERT INTO messages VALUES (?,?,?,?,?)');
   for(let i=0;i<10000;i++)insert.run(String(i),'geral','Mesmo nome',`Mensagem ${i}`,1); db.exec('COMMIT'); db.close();
-  const s=await start(t,{dbPath});
+  const s=await start(t,{sqliteSource:dbPath});
   t.after(async()=>{await s.close();rmSync(dir,{recursive:true,force:true});});
   const a=await client(s.url), history=await a.request({type:'join',name:'Ana',room:'geral'});
   assert.equal(history.messages.length,200); assert.equal(history.messages[0].text,'Mensagem 9800'); assert.equal(history.messages.at(-1).text,'Mensagem 9999');
   assert.deepEqual(history.messages.map(m=>[m.id,m.room,m.text,m.created]),Array.from({length:200},(_,i)=>[String(9800+i),'geral',`Mensagem ${9800+i}`,1]));
   assert.equal(history.messages[0].authorId,null);
-  const check=new DatabaseSync(dbPath), plan=check.prepare('EXPLAIN QUERY PLAN SELECT * FROM messages WHERE room=? ORDER BY sequence DESC LIMIT 200').all('geral');
-  assert.equal(plan.some(row=>/TEMP B-TREE/.test(row.detail)),false); assert.equal(check.prepare('SELECT count(*) AS count FROM messages').get().count,10000); check.close();
+  await s.database.query('ANALYZE drocsid.messages');
+  const plan=JSON.stringify(await s.database.query('EXPLAIN (FORMAT JSON) SELECT * FROM drocsid.messages WHERE room=$1 ORDER BY sequence DESC LIMIT 200',['geral']));
+  assert.equal(plan.includes('"Node Type":"Sort"'),false); assert.match(plan,/Index (Only )?Scan/);
+  assert.equal((await s.database.query('SELECT count(*)::int AS count FROM drocsid.messages'))[0].count,10000);
   await a.request({type:'join',name:'Ana',room:'cafe'});
   const foreign=await a.request({type:'message',operationId:'foreign-room',text:'Mensagem em outra sala'});
   assert.equal(foreign.message.room,'cafe');
@@ -109,7 +114,7 @@ test('STAB-53/54/55/61: legacy history keeps stable insertion order with an inde
   assert.deepEqual((await a.request({type:'join',name:'Ana',room:'geral'})).messages,history.messages);
 });
 
-test('STAB-49/55: incompatible stored data is refused without changing prior rows',t=>{
+test('STAB-49/55: incompatible stored data is refused without changing prior rows',async t=>{
   const dir=mkdtempSync(join(tmpdir(),'conversa-incompatible-'));
   t.after(()=>rmSync(dir,{recursive:true,force:true}));
   for(const variant of ['newer-version','missing-column']){
@@ -121,7 +126,9 @@ test('STAB-49/55: incompatible stored data is refused without changing prior row
     else db.prepare('INSERT INTO messages VALUES (?,?,?,?,?)').run('old','custom','Ana','Texto anterior',123);
     db.exec(`PRAGMA user_version=${variant==='newer-version'?2:0}`);
     const before={rooms:db.prepare('SELECT * FROM rooms').all(),messages:db.prepare('SELECT * FROM messages').all(),version:db.prepare('PRAGMA user_version').get()};db.close();
-    assert.throws(()=>createService({dbPath,iceServers:[]}),error=>error.code==='INVALID_INPUT');
+    const fixture=await postgresFixture(t),database=await fixture.open();
+    await assert.rejects(importSqlite(dbPath,database),error=>error.code==='INVALID_LEGACY_DATABASE');
+    assert.deepEqual(await database.rooms(),[]);
     const reopened=new DatabaseSync(dbPath);
     try{
       assert.deepEqual(reopened.prepare('SELECT * FROM rooms').all(),before.rooms);
@@ -159,7 +166,8 @@ test('STAB-51: 100th room is accepted and 101st is refused without deleting room
 });
 
 test('STAB-37/67: failed cleanup still closes remaining resources and diagnostic omits secret payloads',async t=>{
-  const s=createService({dbPath:':memory:',iceServers:[]}); await new Promise(resolve=>s.server.listen(0,'127.0.0.1',resolve));
+  const fixture=await postgresFixture(t),s=await createService({database:await fixture.open(),trustedLocal:true,iceServers:[]});
+  await new Promise(resolve=>s.server.listen(0,'127.0.0.1',resolve));
   t.after(()=>s.close().catch(()=>{}));
   const warnings=[],originalWarn=console.warn;console.warn=value=>warnings.push(JSON.parse(value));t.after(()=>{console.warn=originalWarn;});
   const originalClose=s.wss.close.bind(s.wss);s.wss.close=callback=>originalClose(()=>callback(new Error('SECRET_TOKEN and message text')));
@@ -298,8 +306,8 @@ test('STAB-35/37: pending shutdown refuses HTTP and WS with one terminal result'
 });
 
 test('STAB-36/37: repeated close does not extend a stalled cleanup deadline',async t=>{
+  const fixture=await postgresFixture(t),s=await createService({database:await fixture.open(),trustedLocal:true,iceServers:[]});s.wss.close=()=>{};
   t.mock.timers.enable({apis:['setTimeout','setInterval']});
-  const s=createService({dbPath:':memory:',iceServers:[]});s.wss.close=()=>{};
   t.after(()=>t.mock.timers.tick(10000));
   let settled=false,cause;const ending=s.close();ending.then(()=>{settled=true;},error=>{settled=true;cause=error;});
   t.mock.timers.tick(4999);await Promise.resolve();assert.equal(settled,false);assert.equal(s.close(),ending);

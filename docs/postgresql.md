@@ -1,10 +1,12 @@
 # PostgreSQL
 
-A decisão AD-003 substitui SQLite como destino da integração Drocsid. O servidor acessará PostgreSQL; o cliente Electron usará a API e não receberá a URL ou senha do banco.
+A decisão AD-003 substitui SQLite na integração Drocsid. O serviço HTTP/WebSocket usa PostgreSQL; o cliente Electron usará a API e não receberá a URL ou senha do banco.
 
 ## Integration status
 
-T3 entrega a camada de persistência tipada e seus testes reais; T4 entrega o importador somente leitura. A aplicação ainda usa o serviço SQLite anterior até T8 trocar esse proprietário. Não foi feita migração de dados do usuário nem deploy AWS.
+T3 entrega a persistência e T4 o importador somente leitura. T7 entrega identidade/grupos; T8 liga esses componentes ao serviço e ao bootstrap em TypeScript. SQLite deixou de ser banco ativo: permanece somente como origem explícita do importador. Nenhum dado do usuário foi migrado e nenhum deploy AWS foi feito.
+
+O host Electron ainda está em conversão na T9 e a interface de contas/grupos chega na T10. Nesta etapa intermediária os ensaios desktop usam o modo host de desenvolvimento, PostgreSQL temporário e convidado explicitamente restrito ao loopback. Isso não entrega uma distribuição Drocsid final.
 
 ## Server configuration
 
@@ -18,11 +20,15 @@ As migrações são transacionais, versionadas e verificadas por checksum sob ad
 
 ## Local verification
 
+O servidor exige autenticação por padrão. `DROCSID_TRUSTED_LOCAL=1` permite o protótipo de convidados somente com `HOST` de loopback. A implementação também confere o endereço real do listener, do cliente e o Host HTTP; não basta declarar uma origem local no pedido. Esse modo não funciona com bind `0.0.0.0`.
+
+`GET /api/server` permite descobrir o modo e a versão sem credenciais ICE. Configuração privada e dados exigem Bearer; o upgrade WS usa um ticket descartável emitido por POST autenticado. Sessões e senhas não são gravadas pela Session nas preferências; trocar de conta ou sair limpa rascunhos/envios daquele contexto. Logout revoga todos os sockets da sessão, sem afetar outro login da mesma conta.
+
 Execute `npm test`. O wrapper `scripts/with-test-postgres.mts` inicia um cluster PostgreSQL real isolado em loopback e porta livre, com senha aleatória e SCRAM. Os testes criam bancos próprios; o wrapper encerra o cluster mesmo quando o processo de teste falha. Os logs ficam em `test-results/postgres/`; os dados temporários são removidos depois da confirmação de shutdown.
 
 Configure `DROCSID_PG_BIN` para a pasta que contém `initdb`, `pg_ctl` e os arquivos de uma instalação PostgreSQL completa. Nesta máquina há um cache local em `%TEMP%/conversa-postgresql-17.11-5/pgsql/bin`, detectado pelo wrapper. Uma alternativa é fornecer `DROCSID_TEST_DATABASE_URL` de um cluster **local isolado**, com permissão para criar/remover bancos `drocsid_test_*`. Não use um banco de produção. O helper só remove bancos aleatórios que ele próprio criou.
 
-Sem PostgreSQL disponível, o teste falha com instrução de configuração. Não há banco emulado, skip nem fallback SQLite para aprovar o componente. A regressão anterior do serviço permanece separada até sua conversão em T8.
+Sem PostgreSQL disponível, o teste falha com instrução de configuração. Não há banco emulado, skip nem fallback SQLite. A regressão do serviço também roda nesse banco, inclusive bloqueio de escrita, reinício, recibos, consulta indexada e shutdown com trabalho ativo. Os checkers desktop usam o mesmo wrapper, por exemplo `node scripts/with-test-postgres.mjs -- node scripts/desktop-smoke.mjs`, com banco e perfil próprios e encerramento dos dois proprietários.
 
 O cache foi obtido do [distribuidor EDB indicado pelo PostgreSQL](https://www.postgresql.org/download/windows/), versão17.11-5 Windows x64. SHA256 do ZIP: `80379b2c04d51c30225532e0ae04509899141e9957ed096fe749d7fd9df8f82f`. É ferramenta local de teste; não integra o portátil e não aprova infraestrutura AWS.
 

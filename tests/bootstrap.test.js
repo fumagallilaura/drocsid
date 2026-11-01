@@ -9,8 +9,9 @@ import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { WebSocket } from 'ws';
 import { startServer } from '../server/index.js';
+import { postgresFixture } from './helpers/postgres.js';
 
-const env = extra => ({ DB_PATH: ':memory:', HOST: '127.0.0.1', PORT: '0', ICE_SERVERS: '[]', ...extra });
+const env = (extra={},fixture) => ({ DATABASE_URL:fixture?.url, DROCSID_TRUSTED_LOCAL:'1', HOST: '127.0.0.1', PORT: '0', ICE_SERVERS: '[]', ...extra });
 
 test('STAB-49: invalid configuration and occupied port fail without signal/listener leaks', async t => {
   const signals = process.listenerCount('SIGINT');
@@ -18,13 +19,15 @@ test('STAB-49: invalid configuration and occupied port fail without signal/liste
     await assert.rejects(startServer({ production: true, env: env(config) }), e => e.code === 'INVALID_INPUT');
   }
   const occupied = createServer(); await new Promise(resolveListen => occupied.listen(0, '127.0.0.1', resolveListen));
+  const fixture=await postgresFixture(t);
   t.after(() => new Promise(resolveClose => occupied.close(resolveClose)));
-  await assert.rejects(startServer({ production: true, env: env({ PORT: String(occupied.address().port) }) }), e => e.code === 'BOOTSTRAP_FAILED');
+  await assert.rejects(startServer({ production: true, env: env({ PORT: String(occupied.address().port) },fixture) }), e => e.code === 'BOOTSTRAP_FAILED');
   assert.equal(process.listenerCount('SIGINT'), signals);
 });
 
 test('STAB-49/50: separate server serves validated ICE config and closes idempotently', async t => {
-  const host = await startServer({ production: true, env: env({ ICE_SERVERS: '[{"urls":"stun:localhost:3478"}]' }) });
+  const fixture=await postgresFixture(t);
+  const host = await startServer({ production: true, env: env({ ICE_SERVERS: '[{"urls":"stun:localhost:3478"}]' },fixture) });
   t.after(() => host.close());
   const config = await (await fetch(`http://127.0.0.1:${host.server.address().port}/api/config`)).json();
   assert.deepEqual(config.iceServers, [{ urls: 'stun:localhost:3478' }]); assert.equal(config.protocolVersion, 2);
@@ -35,16 +38,18 @@ test('STAB-49: a database open failure retains its cause and leaves bootstrap re
   const directory=mkdtempSync(resolve(tmpdir(),'conversa-bootstrap-'));
   t.after(()=>rmSync(directory,{recursive:true,force:true}));
   const signals=['SIGINT','SIGTERM'].map(name=>process.listenerCount(name));
-  await assert.rejects(startServer({production:true,env:env({DB_PATH:directory})}),error=>error.code==='BOOTSTRAP_FAILED'&&error.cause?.code==='ERR_SQLITE_ERROR');
+  const fixture=await postgresFixture(t);
+  await assert.rejects(startServer({production:true,env:env({DATABASE_URL:'postgres://unavailable:fictional@127.0.0.1:1/missing'})}),error=>error.code==='BOOTSTRAP_FAILED'&&error.cause?.code==='PERSISTENCE_FAILED');
   assert.deepEqual(['SIGINT','SIGTERM'].map(name=>process.listenerCount(name)),signals);
-  const retry=await startServer({production:true,env:env()});t.after(()=>retry.close());
+  const retry=await startServer({production:true,env:env({},fixture)});t.after(()=>retry.close());
   assert.equal((await fetch(`http://127.0.0.1:${retry.server.address().port}/api/health`)).status,200);
   await retry.close();assert.equal(retry.server.listening,false);
   assert.deepEqual(['SIGINT','SIGTERM'].map(name=>process.listenerCount(name)),signals);
 });
 
 test('STAB-34: registered Vite HMR upgrade works while unknown paths are rejected', async t => {
-  const host = await startServer({ production: false, env: env() }); t.after(() => host.close());
+  const fixture=await postgresFixture(t);
+  const host = await startServer({ production: false, env: env({},fixture) }); t.after(() => host.close());
   const address = `ws://127.0.0.1:${host.server.address().port}`;
   const ping = new WebSocket(address + '/', 'vite-ping', { handshakeTimeout: 1500 }), opened = once(ping, 'open'), closed = once(ping, 'close');
   await opened; assert.equal((await closed)[0], 1000);
@@ -53,11 +58,12 @@ test('STAB-34: registered Vite HMR upgrade works while unknown paths are rejecte
   assert.equal(status, 404);
 });
 
-test('STAB-36/37: both signal handlers close a separate process inside five seconds', async () => {
+test('STAB-36/37: both signal handlers close a separate process inside five seconds', async t => {
+  const fixture=await postgresFixture(t);
   for (const signal of ['SIGINT', 'SIGTERM']) {
     const moduleUrl = pathToFileURL(resolve('server/index.js')).href;
     const script = `import {startServer} from ${JSON.stringify(moduleUrl)}; await startServer({production:true}); process.emit(${JSON.stringify(signal)});`;
-    const started = performance.now(), child = spawn(process.execPath, ['--input-type=module', '-e', script], { env: { ...process.env, ...env() }, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    const started = performance.now(), child = spawn(process.execPath, ['--input-type=module', '-e', script], { env: { ...process.env, ...env({},fixture) }, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
     let stderr = ''; child.stderr.on('data', bytes => { stderr += bytes; }); child.stdout.resume();
     const deadline = setTimeout(() => child.kill(), 5000);
     const [code] = await once(child, 'exit'); clearTimeout(deadline);
