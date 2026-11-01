@@ -8,8 +8,8 @@
   "author": "Conversa",
   "scripts": {
     "dev": "npm run build:runtime && node server/index.js",
-    "build:runtime": "tsc -p tsconfig.json && tsc -p tsconfig.browser.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.browser.json --noEmit",
+    "build:runtime": "tsc -p tsconfig.json && tsc -p tsconfig.browser.json && tsc -p tsconfig.electron.json && tsc -p tsconfig.tools.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.browser.json --noEmit && tsc -p tsconfig.electron.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
     "build": "npm run build:runtime && vite build",
     "start": "npm run build:runtime && node server/index.js --production",
     "test": "npm run build:runtime && node scripts/with-test-postgres.mjs -- node --test tests/*.test.js",
@@ -43,17 +43,18 @@
     "vite": "^7.0.0"
   },
   "build": {
-    "appId": "app.conversa.desktop",
-    "productName": "Conversa",
+    "appId": "app.drocsid.desktop",
+    "productName": "Drocsid",
     "electronDist": ".packaging/electron",
     "directories": {
       "output": "release-windows"
     },
     "files": [
       "dist/**/*",
-      "electron/**/*",
-      "server/service.js",
-      "shared/**/*",
+      "electron/**/*.js",
+      "electron/**/*.cjs",
+      "server/**/*.js",
+      "shared/**/*.js",
       "package.json"
     ],
     "win": {
@@ -61,7 +62,7 @@
       "signAndEditExecutable": false
     },
     "portable": {
-      "artifactName": "Conversa-${version}-Windows.exe"
+      "artifactName": "Drocsid-${version}-Windows.exe"
     }
   },
   "workspaces": [

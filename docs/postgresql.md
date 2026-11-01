@@ -6,7 +6,7 @@ A decisão AD-003 substitui SQLite na integração Drocsid. O serviço HTTP/WebS
 
 T3 entrega a persistência e T4 o importador somente leitura. T7 entrega identidade/grupos; T8 liga esses componentes ao serviço e ao bootstrap em TypeScript. SQLite deixou de ser banco ativo: permanece somente como origem explícita do importador. Nenhum dado do usuário foi migrado e nenhum deploy AWS foi feito.
 
-O host Electron ainda está em conversão na T9 e a interface de contas/grupos chega na T10. Nesta etapa intermediária os ensaios desktop usam o modo host de desenvolvimento, PostgreSQL temporário e convidado explicitamente restrito ao loopback. Isso não entrega uma distribuição Drocsid final.
+O host Electron é TypeScript e abre como cliente por padrão, sem PostgreSQL instalado ou configuração de banco. `DROCSID_HOST=1` habilita explicitamente o host de desenvolvimento em127.0.0.1 com `DATABASE_URL`; os checkers usam esse modo com bancos temporários. O diretório padrão de preferências continua `appData/conversa`, mesmo com o nome Drocsid. A interface de contas/grupos chega na T10; a distribuição final, limpeza e nova candidata são T12.
 
 ## Server configuration
 

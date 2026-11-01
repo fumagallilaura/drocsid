@@ -10,6 +10,6 @@
     "lib": ["ES2024"],
     "types": ["node"]
   },
-  "include": ["shared/**/*.ts", "server/**/*.ts", "tests/**/*.ts", "scripts/**/*.mts", "review/*.mts", "electron/**/*.ts", "electron/**/*.cts"],
+  "include": ["shared/**/*.ts", "server/**/*.ts"],
   "exclude": ["node_modules", "apps", "dist", "release", "release-windows", ".packaging"]
 }

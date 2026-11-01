@@ -29,3 +29,11 @@ server/index.js
 tests/helpers/service.js
 tests/helpers/client.js
 tests/authorization.test.js
+shared/desktop.js
+server/diagnostics.js
+electron/main.js
+electron/policy.js
+electron/preload.cjs
+scripts/test-runtime.mjs
+scripts/desktop-client-check.mjs
+tests/fixtures/profile-main.mjs

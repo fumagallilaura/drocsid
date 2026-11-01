@@ -13,6 +13,7 @@ Usar tlc-spec-driven carregada pelo MCP. Execução local e decisões técnicas 
 **Run postgres**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/database.test.js
 **Run migration**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/import-sqlite.test.js
 **Run identity**: node scripts/with-test-postgres.mjs -- node --test --test-reporter=spec tests/identity.test.js
+**Run client**: node scripts/desktop-client-check.mjs
 
 O Build usa os comandos próprios existentes e passará a incluir strict/emissão conforme T2 os habilitar. A configuração não excluirá fontes migradas para contornar erro. A aprovação é o mandato de execução com decisões delegadas, não uma palavra inventada em nome do usuário.
 
@@ -201,8 +202,8 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12
 
 **Done when**:
 
-- [ ] Host, política e preload tipados; Drocsid visível, userData legado preservado, isolamento/frame/câmera/seletor continuam verificados.
-- [ ] Gate build aprovado, contagem94 + delta, zero falha/skip/cancelled/todo; evidência e commit da tarefa registrados.
+- [x] Main/policy/preload em TS, bridge com entradas desconhecidas validadas e compilação própria de host/CJS sandbox. Cliente abre UI local sem ler configuração PostgreSQL; host exige `DROCSID_HOST=1` e configuração explícita. App/menu/título/metadados e nomes do build Windows passam a Drocsid. userData padrão continua `appData/conversa` antes do lock, e overrides de teste são preservados. Logger Node separado do serviço evita carregar PostgreSQL no cliente padrão. A configuração do pacote seleciona JS/CJS emitidos dos proprietários; ASAR/candidata final ainda T12.
+- [x] Gate build PASS:141/141, zero fail/skip/cancelled/todo; strict Node/browser/Electron/tools, Vite, client sem PostgreSQL, desktop-smoke/profile/capture/lifecycle PASS. Cliente nativo mantém bytes das preferências/SQLite legados após abertura/reload/saída, com PostgreSQL propositalmente indisponível. Seis sensores por AssertionError (perfil, host implícito, câmera, frame, geração e whitelist de preferências), fontes intactas. AST confirma141 casos/921 assert anteriores e113 ACs intactos. `test-runtime.mts` foi convertido aqui como dependência do checker tipado; restante do harness continua T11. Logs `test-results/drocsid-merge-t9-*`, `merge-t9-sensors.json`; skill selftest24 killed/0 survived após corrigir caminho de import do Python isolado. Commit desta tarefa `feat(desktop): type the drocsid client and preserve legacy profiles`. UI de contas/marca interna T10 e candidata/ASAR/hash finais T12; sem aprovação MEDIA/T9 física.
 
 **Tests**: integration/e2e, conforme matriz e valores da spec; co-localizados nesta entrega.
 **Gate**: build
@@ -225,8 +226,8 @@ T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12
 
 ### T11: Converter ferramentas e testes próprios
 
-**What**: Inventário de fontes inclui scripts, testes, helpers, fixtures e sete ferramentas históricas; strict e asserções sem supressões, hardware não inferido.
-**Where**: `scripts/test-runtime.mts`
+**What**: Converter o restante de scripts, testes, helpers, fixtures e sete ferramentas históricas; strict e asserções sem supressões, hardware não inferido. `test-runtime.mts` e o novo checker client já foram convertidos com T9; não refazer esse trabalho.
+**Where**: `scripts/desktop-smoke.mts`
 **Depends on**: T10
 **Reuses**: Proprietário atual do Conversa e contratos citados em design.md; testes e fixtures acompanham o proprietário, sem testes adiados.
 **Requirement**: MERGE-03, MERGE-14–16
@@ -292,7 +293,7 @@ Proof: run integration | ✔ MERGE-02: Drocsid is the single application metadat
 Proof: run integration | ✔ MERGE-03: every maintained source is covered by strict TypeScript
 
 **C4** - O produto SHALL cumprir MERGE-04, conforme valor e condição da spec.
-Proof: run integration | ✔ MERGE-04: legacy data and preferences remain intact
+Proof: run client | PASS: Drocsid client opens without PostgreSQL, keeps credentials outside renderer and preserves the legacy default profile and database bytes.
 
 **C5** - O produto SHALL cumprir MERGE-05, conforme valor e condição da spec.
 Proof: run identity | ✔ MERGE-05: registration stores salted scrypt hashes and unique identities
@@ -353,4 +354,4 @@ Proof: run integration | ✔ MERGE-21: database credentials stay in the server w
 
 **Walked:** pendente da implementação; checkers atuais seguem como regressão, não aprovação automática da nova interface.
 
-**Current:** T1–T8 concluídas. T7 emc11135e; T8 neste commit liga serviço/bootstrap ao PostgreSQL e autoriza HTTP/WS.141/141, strict Node/browser/Vite e desktop-smoke/profile/capture/lifecycle PASS; produção audit0. Sensores dos lotes35/35 (T3:4,T4:3,T5:3,T6:4,T7:9,T8:12), por AssertionError em cópias isoladas com bytes originais intactos. Nova disputa logout/ticket reproduzida e corrigida; broadcast concorrente agora força ambos os leitores a observar ausência antes de escrever. Próxima T9: Electron main/policy/preload em TS, marca Drocsid e perfil legado; cliente por API sem exigir PostgreSQL/credenciais nos PCs. Estado intermediário ainda usa host de desenvolvimento nos checkers, UI de contas/grupos T10, harness TS restante T11 e pacote/limpeza T12. Nenhum Verifier MERGE antes de T12. MEDIA/T9 física indisponível; sem push/deploy. Auditoria completa anterior:15 moderadas dev/0 altas ou críticas; limpeza final pendente.
+**Current:** T1–T9 de integração concluídas. T7 c11135e, T8 4fa053e; T9 neste commit entrega host/policy/preload tipados, cliente padrão sem PostgreSQL, perfil antigo preservado e marca nativa Drocsid.141/141, strict em quatro ambientes, Vite, client e desktop-smoke/profile/capture/lifecycle PASS; produção audit0 na T8. Sensores dos lotes41/41 (T3:4,T4:3,T5:3,T6:4,T7:9,T8:12,T9:6), por AssertionError em cópias isoladas; fontes intactas.141 casos/921 assert e113 ACs históricos intactos na T9. Próxima T10: React TSX com cadastro/login/logout, grupos e convites por gestos reais, mantendo Call/Session. T11 converte apenas harness restante; test-runtime/checker client já TS. T12 limpa apps/dependências, constrói pacote/candidata/hash e só depois provas/Verifier fresco. MEDIA/T9 física permanece indisponível. Sem push/deploy. Python314._pth no TEMP agora inclui scripts verificados da skill para subprocessos; selftest24 killed/0 survived. Audit completo anterior15 moderadas dev/0 altas/críticas, limpeza final pendente.

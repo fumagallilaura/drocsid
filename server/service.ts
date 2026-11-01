@@ -13,6 +13,8 @@ import { Identity, IdentityError } from './identity.js';
 import type { Session } from './identity.js';
 import { LIMITS, PROTOCOL_VERSION, ProtocolError, parseClientEvent, readIceServers } from '../shared/protocol.js';
 import type { ClientEvent, Member, Room, ServerAction } from '../shared/protocol.js';
+import { logFailure } from './diagnostics.js';
+export { logFailure } from './diagnostics.js';
 
 type Timer = ReturnType<typeof setTimeout> | number;
 type Clock = { now():number; setTimeout(fn:()=>void,ms:number):Timer; clearTimeout(id:Timer|undefined):void; setInterval(fn:()=>void,ms:number):Timer; clearInterval(id:Timer):void };
@@ -34,14 +36,6 @@ const messages:Record<string,string> = {
   PARTICIPANT_UNAVAILABLE:'Participante indisponível nesta chamada.', NOT_FOUND:'Recurso não encontrado.', UNAUTHENTICATED:'Sessão encerrada. Entre novamente.',
   FORBIDDEN:'Somente o dono pode administrar o grupo.',
 };
-
-export function logFailure(phase:string,code:string,requestId?:string|null,error?:unknown):void {
-  const source=object(error)&&error.cause?error.cause:error, cause=object(source)?source:{};
-  const causeCode=typeof cause.code==='string'&&['EADDRINUSE','EADDRNOTAVAIL','EACCES','ENOENT','ERR_SQLITE_ERROR','SHUTDOWN_FAILED'].includes(cause.code)?cause.code:null;
-  console.warn(JSON.stringify({phase,code,requestId:requestId||null,version:metadata.version,runtime:process.versions.electron||process.versions.node,
-    cause:typeof cause.name==='string'&&['Error','TypeError','RangeError','SyntaxError','DOMException','AbortError','NotAllowedError','ProtocolError'].includes(cause.name)?cause.name:'Error',
-    causeCode,sqliteCode:typeof cause.errcode==='number'&&Number.isInteger(cause.errcode)?cause.errcode:null}));
-}
 
 export async function createService({database:provided,env=process.env,iceServers:ice,trustedLocal=false,clock=realClock,identityNow}:Options={}) {
   const iceServers=readIceServers(ice), database=provided??await createDatabase(env);

@@ -125,12 +125,12 @@ Validação/limites: MERGE-05/06/08/11. Falha/transação: MERGE-04/10/11. Idemp
 | --- | --- | --- | --- |
 | MERGE-01 | US1 | Execute/T1 | Implemented; final proofs pending |
 | MERGE-02 | US1 | Tasks | In Tasks |
-| MERGE-03 | US1 | Execute/T2–T6 + Tasks/T7–T11 | Partial: strict protocol, persistence/importer, Call and Session; remaining owners pending |
-| MERGE-04 | US1 | Execute/T4 + Tasks/T9 | Partial: legacy import data/preferences fixture bytes preserved; host profile pending |
+| MERGE-03 | US1 | Execute/T2–T9 + Tasks/T10/T11 | Partial: strict backend, Call/Session, Electron, bridge and runtime/client tooling; React and remaining harness pending |
+| MERGE-04 | US1 | Execute/T4/T9 | Legacy import and native default profile/preferences/database bytes tested; final proofs pending |
 | MERGE-05 | US2 | Execute/T7/T8 | Identity and HTTP implemented; final proofs pending |
 | MERGE-06 | US2 | Execute/T7/T8 | Identity and HTTP limits tested; final proofs pending |
 | MERGE-07 | US2 | Execute/T7/T8 | Expiry/revocation, owned connection termination and logout/ticket concurrency tested; final proofs pending |
-| MERGE-08 | US2 | Execute/T7/T8 + Tasks/T9 | Network authorization and one-use tickets tested; desktop default pending |
+| MERGE-08 | US2 | Execute/T7–T9 | Network authorization, one-use tickets and desktop client default tested; final proofs pending |
 | MERGE-09 | US3 | Execute/T7/T8 + Tasks/T10 | Service isolation tested; UI integration and final proofs pending |
 | MERGE-10 | US3 | Execute/T7/T8 + Tasks/T10 | Atomic owner administration tested; UI integration and final proofs pending |
 | MERGE-11 | US3 | Execute/T7/T8 + Tasks/T10 | Atomic expiring/revocable invitations tested; UI integration and final proofs pending |
