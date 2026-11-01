@@ -8,13 +8,16 @@ import {createHash} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {createTestProfile,removeTestProfile,closeDesktop} from './test-runtime.mjs';
 
+for(const modern of [false,true]){
 const profile=createTestProfile(),legacy=join(profile,'conversa'),databasePath=join(legacy,'conversa.sqlite');
 const preferences={name:'Ana',server:'https://group.example',quality:'720'},preferencesPath=join(legacy,'preferences.json');
 const hash=(path:string)=>createHash('sha256').update(readFileSync(path)).digest('hex');
 let desktop:ElectronApplication|undefined;
 try{
   mkdirSync(legacy,{recursive:true});writeFileSync(preferencesPath,JSON.stringify(preferences));
-  const database=new DatabaseSync(databasePath);database.exec("CREATE TABLE rooms(id TEXT PRIMARY KEY,name TEXT,description TEXT); INSERT INTO rooms VALUES ('old','Antiga','Preservar'); CREATE TABLE messages(id TEXT PRIMARY KEY,room TEXT,author TEXT,text TEXT,created INTEGER); INSERT INTO messages VALUES ('old-message','old','Ana','Legado intacto',1700000000000);");database.close();
+  const database=new DatabaseSync(databasePath);database.exec("CREATE TABLE rooms(id TEXT PRIMARY KEY,name TEXT,description TEXT); INSERT INTO rooms VALUES ('old','Antiga','Preservar'); CREATE TABLE messages(id TEXT PRIMARY KEY,room TEXT,author TEXT,text TEXT,created INTEGER); INSERT INTO messages VALUES ('old-message','old','Ana','Legado intacto',1700000000000);");
+  if(modern)database.exec("ALTER TABLE messages ADD COLUMN authorId TEXT; ALTER TABLE messages ADD COLUMN operationId TEXT; ALTER TABLE messages ADD COLUMN sequence INTEGER; UPDATE messages SET authorId='legacy-ana',operationId='legacy-receipt',sequence=37; PRAGMA user_version=1;");
+  database.close();
   const before={database:hash(databasePath),preferences:hash(preferencesPath)};
   const env:Record<string,string>={DROCSID_TEST_APP_DATA:profile,DATABASE_URL:'postgres://must-not-be-used:fictional@127.0.0.1:1/unavailable'};
   for(const [name,value]of Object.entries(process.env))if(value!==undefined&&!(name in env))env[name]=value;
@@ -35,5 +38,6 @@ try{
   assert.deepEqual({database:hash(databasePath),preferences:hash(preferencesPath)},before);
   await closeDesktop(desktop);desktop=undefined;
   assert.deepEqual({database:hash(databasePath),preferences:hash(preferencesPath)},before);
-  console.log('PASS: Drocsid client opens without PostgreSQL, keeps credentials outside renderer and preserves the legacy default profile and database bytes.');
 }finally{try{await closeDesktop(desktop);}finally{removeTestProfile(profile);}}
+}
+console.log('PASS: Drocsid client opens without PostgreSQL, keeps credentials outside renderer and preserves the legacy default profile and database bytes.');
