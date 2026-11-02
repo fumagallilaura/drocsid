@@ -1,0 +1,40 @@
+[
+  {
+    "id": "RTC-01",
+    "confirmed": true,
+    "observation": "Stale join accepted after re-entry; previous microphone remains live even after close().",
+    "staleRequestAccepted": true,
+    "oldMicrophoneAfterClose": "live",
+    "newMicrophoneAfterClose": "ended"
+  },
+  {
+    "id": "RTC-02",
+    "confirmed": true,
+    "observation": "Concurrent microphone acquisition loses the first stream; close() cannot stop it.",
+    "microphoneRequests": 2,
+    "lostMicrophoneAfterClose": "live"
+  },
+  {
+    "id": "RTC-03",
+    "confirmed": true,
+    "observation": "Sender failure leaves screen capture live without notifying the UI or sending sharing=true.",
+    "trackAfterFailure": "live",
+    "uiUpdates": 0,
+    "announcedSharing": false
+  },
+  {
+    "id": "RTC-04",
+    "confirmed": true,
+    "observation": "join() on a closed instance still requests microphone access before stopping the result.",
+    "requests": 1,
+    "stoppedEventually": true
+  },
+  {
+    "id": "RTC-05",
+    "confirmed": true,
+    "observation": "stopScreen() failure skips sharing=false and UI notification.",
+    "captureStopped": true,
+    "uiUpdates": 0,
+    "sharingFalseSent": false
+  }
+]

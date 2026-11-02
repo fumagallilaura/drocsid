@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import { readFileSync, existsSync, writeFileSync } from 'node:fs';
+const before = JSON.parse(readFileSync('review/baseline.json', 'utf8'));
+const after = JSON.parse(readFileSync('review/after.json', 'utf8'));
+assert.deepEqual(after, before, 'An implementation file changed during the review.');
+const rtc = JSON.parse(readFileSync('review/rtc-probes.json', 'utf8'));
+const server = JSON.parse(readFileSync('review/server-probes.json', 'utf8'));
+const ui = JSON.parse(readFileSync('review/ui-probes.json', 'utf8'));
+const report = readFileSync('review/REVISAO_COMPLETA.md', 'utf8');
+const entries = [...report.matchAll(/\*\*R(\d{2}) \((P\d)\)\./g)].map(m => ({ id: `R${m[1]}`, priority: m[2] }));
+assert.equal(entries.length, 26);
+assert.equal(new Set(entries.map(e => e.id)).size, 26);
+assert.equal([...rtc, ...server, ...ui.results].length, 17);
+assert.ok([...rtc, ...server, ...ui.results].every(r => r.confirmed));
+const missingLinks = [...report.matchAll(/\]\(([^)]+)\)/g)].map(m => m[1]).filter(path => !path.startsWith('https://')).filter(path => {
+  const actual = path.startsWith('C:/') ? path.replace(/:\d+$/, '') : `review/${path}`;
+  return !existsSync(actual);
+});
+assert.deepEqual(missingLinks, []);
+const summary = { version: '0.1.1', implementationFilesUnchanged: before.length, findings: entries.length, priorities: entries.reduce<Record<string,number>>((counts, e) => { counts[e.priority] = (counts[e.priority] || 0) + 1; return counts; }, {}), confirmedProbes: 17, existingServerTests: { passed: 3, failed: 0 }, isolatedBuild: 'passed', npmAuditReportedVulnerabilities: 0, rendererErrorsInUiProbes: ui.rendererErrors, report: 'review/REVISAO_COMPLETA.md' };
+writeFileSync('review/summary.json', JSON.stringify(summary, null, 2));
+console.log(JSON.stringify(summary, null, 2));

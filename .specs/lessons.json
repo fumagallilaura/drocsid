@@ -1,0 +1,444 @@
+{
+  "schema": 1,
+  "promote_threshold": 2,
+  "window_days": 45,
+  "quarantine_threshold": 2,
+  "next_id": 25,
+  "lessons": [
+    {
+      "id": "L-001",
+      "key": "weak_test::assert callback cardinality and pending state removal when electron capture is cancelled before inventory resolves",
+      "text": "Assert callback cardinality and pending-state removal when Electron capture is cancelled before inventory resolves.",
+      "signal": "weak_test",
+      "scope": "electron/capture",
+      "status": "candidate",
+      "features": [
+        "build-confiavel"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "validation.md M8; electron/main.js:53 (electron/capture)"
+      ],
+      "created": "2026-10-25T02:45:07Z",
+      "last_seen": "2026-10-25T02:45:07Z"
+    },
+    {
+      "id": "L-002",
+      "key": "ac_gap::assert that mocked clock cleanup promises are terminal at the deadline before awaiting their result",
+      "text": "Assert that mocked-clock cleanup promises are terminal at the deadline before awaiting their result.",
+      "signal": "ac_gap",
+      "scope": "tests/harness",
+      "status": "candidate",
+      "features": [
+        "build-confiavel"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "BUILD-08; tests/harness.test.js:33; validation.md M9 (tests/harness)"
+      ],
+      "created": "2026-10-25T02:45:13Z",
+      "last_seen": "2026-10-25T02:45:13Z"
+    },
+    {
+      "id": "L-003",
+      "key": "ac_gap::separate local screen cleanup completion from remote acknowledgements and discard effects from superseded screen operations",
+      "text": "Separate local screen cleanup completion from remote acknowledgements and discard effects from superseded screen operations.",
+      "signal": "ac_gap",
+      "scope": "src/rtc;src/main",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "MEDIA-17 (src/rtc;src/main)"
+      ],
+      "created": "2026-10-25T21:09:53Z",
+      "last_seen": "2026-10-25T21:09:53Z"
+    },
+    {
+      "id": "L-004",
+      "key": "ac_gap::assert the correlated acknowledgement or error value before waiting for subsequent websocket events",
+      "text": "Assert the correlated acknowledgement or error value before waiting for subsequent WebSocket events.",
+      "signal": "ac_gap",
+      "scope": "tests/service",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "M4 (tests/service)",
+        "M5 (tests/service)"
+      ],
+      "created": "2026-10-25T21:09:53Z",
+      "last_seen": "2026-10-25T21:09:53Z"
+    },
+    {
+      "id": "L-005",
+      "key": "ac_gap::instrument every media acquisition api before renderer startup and reload when asserting zero unsolicited capture",
+      "text": "Instrument every media acquisition API before renderer startup and reload when asserting zero unsolicited capture.",
+      "signal": "ac_gap",
+      "scope": "desktop/startup",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "MEDIA-01 (desktop/startup)"
+      ],
+      "created": "2026-10-25T21:09:54Z",
+      "last_seen": "2026-10-25T21:09:54Z"
+    },
+    {
+      "id": "L-006",
+      "key": "ac_gap::exercise keyboard cancellation during both acquisition and admission and assert terminal state within one second",
+      "text": "Exercise keyboard cancellation during both acquisition and admission and assert terminal state within one second.",
+      "signal": "ac_gap",
+      "scope": "desktop/call",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "MEDIA-07 (desktop/call)"
+      ],
+      "created": "2026-10-25T21:09:54Z",
+      "last_seen": "2026-10-25T21:09:54Z"
+    },
+    {
+      "id": "L-007",
+      "key": "ac_gap::test screen sharing after microphone denial without retrying microphone acquisition",
+      "text": "Test screen sharing after microphone denial without retrying microphone acquisition.",
+      "signal": "ac_gap",
+      "scope": "rtc/listen-only",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "MEDIA-08 (rtc/listen-only)"
+      ],
+      "created": "2026-10-25T21:09:54Z",
+      "last_seen": "2026-10-25T21:09:54Z"
+    },
+    {
+      "id": "L-008",
+      "key": "ac_gap::assert the visible global system audio warning alongside per operation consent and default off state",
+      "text": "Assert the visible global system audio warning alongside per-operation consent and default-off state.",
+      "signal": "ac_gap",
+      "scope": "desktop/capture",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "MEDIA-10 (desktop/capture)"
+      ],
+      "created": "2026-10-25T21:09:54Z",
+      "last_seen": "2026-10-25T21:09:54Z"
+    },
+    {
+      "id": "L-009",
+      "key": "ac_gap::assert every acquired microphone display and system audio track ends within one second on window close and component teardown",
+      "text": "Assert every acquired microphone, display and system-audio track ends within one second on window close and component teardown.",
+      "signal": "ac_gap",
+      "scope": "desktop/cleanup",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "MEDIA-23 (desktop/cleanup)"
+      ],
+      "created": "2026-10-25T21:09:54Z",
+      "last_seen": "2026-10-25T21:09:54Z"
+    },
+    {
+      "id": "L-010",
+      "key": "ac_gap::inject obsolete signaling and playback events after leave or reentry and assert the current attempt and playback block remain unchanged",
+      "text": "Inject obsolete signaling and playback events after leave or reentry and assert the current attempt and playback block remain unchanged.",
+      "signal": "ac_gap",
+      "scope": "desktop/stale-events",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "MEDIA-28 (desktop/stale-events)",
+        "MEDIA-29 (desktop/stale-events)"
+      ],
+      "created": "2026-10-25T21:09:54Z",
+      "last_seen": "2026-10-25T21:09:54Z"
+    },
+    {
+      "id": "L-011",
+      "key": "ac_gap::assert structured cancellation category phase and operation identity separately from native callback cardinality",
+      "text": "Assert structured cancellation category, phase and operation identity separately from native callback cardinality.",
+      "signal": "ac_gap",
+      "scope": "desktop/capture",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "MEDIA-31 (desktop/capture)"
+      ],
+      "created": "2026-10-25T21:09:54Z",
+      "last_seen": "2026-10-25T21:09:54Z"
+    },
+    {
+      "id": "L-012",
+      "key": "ac_gap::require versioned two pc windows hardware evidence for physical voice loopback and noise acceptance",
+      "text": "Require versioned two-PC Windows hardware evidence for physical voice, loopback and noise acceptance.",
+      "signal": "ac_gap",
+      "scope": "media/hardware",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "MEDIA-33 (media/hardware)",
+        "MEDIA-34 (media/hardware)"
+      ],
+      "created": "2026-10-25T21:09:54Z",
+      "last_seen": "2026-10-25T21:09:54Z"
+    },
+    {
+      "id": "L-013",
+      "key": "ac_gap::exercise leave while screen stop is still pending and assert every acquired track and peer reaches the same terminal deadline",
+      "text": "Exercise leave while screen stop is still pending and assert every acquired track and peer reaches the same terminal deadline.",
+      "signal": "ac_gap",
+      "scope": "rtc/lifecycle",
+      "status": "candidate",
+      "features": [
+        "captura-midia-saida"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "validation.md: Edge Cases stop+leave; MEDIA-16/17/21/24; tests/rtc.test.js:241 (rtc/lifecycle)"
+      ],
+      "created": "2026-10-26T03:19:07Z",
+      "last_seen": "2026-10-26T03:19:07Z"
+    },
+    {
+      "id": "L-014",
+      "key": "ac_gap::valide e teste limites de nomes depois da normalizacao exigida pelo contrato",
+      "text": "Valide e teste limites de nomes depois da normalização exigida pelo contrato.",
+      "signal": "ac_gap",
+      "scope": "shared/protocol.js",
+      "status": "candidate",
+      "features": [
+        "estabilizacao"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md:F1/C40 (shared/protocol.js)"
+      ],
+      "created": "2026-10-31T21:43:30Z",
+      "last_seen": "2026-10-31T21:43:30Z"
+    },
+    {
+      "id": "L-015",
+      "key": "ac_gap::registre recusas de protocolo no proprietario da resposta com correlacao e sem conteudo recebido",
+      "text": "Registre recusas de protocolo no proprietário da resposta, com correlação e sem conteúdo recebido.",
+      "signal": "ac_gap",
+      "scope": "server/service.js",
+      "status": "candidate",
+      "features": [
+        "estabilizacao"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md:F2/C67 (server/service.js)"
+      ],
+      "created": "2026-10-31T21:43:31Z",
+      "last_seen": "2026-10-31T21:43:31Z"
+    },
+    {
+      "id": "L-016",
+      "key": "weak_test::teste a expiracao por item mantendo o conteiner ativo antes e exatamente no limite de idade",
+      "text": "Teste a expiração por item mantendo o contêiner ativo, antes e exatamente no limite de idade.",
+      "signal": "weak_test",
+      "scope": "src/rtc.js",
+      "status": "candidate",
+      "features": [
+        "estabilizacao"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md:F3/C43 (src/rtc.js)"
+      ],
+      "created": "2026-10-31T21:43:32Z",
+      "last_seen": "2026-10-31T21:43:32Z"
+    },
+    {
+      "id": "L-017",
+      "key": "weak_test::compare toda a sequencia da pagina ordenada e seu isolamento por sala incluindo elementos intermediarios",
+      "text": "Compare toda a sequência da página ordenada e seu isolamento por sala, incluindo elementos intermediários.",
+      "signal": "weak_test",
+      "scope": "server/service.js",
+      "status": "candidate",
+      "features": [
+        "estabilizacao"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md:F4/C53 (server/service.js)"
+      ],
+      "created": "2026-10-31T21:43:32Z",
+      "last_seen": "2026-10-31T21:43:32Z"
+    },
+    {
+      "id": "L-018",
+      "key": "weak_test::exigir ambos os commits de origem como ancestrais de head na prova do merge concluido",
+      "text": "Exigir ambos os commits de origem como ancestrais de HEAD na prova do merge concluído.",
+      "signal": "weak_test",
+      "scope": "git",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C1 (git)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-019",
+      "key": "weak_test::verificar preservacao de perfis sqlite antigos e atuais com authorid operationid e sequence preenchidos",
+      "text": "Verificar preservação de perfis SQLite antigos e atuais com authorId, operationId e sequence preenchidos.",
+      "signal": "weak_test",
+      "scope": "desktop",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C4 (desktop)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-020",
+      "key": "weak_test::exercitar revogacao expiracao absoluta e inatividade com sockets ativos e recusa de reuso da sessao",
+      "text": "Exercitar revogação, expiração absoluta e inatividade com sockets ativos e recusa de reuso da sessão.",
+      "signal": "weak_test",
+      "scope": "auth",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C7 (auth)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-021",
+      "key": "weak_test::ativar convidados e forjar host e listener ao verificar a restricao real de loopback",
+      "text": "Ativar convidados e forjar Host e listener ao verificar a restrição real de loopback.",
+      "signal": "weak_test",
+      "scope": "server",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C8 (server)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-022",
+      "key": "weak_test::injetar falha na associacao ao grupo e exigir convite nao consumido antes da repeticao bem sucedida",
+      "text": "Injetar falha na associação ao grupo e exigir convite não consumido antes da repetição bem-sucedida.",
+      "signal": "weak_test",
+      "scope": "identity",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C11 (identity)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-023",
+      "key": "weak_test::reabrir o postgresql e reenviar o recibo exato ao verificar migracoes rollback e encerramento do pool",
+      "text": "Reabrir o PostgreSQL e reenviar o recibo exato ao verificar migrações, rollback e encerramento do pool.",
+      "signal": "weak_test",
+      "scope": "database",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C19 (database)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    },
+    {
+      "id": "L-024",
+      "key": "weak_test::verificar conflitos e falha intermediaria da importacao com origem e destino comparados integralmente",
+      "text": "Verificar conflitos e falha intermediária da importação com origem e destino comparados integralmente.",
+      "signal": "weak_test",
+      "scope": "import",
+      "status": "candidate",
+      "features": [
+        "merge-drocsid"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C20 (import)"
+      ],
+      "created": "2026-11-01T09:42:38Z",
+      "last_seen": "2026-11-01T09:42:38Z"
+    }
+  ]
+}

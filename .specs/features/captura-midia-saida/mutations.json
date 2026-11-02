@@ -1,0 +1,44 @@
+[
+  {
+    "file": "src/rtc.js",
+    "old": "if (!this.current(attempt)) { stop(stream); return null; }",
+    "new": "if (!this.current(attempt)) { return null; }",
+    "proof": "node --test --test-reporter=tap \"--test-name-pattern=MEDIA-03/28: permissions\" tests/rtc.test.js",
+    "label": "M1 captura-obsoleta"
+  },
+  {
+    "file": "src/rtc.js",
+    "old": "stop(operation.stream); this.cancelDisplay(operation.key);",
+    "new": "this.cancelDisplay(operation.key);",
+    "proof": "node --test --test-reporter=tap --test-name-pattern=MEDIA-14/15/19/20 tests/rtc.test.js",
+    "label": "M2 compensacao"
+  },
+  {
+    "file": "electron/main.js",
+    "old": "document.entry !== entry || !sameCaptureKey(entry.key, value.key) || entry.contentsId",
+    "new": "document.entry !== entry || false || entry.contentsId",
+    "proof": "node scripts/desktop-capture-check.mjs",
+    "label": "M3 callback-selecao-alheia"
+  },
+  {
+    "file": "server/service.js",
+    "old": "callId:null,callState:'terminal'",
+    "new": "callId:null,callState:'admitted'",
+    "proof": "node --test --test-reporter=tap \"--test-name-pattern=MEDIA-24/28: leave delivered\" tests/service.test.js",
+    "label": "M4 terminal-antes-admissao"
+  },
+  {
+    "file": "server/service.js",
+    "old": "if(!terminal){",
+    "new": "if(true){",
+    "proof": "node --test --test-reporter=tap \"--test-name-pattern=MEDIA-25/26: saturated\" tests/service.test.js",
+    "label": "M5 cota-terminal"
+  },
+  {
+    "file": "src/rtc.js",
+    "old": "generation, muted: this.muted })), LIMITS.requestMs);",
+    "new": "generation, muted: this.muted })), LIMITS.requestMs - 1);",
+    "proof": "node --test --test-reporter=tap \"--test-name-pattern=MEDIA-06/31: the actual\" tests/rtc.test.js",
+    "label": "M6 prazo"
+  }
+]

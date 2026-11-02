@@ -1,0 +1,343 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { once } from 'node:events';
+import { connect } from 'node:net';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+import { WebSocket } from 'ws';
+import { createService, logFailure } from '../server/service.js';
+import { client } from './helpers/client.js';
+import { startService, testPort } from './helpers/service.js';
+import { postgresFixture } from './helpers/postgres.js';
+import { importSqlite } from '../scripts/import-sqlite.mjs';
+import type {TestContext} from 'node:test';
+import {required,isRecord} from './helpers/assertions.js';
+type Clock=NonNullable<NonNullable<Parameters<typeof createService>[0]>['clock']>;
+type Warning={phase:string;code:string;version:string;requestId?:string|null};
+
+async function start(t:TestContext, options:Parameters<typeof startService>[1]={}) {
+  return startService(t,options);
+}
+
+test('STAB-18/19/21/23/24/53: destination is explicit and commit receipt is idempotent', async t=>{
+  const s=await start(t), a=await client(s.url), sameRoom=await client(s.url,'Bia'), other=await client(s.url,'Caio','cafe');
+  const accepted=await a.request({type:'message',operationId:'stable-operation',text:'Persistir uma vez'});
+  assert.equal(accepted.message.room,'geral'); assert.equal(accepted.message.operationId,'stable-operation'); assert.equal(accepted.message.authorId,a.id); assert.equal(accepted.message.sequence,1);
+  const repeat=await a.request({type:'message',operationId:'stable-operation',text:'Persistir uma vez'});
+  assert.deepEqual(repeat.message,accepted.message);
+  await a.request({type:'join',name:'Ana',room:'cafe'});
+  a.send({type:'message',room:'geral',operationId:'wrong-destination',text:'Não enviar'});
+  assert.equal((await a.next('error')).code,'ROOM_MISMATCH');
+  a.send({type:'message',operationId:'stable-operation',text:'outro conteúdo'});
+  assert.equal((await a.next('error')).code,'OPERATION_CONFLICT');
+  await a.request({type:'join',name:'Ana',room:'geral'});
+  const history=await a.request({type:'join',name:'Ana',room:'geral'});
+  assert.equal(history.messages.length,1); assert.equal(history.messages[0].id,accepted.message.id);
+  await sameRoom.next('message'); assert.equal(sameRoom.events.filter(e=>e.type==='message').length,0);
+  assert.equal(other.events.some(e=>e.type==='message'),false);
+});
+
+test('STAB-25/26/55: failed delivery after commit survives restart; locked write is not confirmed', async t=>{
+  const fixture=await postgresFixture(t);
+  let s=await start(t,{fixture});
+  let a=await client(s.url);
+  const socket=[...s.wss.clients][0], original=socket.send;
+  socket.send=function(data,options?:Parameters<WebSocket['send']>[1]|((error?:Error)=>void),callback?:Parameters<WebSocket['send']>[2]){if(JSON.parse(data.toString()).type==='message')throw Error('delivery');return original.call(this,data,typeof options==='function'?{}:options??{},typeof options==='function'?options:callback);};
+  const accepted=await a.request({type:'message',operationId:'durable',text:'Confirmada'});
+  assert.equal(accepted.message.text,'Confirmada'); await s.close();
+  s=await start(t,{fixture}); a=await client(s.url);
+  assert.equal((await a.request({type:'message',operationId:'durable',text:'Confirmada'})).message.id,accepted.message.id);
+  const locker=await fixture.open(), locked=Promise.withResolvers<void>(), release=Promise.withResolvers<void>();
+  const lock=locker.transaction(async connection=>{await connection.query('LOCK TABLE drocsid.messages IN ACCESS EXCLUSIVE MODE');locked.resolve();await release.promise;});
+  await locked.promise;
+  a.send({type:'message',operationId:'must-not-commit',text:'Bloqueada'});
+  assert.equal((await a.next('error')).code,'PERSISTENCE_FAILED'); release.resolve(); await lock; await locker.close();
+  const history=await a.request({type:'join',name:'Ana',room:'geral'});
+  assert.deepEqual(history.messages.map(m=>m.text),['Confirmada']);
+});
+
+test('STAB-28/29/30/68: leave and stop-screen bypass exhausted action budgets',async t=>{
+  const s=await start(t), a=await client(s.url), b=await client(s.url,'Bia');
+  await a.request({type:'call-join'}); await b.request({type:'call-join'}); await a.request({type:'media',sharing:true});
+  for(let i=0;i<110;i++) a.send({type:'signal',to:b.id,signal:{candidate:{candidate:'candidate'}}});
+  await a.next('error',e=>e.code==='RATE_LIMITED');
+  const stopId=a.send({type:'media',sharing:false}),stopped=await a.next(['ack','error'],e=>e.requestId===stopId);
+  assert.equal(stopped.type,'ack');assert.equal(stopped.sharing,false);
+  const leaveId=a.send({type:'call-leave'}),left=await a.next(['ack','error'],e=>e.requestId===leaveId);
+  assert.equal(left.type,'ack');assert.equal(left.inCall,false); assert.equal(left.sharing,false);
+  const repeated=await a.request({type:'call-leave'}); assert.equal(repeated.inCall,false); assert.equal(repeated.callId,a.callId);
+  const presence=await b.next('presence',e=>e.members.some(m=>m.id===a.id&&!m.inCall));
+  assert.equal(required(presence.members.find(m=>m.id===a.id)).sharing,false);
+  a.send({type:'call-join',callId:a.callId,generation:1}); assert.equal((await a.next('error',e=>e.code!=='RATE_LIMITED')).code,'INVALID_EVENT');
+});
+
+test('STAB-33/36/37: unknown upgrades are rejected and concurrent shutdown completes',async t=>{
+  const s=await start(t), port=testPort(s.server), socket=connect(port,'127.0.0.1');
+  await once(socket,'connect'); socket.write('GET /unused-upgrade HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n');
+  const socketClosed=once(socket,'close'); let bytes;
+  try { [bytes]=await once(socket,'data',{signal:AbortSignal.timeout(1500)}); }
+  finally { socket.destroy(); }
+  assert.match(bytes.toString(),/^HTTP\/1\.1 404/); await socketClosed;
+  const idle=connect(port,'127.0.0.1'); await once(idle,'connect');
+  const closed=once(idle,'close'), started=performance.now(); await Promise.all([s.close(),s.close()]); await closed;
+  assert.ok(performance.now()-started<5000); assert.equal(s.server.listening,false);
+});
+
+test('STAB-40/41: malformed signals never reach a peer and errors keep correlation',async t=>{
+  const s=await start(t), a=await client(s.url), b=await client(s.url,'Bia');
+  await a.request({type:'call-join'}); await b.request({type:'call-join'});
+  const requestId=a.send({type:'signal',to:b.id,signal:{candidate:17}}), error=await a.next('error');
+  assert.equal(error.requestId,requestId); assert.equal(error.code,'INVALID_EVENT'); assert.equal(error.phase,'protocol');
+  assert.equal(b.events.some(e=>e.type==='signal'),false);
+  a.ws.send('{'); assert.equal((await a.next('error')).code,'INVALID_EVENT');
+  a.ws.send(JSON.stringify({type:'join',name:'Ana',room:'geral'})); assert.equal((await a.next('error')).code,'INCOMPATIBLE_PROTOCOL');
+});
+
+test('STAB-53/54/55/61: legacy history keeps stable insertion order with an indexed page', async t=>{
+  const dir=mkdtempSync(join(tmpdir(),'conversa-legacy-')), dbPath=join(dir,'old.sqlite');
+  const db=new DatabaseSync(dbPath); db.exec('CREATE TABLE messages (id TEXT PRIMARY KEY, room TEXT NOT NULL, author TEXT NOT NULL, text TEXT NOT NULL, created INTEGER NOT NULL)');
+  db.exec("CREATE TABLE rooms (id TEXT PRIMARY KEY,name TEXT NOT NULL,description TEXT NOT NULL); INSERT INTO rooms VALUES ('geral','geral','Legado');");
+  db.exec('BEGIN'); const insert=db.prepare('INSERT INTO messages VALUES (?,?,?,?,?)');
+  for(let i=0;i<10000;i++)insert.run(String(i),'geral','Mesmo nome',`Mensagem ${i}`,1); db.exec('COMMIT'); db.close();
+  const s=await start(t,{sqliteSource:dbPath});
+  t.after(async()=>{await s.close();rmSync(dir,{recursive:true,force:true});});
+  const a=await client(s.url), history=await a.request({type:'join',name:'Ana',room:'geral'});
+  assert.equal(history.messages.length,200); assert.equal(history.messages[0].text,'Mensagem 9800'); assert.equal(required(history.messages.at(-1)).text,'Mensagem 9999');
+  assert.deepEqual(history.messages.map(m=>[m.id,m.room,m.text,m.created]),Array.from({length:200},(_,i)=>[String(9800+i),'geral',`Mensagem ${9800+i}`,1]));
+  assert.equal(history.messages[0].authorId,null);
+  await s.database.query('ANALYZE drocsid.messages');
+  const plan=JSON.stringify(await s.database.query('EXPLAIN (FORMAT JSON) SELECT * FROM drocsid.messages WHERE room=$1 ORDER BY sequence DESC LIMIT 200',['geral']));
+  assert.equal(plan.includes('"Node Type":"Sort"'),false); assert.match(plan,/Index (Only )?Scan/);
+  assert.equal((await s.database.query('SELECT count(*)::int AS count FROM drocsid.messages'))[0].count,10000);
+  await a.request({type:'join',name:'Ana',room:'cafe'});
+  const foreign=await a.request({type:'message',operationId:'foreign-room',text:'Mensagem em outra sala'});
+  assert.equal(foreign.message.room,'cafe');
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'cafe'})).messages,[foreign.message]);
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'geral'})).messages,history.messages);
+});
+
+test('STAB-49/55: incompatible stored data is refused without changing prior rows',async t=>{
+  const dir=mkdtempSync(join(tmpdir(),'conversa-incompatible-'));
+  t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  for(const variant of ['newer-version','missing-column']){
+    const dbPath=join(dir,`${variant}.sqlite`),db=new DatabaseSync(dbPath);
+    db.exec(`CREATE TABLE rooms (id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL);
+      INSERT INTO rooms VALUES ('custom','Sala antiga','Preservar');
+      CREATE TABLE messages (id TEXT PRIMARY KEY, room TEXT NOT NULL, author TEXT NOT NULL, ${variant==='missing-column'?'':'text TEXT NOT NULL,'} created INTEGER NOT NULL);`);
+    if(variant==='missing-column')db.prepare('INSERT INTO messages VALUES (?,?,?,?)').run('old','custom','Ana',123);
+    else db.prepare('INSERT INTO messages VALUES (?,?,?,?,?)').run('old','custom','Ana','Texto anterior',123);
+    db.exec(`PRAGMA user_version=${variant==='newer-version'?2:0}`);
+    const before={rooms:db.prepare('SELECT * FROM rooms').all(),messages:db.prepare('SELECT * FROM messages').all(),version:db.prepare('PRAGMA user_version').get()};db.close();
+    const fixture=await postgresFixture(t),database=await fixture.open();
+    await assert.rejects(importSqlite(dbPath,database),error=>isRecord(error)&&error.code==='INVALID_LEGACY_DATABASE');
+    assert.deepEqual(await database.rooms(),[]);
+    const reopened=new DatabaseSync(dbPath);
+    try{
+      assert.deepEqual(reopened.prepare('SELECT * FROM rooms').all(),before.rooms);
+      assert.deepEqual(reopened.prepare('SELECT * FROM messages').all(),before.messages);
+      assert.deepEqual(reopened.prepare('PRAGMA user_version').get(),before.version);
+    }finally{reopened.close();}
+  }
+});
+
+test('STAB-51/52: connection cap refuses 25th and slow consumer cannot block healthy delivery',async t=>{
+  const s=await start(t), clients=[];
+  for(let i=0;i<24;i++)clients.push(await client(s.url,`Pessoa ${i}`));
+  const {WebSocket}=await import('ws'), extra=new WebSocket(s.url);
+  const status=await new Promise(resolve=>{extra.once('unexpected-response',(_req,res)=>{resolve(res.statusCode);res.resume();extra.terminate();});extra.on('error',()=>{});});
+  assert.equal(status,503);
+  const slow=[...s.wss.clients][0]; Object.defineProperty(slow,'bufferedAmount',{get:()=>1048577});
+  const closed=once(clients[0].ws,'close'); const accepted=await clients[1].request({type:'message',text:'Ainda funciona'}); await closed;
+  assert.equal(accepted.message.text,'Ainda funciona'); assert.equal((await clients[2].next('message')).message.id,accepted.message.id);
+});
+
+test('STAB-32: heartbeat releases silent participant within 60 seconds',async t=>{
+  t.mock.timers.enable({apis:['setInterval','setTimeout','Date'],now:0});
+  const clock:Clock={now:()=>Date.now(),setTimeout:(fn,ms)=>setTimeout(fn,ms),clearTimeout:id=>clearTimeout(id),setInterval:(fn,ms)=>setInterval(fn,ms),clearInterval:id=>clearInterval(id)};
+  const s=await start(t,{clock}), a=await client(s.url,'Ana','geral',{autoPong:false}), b=await client(s.url,'Bia','geral',{autoPong:false});
+  await a.request({type:'call-join'}); const closed=Promise.all([once(a.ws,'close'), ...[...s.wss.clients].map(ws=>once(ws,'close'))]);
+  t.mock.timers.tick(60000); await closed;
+  assert.equal(a.ws.readyState,3); assert.equal(s.wss.clients.size,0);
+});
+
+test('STAB-51: 100th room is accepted and 101st is refused without deleting rooms',async t=>{
+  const s=await start(t), a=await client(s.url);
+  for(let i=3;i<100;i++)await a.request({type:'create-room',name:`Sala ${i}`});
+  const requestId=a.send({type:'create-room',name:'Excesso'}); assert.equal((await a.next('error',e=>e.requestId===requestId)).code,'INVALID_INPUT');
+  assert.equal(required(a.events.filter(e=>e.type==='rooms').at(-1)).rooms.length,100);
+});
+
+test('STAB-37/67: failed cleanup still closes remaining resources and diagnostic omits secret payloads',async t=>{
+  const fixture=await postgresFixture(t),s=await createService({database:await fixture.open(),trustedLocal:true,iceServers:[]});
+  await new Promise<void>(resolve=>s.server.listen(0,'127.0.0.1',resolve));
+  t.after(()=>s.close().catch(()=>{}));
+  const warnings:Warning[]=[],originalWarn=console.warn;console.warn=(value:string)=>warnings.push(JSON.parse(value));t.after(()=>{console.warn=originalWarn;});
+  const originalClose=s.wss.close.bind(s.wss);s.wss.close=callback=>originalClose(()=>required(callback)(new Error('SECRET_TOKEN and message text')));
+  await assert.rejects(s.close(),e=>isRecord(e)&&e.code==='SHUTDOWN_FAILED');
+  assert.equal(s.server.listening,false);assert.equal(warnings[0].phase,'shutdown');assert.equal(warnings[0].code,'SHUTDOWN_FAILED');
+  assert.equal(warnings[0].version,'0.1.1');assert.equal(JSON.stringify(warnings).includes('SECRET_TOKEN'),false);
+});
+
+test('MEDIA-24/28: leave delivered before a held join makes that generation terminal without touching a newer call',async t=>{
+  const s=await start(t), a=await client(s.url), observer=await client(s.url,'Bia');
+  const delayedJoin={type:'call-join',callId:'old',generation:1,muted:false};
+  const left=await a.request({type:'call-leave',callId:'old',generation:1});
+  assert.deepEqual({callId:left.callId,generation:left.generation,inCall:left.inCall,muted:left.muted,sharing:left.sharing},
+    {callId:'old',generation:1,inCall:false,muted:true,sharing:false});
+  const oldId=a.send(delayedJoin), refused=await a.next(['error','ack'],e=>e.requestId===oldId);
+  assert.equal(refused.type,'error');
+  assert.equal(refused.code,'INVALID_EVENT'); assert.equal(refused.phase,'call-join');
+  const admitted=await a.request({type:'call-join',callId:'new',generation:2,muted:false});
+  assert.equal(admitted.generation,2); assert.equal(admitted.inCall,true);
+  await a.request({type:'media',callId:'new',generation:2,sharing:true});
+  const duplicate=await a.request({type:'call-join',callId:'new',generation:2,muted:true});
+  assert.equal(duplicate.sharing,true); assert.equal(duplicate.muted,false);
+  const repeated=await a.request({type:'call-leave',callId:'old',generation:1});
+  assert.equal(repeated.generation,1); assert.equal(repeated.inCall,false);
+  for(const type of ['call-join','call-leave','media','signal']) {
+    const requestId=a.send({type,callId:'different-id',generation:2,muted:true,sharing:false,to:observer.id,toCallId:'none',signal:{candidate:{candidate:''}}});
+    assert.equal((await a.next('error',e=>e.requestId===requestId)).code,'INVALID_EVENT');
+  }
+  const snapshot=await a.request({type:'media',callId:'new',generation:2,muted:false});
+  assert.equal(snapshot.inCall,true); assert.equal(snapshot.sharing,true); assert.equal(snapshot.generation,2);
+  const present=await observer.next('presence',e=>e.members.some(m=>m.callId==='new'&&m.sharing));
+  assert.equal(present.members.filter(m=>m.inCall).length,1);
+  const revisions=observer.events.filter(e=>e.type==='presence').map(e=>e.revision);
+  assert.ok(revisions.every(Number.isSafeInteger));
+  assert.ok(revisions.every((value,i)=>!i||value>revisions[i-1]));
+});
+
+test('MEDIA-25/26: saturated message, media and signaling budgets still allow stop and replacement at capacity',async t=>{
+  const s=await start(t), people=[];
+  for(let i=0;i<7;i++)people.push(await client(s.url,`Pessoa ${i}`));
+  for(const p of people.slice(0,6))await p.request({type:'call-join'});
+  const a=people[0], b=people[1], extra=people[6];
+  const excess=extra.send({type:'call-join'}); assert.equal((await extra.next('error',e=>e.requestId===excess)).code,'CALL_FULL');
+  for(const type of ['message','media','signal']) {
+    for(let i=0;i<101;i++)a.send({type,text:'quota',muted:false,sharing:true,to:b.id,signal:{candidate:{candidate:''}}});
+    await a.next('error',e=>e.code==='RATE_LIMITED'&&e.phase===type);
+  }
+  const started=performance.now(),stopId=a.send({type:'media',sharing:false}),stopped=await a.next(['ack','error'],e=>e.requestId===stopId);
+  assert.equal(stopped.type,'ack');assert.equal(stopped.sharing,false); assert.equal(stopped.inCall,true);
+  const leaveId=a.send({type:'call-leave',generation:1}),left=await a.next(['ack','error'],e=>e.requestId===leaveId);
+  assert.equal(left.type,'ack');assert.equal(left.inCall,false); assert.equal(left.sharing,false); assert.equal(left.generation,1);
+  const terminal=await b.next('presence',e=>e.members.find(m=>m.id===a.id)?.inCall===false);
+  assert.equal(required(terminal.members.find(m=>m.id===a.id)).sharing,false); assert.ok(performance.now()-started<1000);
+  await extra.request({type:'call-join'});
+  const replacement=await b.next('presence',e=>e.members.find(m=>m.id===extra.id)?.inCall);
+  assert.equal(replacement.members.filter(m=>m.inCall).length,6);
+});
+
+test('MEDIA-27: heartbeat deadline follows an off-tick pong and clears timers on close',async t=>{
+  let time=0,next=0;const jobs=new Map<number,{at:number;fn():void}>();
+  const clock:Clock={now:()=>time,setTimeout:(fn,ms)=>{const id=++next;jobs.set(id,{at:time+ms,fn});return id;},clearTimeout:id=>{if(typeof id==='number')jobs.delete(id);},
+    setInterval:()=>++next,clearInterval:()=>{}};
+  const tick=(ms:number)=>{time+=ms;for(const [id,job]of [...jobs])if(job.at<=time){jobs.delete(id);job.fn();}};
+  const s=await start(t,{clock}), a=await client(s.url,'Ana','geral',{autoPong:false});
+  await a.request({type:'call-join'}); const serverSocket=[...s.wss.clients][0];
+  assert.equal(jobs.size,1); tick(12345);
+  const pong=once(serverSocket,'pong');a.ws.pong();await pong; assert.equal(jobs.size,1);
+  tick(59999); assert.equal(a.ws.readyState,1); assert.equal(s.wss.clients.size,1);
+  const closed=Promise.all([once(a.ws,'close'),once(serverSocket,'close')]); tick(1); await closed;
+  assert.equal(a.ws.readyState,3); assert.equal(s.wss.clients.size,0); assert.equal(jobs.size,0);
+  const b=await client(s.url,'Bia','geral',{autoPong:false});assert.equal(jobs.size,1);
+  const gone=once([...s.wss.clients][0],'close');b.ws.close();await gone;assert.equal(jobs.size,0);
+  await s.close();assert.equal(jobs.size,0);
+});
+
+test('MEDIA-05/24/28: v1 requests cannot enter a v2 service or occupy its call',async t=>{
+  const s=await start(t),a=await client(s.url),observer=await client(s.url,'Bia');
+  a.ws.send(JSON.stringify({v:1,type:'call-join',requestId:'old-version',callId:'old-call',generation:1,muted:false}));
+  const error=await a.next('error',e=>e.requestId==='old-version');assert.equal(error.code,'INCOMPATIBLE_PROTOCOL');
+  const present=await observer.request({type:'join',name:'Bia',room:'geral'});assert.equal(present.room.id,'geral');
+  const snapshot=await observer.next('presence',e=>e.members.some(m=>m.id===a.id));assert.equal(required(snapshot.members.find(m=>m.id===a.id)).inCall,false);
+  const next=await a.request({type:'call-join'});assert.equal(next.inCall,true);assert.equal(next.generation,1);
+});
+
+test('MEDIA-32: media diagnostics exclude sensitive error properties and untrusted cause names',t=>{
+  const warnings:string[]=[],original=console.warn;console.warn=(value:string)=>warnings.push(value);t.after(()=>{console.warn=original;});
+  const error=Object.assign(Error('MEDIA_PRIVATE_AUDIO'),{name:'MEDIA_PRIVATE_TITLE',sdp:'MEDIA_PRIVATE_SDP',candidate:'MEDIA_PRIVATE_ICE',credential:'MEDIA_PRIVATE_SECRET',thumbnail:'MEDIA_PRIVATE_IMAGE',messageText:'MEDIA_PRIVATE_CHAT'});
+  logFailure('capture-inventory','MEDIA_FAILED','technical-request',error);
+  assert.equal(warnings.length,1);assert.equal(warnings.join('').includes('MEDIA_PRIVATE_'),false);
+  assert.deepEqual(JSON.parse(warnings[0]),{phase:'capture-inventory',code:'MEDIA_FAILED',requestId:'technical-request',version:'0.1.1',runtime:process.versions.node,cause:'Error',causeCode:null,sqliteCode:null});
+});
+
+test('STAB-19/23/24: a receipt stays in its original room and conflicts never alter either history',async t=>{
+  const s=await start(t),a=await client(s.url);
+  const accepted=await a.request({type:'message',operationId:'original-operation',text:'  texto original  '});
+  assert.equal(accepted.message.text,'texto original');await a.request({type:'join',name:'Ana',room:'cafe'});
+  const retry=await a.request({type:'message',room:'geral',operationId:'original-operation',text:'texto original'});
+  assert.deepEqual(retry.message,accepted.message);
+  for(const value of [{room:'cafe',text:'texto original'},{room:'geral',text:'outro texto'}]){
+    const requestId=a.send({type:'message',operationId:'original-operation',...value});
+    const result=await a.next(['message-accepted','error'],event=>event.requestId===requestId);
+    assert.equal(result.type,'error');assert.equal(result.code,'OPERATION_CONFLICT');assert.equal(result.phase,'message');
+  }
+  const mismatch=a.send({type:'message',room:'geral',operationId:'not-yet-persisted',text:'destino errado'});
+  const refused=await a.next(['message-accepted','error'],event=>event.requestId===mismatch);
+  assert.equal(refused.type,'error');assert.equal(refused.code,'ROOM_MISMATCH');
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'cafe'})).messages,[]);
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'geral'})).messages,[accepted.message]);
+});
+
+test('STAB-21/27: rejected text creates no record and 2000 UTF-16 units commit after trim',async t=>{
+  const s=await start(t),a=await client(s.url);
+  for(const text of ['', '   ', 'x'.repeat(2001)]){
+    const requestId=a.send({type:'message',text}),result=await a.next(['message-accepted','error'],event=>event.requestId===requestId);
+    assert.equal(result.type,'error');assert.equal(result.code,'INVALID_INPUT');
+  }
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'geral'})).messages,[]);
+  const text='😀'.repeat(1000),accepted=await a.request({type:'message',text:`  ${text}  `});
+  assert.equal(accepted.message.text,text);assert.equal(accepted.message.text.length,2000);assert.equal(accepted.message.sequence,1);
+  assert.deepEqual((await a.request({type:'join',name:'Ana',room:'geral'})).messages,[accepted.message]);
+});
+
+test('STAB-35/37: pending shutdown refuses HTTP and WS with one terminal result',async t=>{
+  const s=await start(t),port=testPort(s.server),original=s.server.close.bind(s.server);let release:(()=>void)|null=null;
+  s.server.close=callback=>{release=()=>{release=null;original(callback);};return s.server;};
+  const ending=s.close();t.after(async()=>{release?.();await ending;});
+  assert.equal(s.close(),ending);
+  const response=await fetch(`http://127.0.0.1:${port}/api/config`);
+  assert.equal(response.status,503);assert.deepEqual(await response.json(),{code:'SHUTTING_DOWN'});
+  const status=await new Promise((resolve,reject)=>{
+    const ws=new WebSocket(`ws://127.0.0.1:${port}/ws`);ws.on('error',()=>{});
+    const guard=setTimeout(()=>reject(Error('no WS response during shutdown')),1000);
+    ws.once('unexpected-response',(_req,res)=>{clearTimeout(guard);res.resume();ws.terminate();resolve(res.statusCode);});
+  });
+  assert.equal(status,503);required<()=>void>(release)();await ending;assert.equal(s.server.listening,false);
+});
+
+test('STAB-36/37: repeated close does not extend a stalled cleanup deadline',async t=>{
+  const fixture=await postgresFixture(t),s=await createService({database:await fixture.open(),trustedLocal:true,iceServers:[]});s.wss.close=()=>{};
+  t.mock.timers.enable({apis:['setTimeout','setInterval']});
+  t.after(()=>t.mock.timers.tick(10000));
+  let settled=false,cause:unknown;const ending=s.close();ending.then(()=>{settled=true;},error=>{settled=true;cause=error;});
+  t.mock.timers.tick(4999);await Promise.resolve();assert.equal(settled,false);assert.equal(s.close(),ending);
+  t.mock.timers.tick(1);for(let i=0;i<12;i++)await Promise.resolve();
+  assert.ok(isRecord(cause));assert.equal(settled,true);assert.equal(cause.code,'SHUTDOWN_FAILED');await assert.rejects(ending,error=>isRecord(error)&&error.code==='SHUTDOWN_FAILED');
+});
+
+test('STAB-33/63/R07: an unknown Upgrade returns 404 and closes within 1s',async t=>{
+  const s=await start(t),socket=connect(testPort(s.server),'127.0.0.1');t.after(()=>socket.destroy());await once(socket,'connect');
+  let bytes='',closedAt;socket.on('data',data=>{bytes+=data;});socket.once('close',()=>{closedAt=performance.now();});
+  const started=performance.now();socket.write('GET /unused-upgrade HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n');
+  await new Promise(resolve=>setTimeout(resolve,1000));
+  assert.ok(typeof closedAt==='number');assert.match(bytes,/^HTTP\/1\.1 404/);assert.equal(typeof closedAt,'number');assert.ok(closedAt-started<=1000);assert.equal(socket.destroyed,true);
+});
+
+test('STAB-67: validation and state refusals log correlated metadata without payloads',async t=>{
+  const s=await start(t),a=await client(s.url),b=await client(s.url,'Bia');
+  await a.request({type:'call-join'});await b.request({type:'call-join'});
+  const warnings:Warning[]=[];t.mock.method(console,'warn',(value:string)=>warnings.push(JSON.parse(value)));
+  const invalid=a.send({type:'signal',to:b.id,toCallId:b.callId,signal:{candidate:{candidate:'STAB_PRIVATE_MEDIA',sdpMid:'STAB_PRIVATE_TOKEN',sdpMLineIndex:7.25}}});
+  const refused=await a.next('error',event=>event.requestId===invalid);
+  assert.equal(refused.code,'INVALID_EVENT');assert.equal(refused.phase,'protocol');
+  assert.equal(warnings.length,1);
+  const stale=a.send({type:'signal',callId:'other-call',to:b.id,toCallId:b.callId,signal:{candidate:{candidate:'STAB_PRIVATE_SDP'}}});
+  const terminal=await a.next('error',event=>event.requestId===stale);
+  assert.equal(terminal.code,'INVALID_EVENT');assert.equal(terminal.phase,'signal');
+  assert.deepEqual(warnings,[['protocol',invalid],['signal',stale]].map(([phase,requestId])=>({phase,code:'INVALID_EVENT',requestId,version:'0.1.1',runtime:process.versions.node,cause:'Error',causeCode:null,sqliteCode:null})));
+  assert.equal(JSON.stringify(warnings).includes('STAB_PRIVATE_'),false);
+});

@@ -1,0 +1,56 @@
+{
+  "results": [
+    {
+      "id": "UI-01",
+      "confirmed": true,
+      "observation": "Sending before join confirmation persists the message in the new room although the old room was still displayed.",
+      "displayedRoomAtSend": "geral",
+      "persistedRoom": "projetos",
+      "sentDuringDelayedJoin": true
+    },
+    {
+      "id": "UI-02",
+      "confirmed": true,
+      "observation": "A server rejection discards the draft with no pending message or retry.",
+      "draftAfterRejection": ""
+    },
+    {
+      "id": "UI-03",
+      "confirmed": true,
+      "observation": "Pasting an invite URL into the server field discards its room parameter.",
+      "requestedRoom": "cafe",
+      "actualRoom": "geral"
+    },
+    {
+      "id": "UI-06",
+      "confirmed": true,
+      "observation": "The modal does not close on Escape and keyboard focus escapes into the background.",
+      "escapeKeptDialogOpen": true,
+      "focusEscaped": true
+    },
+    {
+      "id": "UI-07",
+      "confirmed": true,
+      "observation": "A rejected call-join leaves a live synthetic microphone but the UI shows no active call or leave control.",
+      "microphoneStates": [
+        "live"
+      ],
+      "hangupControls": 0
+    },
+    {
+      "id": "UI-04",
+      "confirmed": true,
+      "observation": "Preferences saved in localStorage disappear on restart because the local origin uses a new random port.",
+      "originBefore": "http://127.0.0.1:54614",
+      "originAfter": "http://127.0.0.1:54783",
+      "savedNameAfterRestart": ""
+    },
+    {
+      "id": "UI-05",
+      "confirmed": true,
+      "observation": "A server that accepts WebSocket but sends no hello leaves the entry form connecting forever beyond the configured timeout.",
+      "observedAfterMs": 8500
+    }
+  ],
+  "rendererErrors": []
+}

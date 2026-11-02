@@ -1,15 +1,76 @@
 {
   "name": "drocsid",
+  "version": "0.1.1",
   "private": true,
-  "workspaces": [
-    "apps/*"
-  ],
+  "type": "module",
+  "main": "electron/main.js",
+  "description": "Salas de texto, voz e compartilhamento de tela para pequenos grupos",
+  "author": "Conversa",
   "scripts": {
-    "db": "docker compose up -d",
-    "dev:server": "npm run dev -w apps/server",
-    "dev:web": "npm run dev -w apps/web",
-    "dev:desktop": "npm start -w apps/desktop",
-    "test": "npm test -w apps/server",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "dev": "npm run build:runtime && node server/index.js",
+    "build:runtime": "tsc -p tsconfig.json && tsc -p tsconfig.browser.json && tsc -p tsconfig.electron.json && tsc -p tsconfig.tools.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.browser.json --noEmit && tsc -p tsconfig.electron.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
+    "build": "npm run build:runtime && vite build",
+    "start": "npm run build:runtime && node server/index.js --production",
+    "test": "npm run build:runtime && node scripts/with-test-postgres.mjs -- node --test tests/*.test.js",
+    "import:sqlite": "npm run build:runtime && node scripts/import-sqlite.mjs",
+    "desktop": "npm run build && electron .",
+    "dist:win": "npm run build && node scripts/prepare-electron.mjs && node scripts/build-windows.mjs",
+    "security": "npm run build:runtime && node scripts/security-check.mjs",
+    "check:release": "npm run build:runtime && node scripts/with-test-postgres.mjs -- node scripts/release-check.mjs"
+  },
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "lucide-react": "0.577.0",
+    "pg": "8.23.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@babel/generator": "7.29.8",
+    "@babel/parser": "7.29.11",
+    "@electron/asar": "3.4.1",
+    "@playwright/test": "^1.56.0",
+    "@types/babel__generator": "7.27.0",
+    "@types/express": "5.0.6",
+    "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/ws": "8.18.2",
+    "@vitejs/plugin-react": "^5.0.0",
+    "electron": "45.0.0",
+    "electron-builder": "26.18.0",
+    "playwright": "1.64.1",
+    "typescript": "7.0.2",
+    "vite": "^7.0.0",
+    "yaml": "2.9.1"
+  },
+  "build": {
+    "appId": "app.drocsid.desktop",
+    "productName": "Drocsid",
+    "electronDist": ".packaging/electron",
+    "directories": {
+      "output": "release-windows"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*.js",
+      "electron/**/*.cjs",
+      "server/**/*.js",
+      "shared/**/*.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "Drocsid-${version}-Windows.exe"
+    }
   }
 }

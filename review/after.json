@@ -1,0 +1,110 @@
+[
+  {
+    "path": ".gitignore",
+    "bytes": 108,
+    "lines": 11,
+    "sha256": "949ba5604beea6795a583abf8445a04a14c03a3f1173b3ffc56d3ba7d490f919"
+  },
+  {
+    "path": "electron/main.js",
+    "bytes": 4927,
+    "lines": 78,
+    "sha256": "39859a1c0e7ade50afe552387ad1c5f1d7cf1fc686091b2c23b00adc66586896"
+  },
+  {
+    "path": "electron/preload.cjs",
+    "bytes": 545,
+    "lines": 12,
+    "sha256": "f2a2a50500ad22853a2425a91d598bfd435de3344eea225b136cba5b176c7331"
+  },
+  {
+    "path": "index.html",
+    "bytes": 541,
+    "lines": 13,
+    "sha256": "93a5c469714fac1df93463fd5f12c0c3e419b17d74821697e6a0f9ce6f281d67"
+  },
+  {
+    "path": "package-lock.json",
+    "bytes": 210904,
+    "lines": 6092,
+    "sha256": "c002f760499439f63a8c98744bfc4698a2da9a1367b842cd62d397055efdd442"
+  },
+  {
+    "path": "package.json",
+    "bytes": 1329,
+    "lines": 42,
+    "sha256": "8d00fbbae8067f4b9ae9b7a96f36cd5dec61707cde673a91a7a210b0736f6277"
+  },
+  {
+    "path": "public/favicon.svg",
+    "bytes": 313,
+    "lines": 2,
+    "sha256": "cb57f5c50c84a9e83165dae3349851ac45cfd3ac7202721869d8951d52241dbe"
+  },
+  {
+    "path": "scripts/build-windows.mjs",
+    "bytes": 1170,
+    "lines": 18,
+    "sha256": "c60d264db496af583baa435f4f21daee95a46cb740db2f53bf0545d6bb406dfe"
+  },
+  {
+    "path": "scripts/desktop-smoke.mjs",
+    "bytes": 7274,
+    "lines": 103,
+    "sha256": "0f5e0eeb5f86f3ff1bdfd6cc52da9f26aaec0b1935f312088fd8b7180d314bf3"
+  },
+  {
+    "path": "scripts/prepare-electron.mjs",
+    "bytes": 491,
+    "lines": 11,
+    "sha256": "b73bd86aed9f09355f415a9f41b77fd925f440e8bd2ca865cfca123408011227"
+  },
+  {
+    "path": "scripts/startup-audio-check.mjs",
+    "bytes": 1993,
+    "lines": 32,
+    "sha256": "7d04303f7607136784d81f61da9ef520bee53bedbfccaa495f12ae8d539d0900"
+  },
+  {
+    "path": "server/index.js",
+    "bytes": 1419,
+    "lines": 26,
+    "sha256": "1c0fda48cde21a3fe01d4a5cb847f9df8eea5e8751250f83df1f52bc7edaf000"
+  },
+  {
+    "path": "server/service.js",
+    "bytes": 7955,
+    "lines": 126,
+    "sha256": "82c4269b6122dba9b7344fa853e29d26b10e774d80cca801b7a67ab698e6713a"
+  },
+  {
+    "path": "src/main.jsx",
+    "bytes": 24189,
+    "lines": 155,
+    "sha256": "5d86d9ecc4798653e7a19be8dbfffe32599f80d970bc9f37e859bb05c0f8861e"
+  },
+  {
+    "path": "src/rtc.js",
+    "bytes": 7374,
+    "lines": 132,
+    "sha256": "d0983f285cb6245fbef8878e37b3d6c64aafee19630482b3e038d1610aa8fa76"
+  },
+  {
+    "path": "src/style.css",
+    "bytes": 24059,
+    "lines": 3,
+    "sha256": "bf365672323cefcb1ea08fa39c46b4baafdc581671abdccde307b7b7fecad4aa"
+  },
+  {
+    "path": "tests/server.test.js",
+    "bytes": 4669,
+    "lines": 93,
+    "sha256": "f6ba729c89e5f0f79ecfb362518c675a5b6cdee2ee5a945ab75766e2734029fd"
+  },
+  {
+    "path": "vite.config.js",
+    "bytes": 132,
+    "lines": 4,
+    "sha256": "0ea84b4e2909b04e4c1cb1b92392a9f85bcb46605472763b15935d3498ba8ed3"
+  }
+]
